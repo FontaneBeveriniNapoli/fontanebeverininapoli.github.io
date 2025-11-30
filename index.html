@@ -4,18 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fontane & Beverini - Napoli</title>
-    
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6">
     <link rel="apple-touch-icon" href="./images/logo-app.png">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -142,10 +139,8 @@
                 <h3>Login Admin</h3>
                 <input type="email" id="admin-email" placeholder="Email" class="form-input">
                 <input type="password" id="admin-password" placeholder="Password" class="form-input">
-                <div class="modal-buttons">
-                    <button onclick="app.login()" class="admin-btn primary">Accedi</button>
-                    <button onclick="document.getElementById('login-modal').style.display='none'" class="admin-btn secondary">Annulla</button>
-                </div>
+                <button onclick="app.login()" class="admin-btn primary">Accedi</button>
+                <button onclick="document.getElementById('login-modal').style.display='none'" class="admin-btn secondary">Chiudi</button>
             </div>
         </div>
 
