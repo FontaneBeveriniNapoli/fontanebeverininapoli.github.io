@@ -4,15 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fontane & Beverini - Napoli</title>
+    
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6">
     <link rel="apple-touch-icon" href="./images/logo-app.png">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -50,44 +53,45 @@
                     </button>
                 </div>
             </div>
+            
             <div style="margin-top: 40px; text-align: center;">
-                <button onclick="app.toggleLogin()" style="background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 0.8rem;">
+                <button onclick="app.toggleLogin()" style="background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; margin: 0 auto;">
                     <i class="fas fa-lock"></i> Area Admin
                 </button>
             </div>
         </div>
 
-        <div id="fontane-screen" class="screen">
+        <div id="fontane-screen" class="screen list-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="app.showScreen('home-screen')"><i class="fas fa-arrow-left"></i></button>
                 <h1 class="screen-title">Fontane</h1>
             </header>
-            <div class="search-container">
-                <input type="text" class="search-input" placeholder="🔍 Cerca fontane..." onkeyup="app.filterList('fontane', this.value)">
-            </div>
             <div class="content-area">
+                <div class="search-container">
+                    <input type="text" class="search-input" placeholder="🔍 Cerca fontane..." onkeyup="app.filterList('fontane', this.value)">
+                </div>
                 <div class="items-grid" id="fontane-list">
                     <div class="loading"><p>Caricamento...</p></div>
                 </div>
             </div>
         </div>
 
-        <div id="beverini-screen" class="screen">
+        <div id="beverini-screen" class="screen list-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="app.showScreen('home-screen')"><i class="fas fa-arrow-left"></i></button>
                 <h1 class="screen-title">Beverini</h1>
             </header>
-            <div class="search-container">
-                <input type="text" class="search-input" placeholder="🔍 Cerca beverini..." onkeyup="app.filterList('beverini', this.value)">
-            </div>
             <div class="content-area">
+                <div class="search-container">
+                    <input type="text" class="search-input" placeholder="🔍 Cerca beverini..." onkeyup="app.filterList('beverini', this.value)">
+                </div>
                 <div class="compact-items-list" id="beverini-list">
                     <div class="loading"><p>Caricamento...</p></div>
                 </div>
             </div>
         </div>
 
-        <div id="news-screen" class="screen">
+        <div id="news-screen" class="screen list-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="app.showScreen('home-screen')"><i class="fas fa-arrow-left"></i></button>
                 <h1 class="screen-title">News</h1>
@@ -97,7 +101,7 @@
             </div>
         </div>
 
-        <div id="detail-screen" class="screen">
+        <div id="detail-screen" class="screen detail-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="app.goBack()"><i class="fas fa-arrow-left"></i></button>
                 <h1 class="screen-title" id="detail-title">Dettaglio</h1>
@@ -139,8 +143,10 @@
                 <h3>Login Admin</h3>
                 <input type="email" id="admin-email" placeholder="Email" class="form-input">
                 <input type="password" id="admin-password" placeholder="Password" class="form-input">
-                <button onclick="app.login()" class="admin-btn primary">Accedi</button>
-                <button onclick="document.getElementById('login-modal').style.display='none'" class="admin-btn secondary">Chiudi</button>
+                <div class="modal-buttons" style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button onclick="app.login()" class="admin-btn primary" style="flex:1;">Accedi</button>
+                    <button onclick="document.getElementById('login-modal').style.display='none'" class="admin-btn secondary" style="flex:1;">Chiudi</button>
+                </div>
             </div>
         </div>
 
@@ -151,33 +157,45 @@
                     <button onclick="app.closeAdminPanel()" style="background:none; border:none; color:white; font-size:1.5rem;">×</button>
                 </div>
                 <div style="padding: 20px;">
+                    <label>Tipo:</label>
                     <select id="adm-type" class="form-input">
                         <option value="fontane">Fontana</option>
                         <option value="beverini">Beverino</option>
                         <option value="news">News</option>
                     </select>
-                    <input type="text" id="adm-name" placeholder="Nome" class="form-input">
-                    <input type="text" id="adm-address" placeholder="Indirizzo" class="form-input">
+                    
+                    <label>Nome:</label>
+                    <input type="text" id="adm-name" placeholder="Nome / Titolo" class="form-input">
+                    
+                    <label>Indirizzo:</label>
+                    <input type="text" id="adm-address" placeholder="Indirizzo / Testo" class="form-input">
+                    
+                    <label>Stato:</label>
                     <select id="adm-status" class="form-input">
                         <option value="funzionante">Funzionante</option>
                         <option value="non-funzionante">Non Funzionante</option>
                         <option value="manutenzione">In Manutenzione</option>
                     </select>
-                    <div style="border:1px dashed #ccc; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    
+                    <div style="border:1px dashed #ccc; padding:10px; border-radius:8px; margin-bottom:15px;">
                         <label>Foto:</label>
-                        <input type="file" id="adm-file" accept="image/*">
+                        <input type="file" id="adm-file" accept="image/*" style="margin-top: 5px;">
                         <input type="hidden" id="adm-image-url">
                     </div>
-                    <div style="display:flex; gap:10px;">
+
+                    <label>Coordinate:</label>
+                    <div style="display:flex; gap:10px; margin-bottom: 5px;">
                         <input type="number" id="adm-lat" placeholder="Lat" class="form-input" step="any">
                         <input type="number" id="adm-lng" placeholder="Lng" class="form-input" step="any">
                     </div>
-                    <button onclick="app.getGPS()" class="admin-btn secondary" style="margin-bottom:15px;">📍 Usa GPS</button>
-                    <button onclick="app.saveData()" class="admin-btn primary">Salva</button>
-                    <button id="btn-delete" onclick="app.deleteData()" class="admin-btn danger" style="display:none;">Elimina</button>
-                    <div style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
-                        <button onclick="app.importInitialData()" class="admin-btn secondary" style="font-size:0.7rem;">Carica Dati Iniziali</button>
-                        <button onclick="app.logout()" class="admin-btn danger" style="font-size:0.7rem; float:right;">Logout</button>
+                    <button onclick="app.getGPS()" class="admin-btn secondary" style="margin-bottom:15px; font-size: 0.9rem;">📍 Usa GPS Posizione Attuale</button>
+
+                    <button onclick="app.saveData()" class="admin-btn primary">SALVA</button>
+                    <button id="btn-delete" onclick="app.deleteData()" class="admin-btn danger" style="display:none; margin-top: 10px;">ELIMINA</button>
+                    
+                    <div style="margin-top:30px; border-top:1px solid #eee; padding-top:15px; display: flex; justify-content: space-between;">
+                        <button onclick="app.importInitialData()" style="background:#555; color:white; border:none; padding:8px; border-radius:5px; font-size:0.7rem;">Carica Dati Demo</button>
+                        <button onclick="app.logout()" style="background:#d32f2f; color:white; border:none; padding:8px; border-radius:5px; font-size:0.7rem;">Logout</button>
                     </div>
                 </div>
             </div>
