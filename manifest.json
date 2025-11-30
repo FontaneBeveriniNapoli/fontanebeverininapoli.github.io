@@ -1,12 +1,24 @@
 {
-  "name": "Fontane di Napoli",
-  "short_name": "FontaneNA",
-  "start_url": "./index.html",
+  "name": "Fontane & Beverini - Napoli",
+  "short_name": "FontaneNapoli",
+  "description": "Gestione intelligente delle risorse idriche cittadine di Napoli",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
   "icons": [
-    { "src": "./images/logo-app.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "./images/logo-app.png", "sizes": "512x512", "type": "image/png" }
-  ]
+    {
+      "src": "./images/logo-app.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./images/logo-app.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["navigation", "utilities"],
+  "lang": "it-IT"
 }

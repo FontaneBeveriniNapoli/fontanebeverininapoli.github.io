@@ -4,207 +4,729 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fontane & Beverini - Napoli</title>
-    
-    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6">
-    <link rel="apple-touch-icon" href="./images/logo-app.png">
-    
+    <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Cloud Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        
-        <div id="home-screen" class="screen active">
-            <div class="logo-container">
-                <div class="app-logo"></div>
-                <div class="comune-logo"></div>
-            </div>
-            <h1 class="home-title">Fontane & Beverini</h1>
-            <p class="home-subtitle">
-                Gestione intelligente delle risorse idriche cittadine.<br>
-                Trova, esplora e monitora tutte le fontane e i beverini della tua città.
-            </p>
-            <div class="home-buttons">
-                <div class="button-row">
-                    <button class="home-btn fontane-btn" onclick="app.showScreen('fontane-screen')">
-                        <span class="btn-icon"><i class="fas fa-monument"></i></span>
-                        <span class="btn-text">Fontane</span>
-                    </button>
-                    <button class="home-btn beverini-btn" onclick="app.showScreen('beverini-screen')">
-                        <span class="btn-icon"><i class="fas fa-faucet"></i></span>
-                        <span class="btn-text">Beverini</span>
-                    </button>
-                </div>
-                <div class="button-row">
-                    <button class="home-btn mappa-btn" onclick="app.showScreen('mappa-screen')">
-                        <span class="btn-icon"><i class="fas fa-map-marked-alt"></i></span>
-                        <span class="btn-text">Mappa</span>
-                    </button>
-                    <button class="home-btn news-btn" onclick="app.showScreen('news-screen')">
-                        <span class="btn-icon"><i class="fas fa-newspaper"></i></span>
-                        <span class="btn-text">News</span>
-                    </button>
-                </div>
-            </div>
-            
-            <div style="margin-top: 40px; text-align: center;">
-                <button onclick="app.toggleLogin()" style="background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; margin: 0 auto;">
-                    <i class="fas fa-lock"></i> Area Admin
+    <div class="offline-indicator" id="offline-indicator">
+        <i class="fas fa-wifi"></i> Connessione assente
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <!-- Modal di autenticazione admin -->
+    <div class="auth-overlay" id="admin-auth">
+        <div class="auth-modal">
+            <h2 class="auth-title">Accesso Amministratore</h2>
+            <input type="email" class="auth-input" id="admin-email" placeholder="Email" autocomplete="email" value="fontane.beverini.napoli@gmail.com">
+            <input type="password" class="auth-input" id="admin-password" placeholder="Password" autocomplete="current-password">
+            <button class="auth-btn" onclick="checkAdminAuth()">Accedi</button>
+            <div class="auth-error" id="auth-error">Credenziali non valide</div>
+            <button class="auth-btn secondary" onclick="closeAdminAuth()" style="background: #6b7280;">Annulla</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="navigation-modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Scegli l'app di navigazione</h3>
+            <div class="modal-buttons">
+                <button class="modal-btn primary" onclick="openGoogleMaps()">
+                    <i class="fas fa-map-marked-alt"></i> Google Maps
+                </button>
+                <button class="modal-btn primary" onclick="openAppleMaps()">
+                    <i class="fas fa-map-marked-alt"></i> Apple Maps
+                </button>
+                <button class="modal-btn secondary" onclick="closeNavigationModal()">
+                    <i class="fas fa-times"></i> Annulla
                 </button>
             </div>
         </div>
+    </div>
 
-        <div id="fontane-screen" class="screen list-screen">
-            <header class="app-header">
-                <button class="back-btn" onclick="app.showScreen('home-screen')"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title">Fontane</h1>
-            </header>
-            <div class="content-area">
-                <div class="search-container">
-                    <input type="text" class="search-input" placeholder="🔍 Cerca fontane..." onkeyup="app.filterList('fontane', this.value)">
-                </div>
-                <div class="items-grid" id="fontane-list">
-                    <div class="loading"><p>Caricamento...</p></div>
-                </div>
+    <div class="modal-overlay" id="info-modal">
+        <div class="modal-content">
+            <h3 class="modal-title" id="info-modal-title">Informazioni</h3>
+            <p id="info-modal-message"></p>
+            <div class="modal-buttons">
+                <button class="modal-btn primary" onclick="closeInfoModal()">OK</button>
             </div>
         </div>
+    </div>
 
-        <div id="beverini-screen" class="screen list-screen">
-            <header class="app-header">
-                <button class="back-btn" onclick="app.showScreen('home-screen')"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title">Beverini</h1>
+    <div class="admin-panel-overlay" id="admin-panel">
+        <div class="admin-panel-content">
+            <header class="admin-panel-header">
+                <h2>Pannello di Controllo</h2>
+                <button class="close-admin-panel" onclick="closeAdminPanel()">
+                    <i class="fas fa-times"></i>
+                </button>
             </header>
-            <div class="content-area">
-                <div class="search-container">
-                    <input type="text" class="search-input" placeholder="🔍 Cerca beverini..." onkeyup="app.filterList('beverini', this.value)">
-                </div>
-                <div class="compact-items-list" id="beverini-list">
-                    <div class="loading"><p>Caricamento...</p></div>
-                </div>
+
+            <div class="admin-config-section">
+                <!-- Configurazione Firebase -->
             </div>
-        </div>
 
-        <div id="news-screen" class="screen list-screen">
-            <header class="app-header">
-                <button class="back-btn" onclick="app.showScreen('home-screen')"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title">News</h1>
-            </header>
-            <div class="content-area">
-                <div class="news-container" id="news-list"></div>
+            <div class="admin-tabs">
+                <button class="admin-tab-btn active" data-tab="dashboard-admin">Dashboard</button>
+                <button class="admin-tab-btn" data-tab="fontane-admin">Fontane</button>
+                <button class="admin-tab-btn" data-tab="beverini-admin">Beverini</button>
+                <button class="admin-tab-btn" data-tab="news-admin">News</button>
+                <button class="admin-tab-btn" data-tab="config-admin">Configurazione</button>
             </div>
-        </div>
 
-        <div id="detail-screen" class="screen detail-screen">
-            <header class="app-header">
-                <button class="back-btn" onclick="app.goBack()"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title" id="detail-title">Dettaglio</h1>
-            </header>
-            <div class="detail-content" id="detail-content"></div>
-        </div>
-
-        <div id="mappa-screen" class="screen">
-            <header class="app-header" style="position: absolute; z-index: 1000; padding: 15px; background: none; box-shadow: none;">
-                <button class="back-btn" onclick="app.showScreen('home-screen')"><i class="fas fa-arrow-left"></i></button>
-            </header>
-            <div id="map"></div>
-        </div>
-
-        <div class="tab-bar">
-            <button class="tab-btn active" data-target="home-screen" onclick="app.showScreen('home-screen')">
-                <span class="tab-icon"><i class="fas fa-home"></i></span><span>Home</span>
-            </button>
-            <button class="tab-btn" data-target="fontane-screen" onclick="app.showScreen('fontane-screen')">
-                <span class="tab-icon"><i class="fas fa-monument"></i></span><span>Fontane</span>
-            </button>
-            <button class="tab-btn" data-target="beverini-screen" onclick="app.showScreen('beverini-screen')">
-                <span class="tab-icon"><i class="fas fa-faucet"></i></span><span>Beverini</span>
-            </button>
-            <button class="tab-btn" data-target="mappa-screen" onclick="app.showScreen('mappa-screen')">
-                <span class="tab-icon"><i class="fas fa-map-marked-alt"></i></span><span>Mappa</span>
-            </button>
-            <button class="tab-btn" data-target="news-screen" onclick="app.showScreen('news-screen')">
-                <span class="tab-icon"><i class="fas fa-newspaper"></i></span><span>News</span>
-            </button>
-        </div>
-
-        <button id="admin-fab" class="admin-fab" onclick="app.openAdminPanel()" style="display: none;">
-            <i class="fas fa-plus"></i>
-        </button>
-
-        <div id="login-modal" class="modal-overlay">
-            <div class="modal-content">
-                <h3>Login Admin</h3>
-                <input type="email" id="admin-email" placeholder="Email" class="form-input">
-                <input type="password" id="admin-password" placeholder="Password" class="form-input">
-                <div class="modal-buttons" style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button onclick="app.login()" class="admin-btn primary" style="flex:1;">Accedi</button>
-                    <button onclick="document.getElementById('login-modal').style.display='none'" class="admin-btn secondary" style="flex:1;">Chiudi</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="admin-panel" class="admin-panel-overlay">
-            <div class="admin-panel-content">
-                <div class="admin-panel-header">
-                    <h3>Gestione</h3>
-                    <button onclick="app.closeAdminPanel()" style="background:none; border:none; color:white; font-size:1.5rem;">×</button>
-                </div>
-                <div style="padding: 20px;">
-                    <label>Tipo:</label>
-                    <select id="adm-type" class="form-input">
-                        <option value="fontane">Fontana</option>
-                        <option value="beverini">Beverino</option>
-                        <option value="news">News</option>
-                    </select>
-                    
-                    <label>Nome:</label>
-                    <input type="text" id="adm-name" placeholder="Nome / Titolo" class="form-input">
-                    
-                    <label>Indirizzo:</label>
-                    <input type="text" id="adm-address" placeholder="Indirizzo / Testo" class="form-input">
-                    
-                    <label>Stato:</label>
-                    <select id="adm-status" class="form-input">
-                        <option value="funzionante">Funzionante</option>
-                        <option value="non-funzionante">Non Funzionante</option>
-                        <option value="manutenzione">In Manutenzione</option>
-                    </select>
-                    
-                    <div style="border:1px dashed #ccc; padding:10px; border-radius:8px; margin-bottom:15px;">
-                        <label>Foto:</label>
-                        <input type="file" id="adm-file" accept="image/*" style="margin-top: 5px;">
-                        <input type="hidden" id="adm-image-url">
+            <div class="admin-tab-content active" id="dashboard-admin">
+                <div class="dashboard-stats">
+                    <div class="stat-card fontane">
+                        <div class="stat-title">Fontane Totali</div>
+                        <div class="stat-value" id="total-fontane">0</div>
+                        <div class="stat-details">
+                            <div class="stat-detail">
+                                <div class="detail-value status-funzionante" id="fontane-funzionanti">0</div>
+                                <div class="detail-label">Funzionanti</div>
+                            </div>
+                            <div class="stat-detail">
+                                <div class="detail-value status-non-funzionante" id="fontane-non-funzionanti">0</div>
+                                <div class="detail-label">Non Funzionanti</div>
+                            </div>
+                            <div class="stat-detail">
+                                <div class="detail-value status-manutenzione" id="fontane-manutenzione">0</div>
+                                <div class="detail-label">In Manutenzione</div>
+                            </div>
+                        </div>
                     </div>
 
-                    <label>Coordinate:</label>
-                    <div style="display:flex; gap:10px; margin-bottom: 5px;">
-                        <input type="number" id="adm-lat" placeholder="Lat" class="form-input" step="any">
-                        <input type="number" id="adm-lng" placeholder="Lng" class="form-input" step="any">
+                    <div class="stat-card beverini">
+                        <div class="stat-title">Beverini Totali</div>
+                        <div class="stat-value" id="total-beverini">0</div>
+                        <div class="stat-details">
+                            <div class="stat-detail">
+                                <div class="detail-value status-funzionante" id="beverini-funzionanti">0</div>
+                                <div class="detail-label">Funzionanti</div>
+                            </div>
+                            <div class="stat-detail">
+                                <div class="detail-value status-non-funzionante" id="beverini-non-funzionanti">0</div>
+                                <div class="detail-label">Non Funzionanti</div>
+                            </div>
+                            <div class="stat-detail">
+                                <div class="detail-value status-manutenzione" id="beverini-manutenzione">0</div>
+                                <div class="detail-label">In Manutenzione</div>
+                            </div>
+                        </div>
                     </div>
-                    <button onclick="app.getGPS()" class="admin-btn secondary" style="margin-bottom:15px; font-size: 0.9rem;">📍 Usa GPS Posizione Attuale</button>
 
-                    <button onclick="app.saveData()" class="admin-btn primary">SALVA</button>
-                    <button id="btn-delete" onclick="app.deleteData()" class="admin-btn danger" style="display:none; margin-top: 10px;">ELIMINA</button>
-                    
-                    <div style="margin-top:30px; border-top:1px solid #eee; padding-top:15px; display: flex; justify-content: space-between;">
-                        <button onclick="app.importInitialData()" style="background:#555; color:white; border:none; padding:8px; border-radius:5px; font-size:0.7rem;">Carica Dati Demo</button>
-                        <button onclick="app.logout()" style="background:#d32f2f; color:white; border:none; padding:8px; border-radius:5px; font-size:0.7rem;">Logout</button>
+                    <div class="stat-card news">
+                        <div class="stat-title">News Totali</div>
+                        <div class="stat-value" id="total-news">0</div>
+                    </div>
+                </div>
+
+                <div class="recent-activity">
+                    <div class="activity-title">
+                        <span>Attività Recenti</span>
+                        <button class="admin-btn secondary" onclick="clearActivityLog()">
+                            <i class="fas fa-trash"></i> Pulisci
+                        </button>
+                    </div>
+                    <div class="activity-list" id="activity-list">
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-tab-content" id="fontane-admin">
+                <div class="sync-section">
+                    <button class="admin-btn primary" onclick="loadFromFirebase('fontane')">
+                        <i class="fas fa-download"></i> Carica da Firebase
+                    </button>
+                    <button class="admin-btn secondary" onclick="saveToFirebase('fontane')">
+                        <i class="fas fa-upload"></i> Salva su Firebase
+                    </button>
+                </div>
+
+                <div class="import-export-section">
+                    <h4>Import/Export Fontane</h4>
+                    <div class="import-options">
+                        <input type="file" id="import-fontane-file" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleFileImport('fontane', this.files)">
+                        <button class="admin-btn secondary" onclick="document.getElementById('import-fontane-file').click()">
+                            <i class="fas fa-file-import"></i> Importa Fontane
+                        </button>
+                        <button class="admin-btn secondary" onclick="exportDataToExcel('fontane')">
+                            <i class="fas fa-file-export"></i> Esporta Fontane
+                        </button>
+                        <button class="admin-btn secondary" onclick="downloadTemplate('fontane')">
+                            <i class="fas fa-download"></i> Template Fontane
+                        </button>
+                    </div>
+                </div>
+
+                <h3>Aggiungi/Modifica Fontana</h3>
+                <form id="fontana-form" onsubmit="saveFontana(event)">
+                    <input type="hidden" id="fontana-id">
+                    <div class="form-group">
+                        <label for="fontana-nome">Nome:</label>
+                        <input type="text" id="fontana-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fontana-indirizzo">Indirizzo:</label>
+                        <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                            <input type="text" id="fontana-indirizzo" required style="flex: 1;">
+                            <button type="button" class="location-btn secondary" onclick="getCurrentLocationWithAddress('fontana')"
+                                    title="Usa la posizione corrente per coordinate e indirizzo">
+                                <i class="fas fa-location-arrow"></i> Rileva Automatico
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fontana-stato">Stato:</label>
+                        <select id="fontana-stato" required>
+                            <option value="funzionante">Funzionante</option>
+                            <option value="non-funzionante">Non Funzionante</option>
+                            <option value="manutenzione">In Manutenzione</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fontana-anno">Anno:</label>
+                        <input type="text" id="fontana-anno">
+                    </div>
+                    <div class="form-group">
+                        <label for="fontana-descrizione">Descrizione:</label>
+                        <textarea id="fontana-descrizione" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fontana-storico">Storico:</label>
+                        <textarea id="fontana-storico" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fontana-latitudine">Coordinate:</label>
+                        <div style="margin-bottom: 8px;">
+                            <div class="location-buttons">
+                                <button type="button" class="location-btn primary" onclick="getCurrentLocationCoordinatesOnly('fontana')">
+                                    <i class="fas fa-location-arrow"></i> Solo Coordinate
+                                </button>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--light-text);">Latitudine</label>
+                                <input type="text" id="fontana-latitudine" required placeholder="40.8518">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--light-text);">Longitudine</label>
+                                <input type="text" id="fontana-longitudine" required placeholder="14.2681">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fontana-immagine">URL Immagine:</label>
+                        <input type="text" id="fontana-immagine">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="admin-btn primary">Salva</button>
+                        <button type="button" class="admin-btn secondary" onclick="resetFontanaForm()">Annulla</button>
+                    </div>
+                </form>
+
+                <div class="admin-table-container">
+                    <table class="admin-table" id="fontane-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Indirizzo</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fontane-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="admin-tab-content" id="beverini-admin">
+                <div class="sync-section">
+                    <button class="admin-btn primary" onclick="loadFromFirebase('beverini')">
+                        <i class="fas fa-download"></i> Carica da Firebase
+                    </button>
+                    <button class="admin-btn secondary" onclick="saveToFirebase('beverini')">
+                        <i class="fas fa-upload"></i> Salva su Firebase
+                    </button>
+                </div>
+
+                <div class="import-export-section">
+                    <h4>Import/Export Beverini</h4>
+                    <div class="import-options">
+                        <input type="file" id="import-beverini-file" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleFileImport('beverini', this.files)">
+                        <button class="admin-btn secondary" onclick="document.getElementById('import-beverini-file').click()">
+                            <i class="fas fa-file-import"></i> Importa Beverini
+                        </button>
+                        <button class="admin-btn secondary" onclick="exportDataToExcel('beverini')">
+                            <i class="fas fa-file-export"></i> Esporta Beverini
+                        </button>
+                        <button class="admin-btn secondary" onclick="downloadTemplate('beverini')">
+                            <i class="fas fa-download"></i> Template Beverini
+                        </button>
+                    </div>
+                </div>
+
+                <h3>Aggiungi/Modifica Beverino</h3>
+                <form id="beverino-form" onsubmit="saveBeverino(event)">
+                    <input type="hidden" id="beverino-id">
+                    <div class="form-group">
+                        <label for="beverino-nome">Nome:</label>
+                        <input type="text" id="beverino-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="beverino-indirizzo">Indirizzo:</label>
+                        <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                            <input type="text" id="beverino-indirizzo" required style="flex: 1;">
+                            <button type="button" class="location-btn secondary" onclick="getCurrentLocationWithAddress('beverino')"
+                                    title="Usa la posizione corrente per coordinate e indirizzo">
+                                <i class="fas fa-location-arrow"></i> Rileva Automatico
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="beverino-stato">Stato:</label>
+                        <select id="beverino-stato" required>
+                            <option value="funzionante">Funzionante</option>
+                            <option value="non-funzionante">Non Funzionante</option>
+                            <option value="manutenzione">In Manutenzione</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="beverino-latitudine">Coordinate:</label>
+                        <div style="margin-bottom: 8px;">
+                            <div class="location-buttons">
+                                <button type="button" class="location-btn primary" onclick="getCurrentLocationCoordinatesOnly('beverino')">
+                                    <i class="fas fa-location-arrow"></i> Solo Coordinate
+                                </button>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--light-text);">Latitudine</label>
+                                <input type="text" id="beverino-latitudine" required placeholder="40.8518">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--light-text);">Longitudine</label>
+                                <input type="text" id="beverino-longitudine" required placeholder="14.2681">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="beverino-immagine">URL Immagine:</label>
+                        <input type="text" id="beverino-immagine">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="admin-btn primary">Salva</button>
+                        <button type="button" class="admin-btn secondary" onclick="resetBeverinoForm()">Annulla</button>
+                    </div>
+                </form>
+
+                <div class="admin-table-container">
+                    <table class="admin-table" id="beverini-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Indirizzo</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="beverini-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="admin-tab-content" id="news-admin">
+                <div class="sync-section">
+                    <button class="admin-btn primary" onclick="loadFromFirebase('news')">
+                        <i class="fas fa-download"></i> Carica da Firebase
+                    </button>
+                    <button class="admin-btn secondary" onclick="saveToFirebase('news')">
+                        <i class="fas fa-upload"></i> Salva su Firebase
+                    </button>
+                </div>
+
+                <div class="import-export-section">
+                    <h4>Import/Export News</h4>
+                    <div class="import-options">
+                        <input type="file" id="import-news-file" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleFileImport('news', this.files)">
+                        <button class="admin-btn secondary" onclick="document.getElementById('import-news-file').click()">
+                            <i class="fas fa-file-import"></i> Importa News
+                        </button>
+                        <button class="admin-btn secondary" onclick="exportDataToExcel('news')">
+                            <i class="fas fa-file-export"></i> Esporta News
+                        </button>
+                        <button class="admin-btn secondary" onclick="downloadTemplate('news')">
+                            <i class="fas fa-download"></i> Template News
+                        </button>
+                    </div>
+                </div>
+
+                <h3>Aggiungi/Modifica News</h3>
+                <form id="news-form" onsubmit="saveNews(event)">
+                    <input type="hidden" id="news-id">
+                    <div class="form-group">
+                        <label for="news-titolo">Titolo:</label>
+                        <input type="text" id="news-titolo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="news-contenuto">Contenuto:</label>
+                        <textarea id="news-contenuto" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="news-data">Data:</label>
+                        <input type="date" id="news-data" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="news-categoria">Categoria:</label>
+                        <input type="text" id="news-categoria" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="news-fonte">Fonte:</label>
+                        <input type="text" id="news-fonte" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="admin-btn primary">Salva</button>
+                        <button type="button" class="admin-btn secondary" onclick="resetNewsForm()">Annulla</button>
+                    </div>
+                </form>
+
+                <div class="admin-table-container">
+                    <table class="admin-table" id="news-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Titolo</th>
+                                <th>Data</th>
+                                <th>Categoria</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="news-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="admin-tab-content" id="config-admin">
+                <!-- Sezione Sicurezza Amministratore -->
+                <div class="backup-section">
+                    <h4>Sicurezza Amministratore</h4>
+                    <div class="sync-actions">
+                        <button class="admin-btn secondary" onclick="changeAdminPassword()">
+                            <i class="fas fa-key"></i> Cambia Password
+                        </button>
+                        <button class="admin-btn secondary" onclick="logoutAdmin()">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.9rem; color: var(--light-text);">
+                        <strong>Utente attuale:</strong> <span id="current-user-email">Non connesso</span>
+                    </div>
+                </div>
+
+                <div class="backup-section">
+                    <h4>Gestione Backup</h4>
+                    <div class="config-item">
+                        <label for="backup-frequency">Frequenza Backup Automatico:</label>
+                        <select id="backup-frequency">
+                            <option value="daily">Giornaliero</option>
+                            <option value="weekly" selected>Settimanale</option>
+                            <option value="monthly">Mensile</option>
+                        </select>
+                    </div>
+                    <div class="config-item">
+                        <label for="max-backups">Numero Massimo Backup:</label>
+                        <input type="number" id="max-backups" value="10" min="1" max="50">
+                    </div>
+                    <div class="sync-actions">
+                        <button class="admin-btn primary" onclick="createBackup()">
+                            <i class="fas fa-save"></i> Crea Backup Manuale
+                        </button>
+                        <button class="admin-btn secondary" onclick="restoreFromBackup()">
+                            <i class="fas fa-history"></i> Ripristina da Backup
+                        </button>
+                    </div>
+
+                    <h4 style="margin-top: 20px;">Backup Disponibili</h4>
+                    <div class="backup-list" id="backup-list">
+                    </div>
+                </div>
+
+                <div class="import-export-section">
+                    <h4>Import/Export Dati in Excel</h4>
+                    <div class="export-options">
+                        <button class="admin-btn secondary" onclick="exportDataToExcel('fontane')">
+                            <i class="fas fa-file-export"></i> Esporta Fontane
+                        </button>
+                        <button class="admin-btn secondary" onclick="exportDataToExcel('beverini')">
+                            <i class="fas fa-file-export"></i> Esporta Beverini
+                        </button>
+                        <button class="admin-btn secondary" onclick="exportDataToExcel('news')">
+                            <i class="fas fa-file-export"></i> Esporta News
+                        </button>
+                        <button class="admin-btn primary" onclick="exportAllDataToExcel()">
+                            <i class="fas fa-file-archive"></i> Esporta Tutto
+                        </button>
+                    </div>
+
+                    <div class="import-options">
+                        <input type="file" id="import-all-file" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleFileImport('all', this.files)">
+                        <button class="admin-btn secondary" onclick="document.getElementById('import-all-file').click()">
+                            <i class="fas fa-file-import"></i> Importa Tutto
+                        </button>
+                    </div>
+                </div>
+
+                <div class="backup-section" style="margin-top: 20px;">
+                    <h4>Manutenzione</h4>
+                    <div class="sync-actions">
+                        <button class="admin-btn secondary" onclick="resetToDefault()">
+                            <i class="fas fa-undo"></i> Ripristina Dati di Default
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <div class="app-container">
+        <div class="screen active" id="home-screen">
+            <div class="logo-container">
+                <div class="app-logo logo-with-image"></div>
+                <div class="comune-logo"></div>
+            </div>
+            <h1 class="home-title">Fontane & Beverini</h1>
+            <p class="home-subtitle">
+                Gestione intelligente delle risorse idriche cittadine.
+                Trova, esplora e monitora tutte le fontane e i beverini della tua città.
+            </p>
+
+            <div class="home-buttons">
+                <div class="button-row">
+                    <button class="home-btn fontane-btn" onclick="showScreen('fontane-screen')">
+                        <span class="btn-icon"><i class="fas fa-monument"></i></span>
+                        <span class="btn-text">Fontane</span>
+                    </button>
+                    <button class="home-btn beverini-btn" onclick="showScreen('beverini-screen')">
+                        <span class="btn-icon"><i class="fas fa-faucet"></i></span>
+                        <span class="btn-text">Beverini</span>
+                    </button>
+                </div>
+                <div class="button-row">
+                    <button class="home-btn mappa-btn" onclick="showScreen('mappa-screen')">
+                        <span class="btn-icon"><i class="fas fa-map-marked-alt"></i></span>
+                        <span class="btn-text">Mappa</span>
+                    </button>
+                    <button class="home-btn news-btn" onclick="showScreen('news-screen')">
+                        <span class="btn-icon"><i class="fas fa-newspaper"></i></span>
+                        <span class="btn-text">News</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="screen list-screen" id="fontane-screen">
+            <header class="app-header">
+                <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
+                <h1 class="screen-title">Fontane</h1>
+                <p class="screen-subtitle">Scopri le fontane della città</p>
+            </header>
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="🔍 Cerca fontane..." onkeyup="debouncedFilter('fontane', this.value)">
+            </div>
+            <div class="content-area">
+                <div class="filter-buttons">
+                    <button class="filter-btn all active" onclick="setFilter('fontane', 'all')">
+                        <i class="fas fa-layer-group"></i> Tutti
+                    </button>
+                    <button class="filter-btn funzionante" onclick="setFilter('fontane', 'funzionante')">
+                        <i class="fas fa-check-circle"></i> Funzionanti
+                    </button>
+                    <button class="filter-btn non-funzionante" onclick="setFilter('fontane', 'non-funzionante')">
+                        <i class="fas fa-times-circle"></i> Non Funzionanti
+                    </button>
+                    <button class="filter-btn manutenzione" onclick="setFilter('fontane', 'manutenzione')">
+                        <i class="fas fa-tools"></i> In Manutenzione
+                    </button>
+                </div>
+                <div class="items-grid" id="fontane-list">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Caricamento fontane in corso...</p>
+                    </div>
+                </div>
+            </div>
+            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
+                <i class="fas fa-map-marker-alt"></i> Naviga Verso
+            </button>
+        </div>
+
+        <div class="screen list-screen" id="beverini-screen">
+            <header class="app-header">
+                <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
+                <h1 class="screen-title">Beverini</h1>
+                <p class="screen-subtitle">Trova i beverini pubblici</p>
+            </header>
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="🔍 Cerca beverini..." onkeyup="debouncedFilter('beverini', this.value)">
+            </div>
+            <div class="content-area">
+                <div class="filter-buttons">
+                    <button class="filter-btn all active" onclick="setFilter('beverini', 'all')">
+                        <i class="fas fa-layer-group"></i> Tutti
+                    </button>
+                    <button class="filter-btn funzionante" onclick="setFilter('beverini', 'funzionante')">
+                        <i class="fas fa-check-circle"></i> Funzionanti
+                    </button>
+                    <button class="filter-btn non-funzionante" onclick="setFilter('beverini', 'non-funzionante')">
+                        <i class="fas fa-times-circle"></i> Non Funzionanti
+                    </button>
+                    <button class="filter-btn manutenzione" onclick="setFilter('beverini', 'manutenzione')">
+                        <i class="fas fa-tools"></i> In Manutenzione
+                    </button>
+                </div>
+                <div class="compact-items-list" id="beverini-list">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Caricamento beverini in corso...</p>
+                    </div>
+                </div>
+            </div>
+            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
+                <i class="fas fa-map-marker-alt"></i> Naviga Verso
+            </button>
+        </div>
+
+        <div class="screen list-screen" id="news-screen">
+            <header class="app-header">
+                <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
+                <h1 class="screen-title">News</h1>
+                <p class="screen-subtitle">Ultime notizie sulle fontane</p>
+            </header>
+            <div class="content-area">
+                <div class="news-container" id="news-list">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Caricamento news in corso...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="screen detail-screen" id="fontana-detail-screen">
+            <header class="app-header">
+                <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
+                <h1 class="screen-title" id="fontana-detail-title">Fontana</h1>
+            </header>
+            <div class="detail-content" id="fontana-detail-content">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
+                <i class="fas fa-map-marker-alt"></i> Naviga Verso
+            </button>
+        </div>
+
+        <div class="screen detail-screen" id="beverino-detail-screen">
+            <header class="app-header">
+                <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
+                <h1 class="screen-title" id="beverino-detail-title">Beverino</h1>
+            </header>
+            <div class="detail-content" id="beverino-detail-content">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
+                <i class="fas fa-map-marker-alt"></i> Naviga Verso
+            </button>
+        </div>
+
+        <div class="screen" id="mappa-screen">
+            <header class="app-header" style="position: absolute; top: 0; left: 0; right: 0; z-index: 1000; padding: 15px 20px;">
+                <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
+                <h1 class="screen-title" style="font-size: 1.4rem;">Mappa</h1>
+            </header>
+            <div class="map-search-container">
+                <div class="map-search-box">
+                    <input type="text" id="map-search-input" placeholder="🔍 Cerca indirizzo, luogo, punto interesse..."
+                           onkeypress="handleMapSearch(event)">
+                    <button class="map-search-btn" onclick="performMapSearch()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div class="search-results" id="map-search-results"></div>
+            </div>
+            <div id="map" style="height: 100vh;"></div>
+            <div class="map-legend">
+                <div class="legend-title">Legenda</div>
+                <div class="legend-item">
+                    <div class="legend-icon icon-fontana"></div>
+                    <span>Fontana</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon icon-beverino"></div>
+                    <span>Beverini</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon icon-position"></div>
+                    <span>La tua posizione</span>
+                </div>
+            </div>
+            <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 5px; font-size: 0.7rem; z-index: 1000;">
+                © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors
+            </div>
+        </div>
+
+        <div class="tab-bar">
+            <button class="tab-btn active" data-target="home-screen" onclick="showScreen('home-screen')">
+                <span class="tab-icon"><i class="fas fa-home"></i></span>
+                <span>Home</span>
+            </button>
+            <button class="tab-btn" data-target="fontane-screen" onclick="showScreen('fontane-screen')">
+                <span class="tab-icon"><i class="fas fa-monument"></i></span>
+                <span>Fontane</span>
+            </button>
+            <button class="tab-btn" data-target="beverini-screen" onclick="showScreen('beverini-screen')">
+                <span class="tab-icon"><i class="fas fa-faucet"></i></span>
+                <span>Beverini</span>
+            </button>
+            <button class="tab-btn" data-target="mappa-screen" onclick="showScreen('mappa-screen')">
+                <span class="tab-icon"><i class="fas fa-map-marked-alt"></i></span>
+                <span>Mappa</span>
+            </button>
+            <button class="tab-btn" data-target="news-screen" onclick="showScreen('news-screen')">
+                <span class="tab-icon"><i class="fas fa-newspaper"></i></span>
+                <span>News</span>
+            </button>
+        </div>
+    </div>
+
+    <button class="admin-fab" onclick="openAdminPanel()" style="display: none;">
+        <i class="fas fa-cog"></i>
+    </button>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script type="module" src="app.js"></script>
-    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>
+    <script src="app.js"></script>
 </body>
 </html>
