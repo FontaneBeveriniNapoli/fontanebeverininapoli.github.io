@@ -336,12 +336,13 @@ function showScreen(screenId) {
     // Nascondi tutte le schermate
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
+        screen.style.display = 'none';
     });
     
     // Mostra la nuova schermata
     const targetScreen = document.getElementById(screenId);
     if (targetScreen) {
-        targetScreen.style.display = 'block';
+        targetScreen.style.display = 'flex'; // Cambiato da 'block' a 'flex'
         setTimeout(() => {
             targetScreen.classList.add('active');
         }, 10);
