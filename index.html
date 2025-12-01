@@ -2,25 +2,377 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="Mappa delle fontane e beverini di Napoli - PWA">
-    <meta name="keywords" content="fontane, beverini, napoli, acqua, mappa">
-    <meta name="author" content="Comune di Napoli">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mappa delle fontane e beverini di Napoli">
+    <meta name="theme-color" content="#007bff">
     
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#1a73e8">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Fontane Napoli">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="images/icona-avvio.png">
     <link rel="apple-touch-startup-image" href="images/icona-avvio-splash.png">
     
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="images/icona-avvio.png" type="image/png">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <title>Fontane & Beverini Napoli</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    
     <link rel="stylesheet" href="style.css">
-    
+    <title>Fontane & Beverini Napoli</title>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Caricamento...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="main-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img src="images/logo-comune.png" alt="Comune di Napoli" class="comune-logo" id="admin-logo">
+                    <div class="title-section">
+                        <h1>Fontane & Beverini</h1>
+                        <p class="subtitle">Comune di Napoli</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="searchBtn" class="btn-icon">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button id="filterBtn" class="btn-icon">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                    <button id="refreshBtn" class="btn-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Search Bar -->
+            <div id="searchBar" class="search-container hidden">
+                <input type="text" id="searchInput" placeholder="Cerca per indirizzo o nome...">
+                <button id="clearSearch" class="btn-clear">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Filter Panel -->
+            <div id="filterPanel" class="filter-container hidden">
+                <div class="filter-group">
+                    <h3>Filtra per Stato</h3>
+                    <div class="filter-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterWorking" checked>
+                            <span class="checkmark"></span>
+                            <span class="status-dot working"></span>
+                            Funzionanti
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterNotWorking" checked>
+                            <span class="checkmark"></span>
+                            <span class="status-dot not-working"></span>
+                            Non Funzionanti
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterMaintenance" checked>
+                            <span class="checkmark"></span>
+                            <span class="status-dot maintenance"></span>
+                            In Manutenzione
+                        </label>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <h3>Tipologia</h3>
+                    <div class="filter-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterFountains" checked>
+                            <span class="checkmark"></span>
+                            Fontane
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterBeverini" checked>
+                            <span class="checkmark"></span>
+                            Beverini
+                        </label>
+                    </div>
+                </div>
+                <button id="applyFilters" class="btn-primary">Applica Filtri</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Screen -->
+        <section id="home-screen" class="screen active">
+            <div class="hero-banner">
+                <img src="images/sfondo-home.jpg" alt="Fontane di Napoli">
+                <div class="hero-overlay">
+                    <h2>Acqua Pubblica Napoli</h2>
+                    <p>Scopri le fontane e i beverini della tua città</p>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-fountain"></i>
+                    </div>
+                    <h3>Fontane</h3>
+                    <p class="stat-number" id="totalFountains">0</p>
+                    <small>Registrate</small>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-tint"></i>
+                    </div>
+                    <h3>Beverini</h3>
+                    <p class="stat-number" id="totalBeverini">0</p>
+                    <small>Registrati</small>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h3>Funzionanti</h3>
+                    <p class="stat-number" id="totalWorking">0</p>
+                    <small>Attualmente</small>
+                </div>
+            </div>
+            
+            <div class="quick-links">
+                <a href="#fontane" class="quick-link">
+                    <div class="link-icon">
+                        <i class="fas fa-fountain"></i>
+                    </div>
+                    <span>Fontane</span>
+                </a>
+                <a href="#beverini" class="quick-link">
+                    <div class="link-icon">
+                        <i class="fas fa-tint"></i>
+                    </div>
+                    <span>Beverini</span>
+                </a>
+                <a href="#mappa" class="quick-link">
+                    <div class="link-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <span>Mappa</span>
+                </a>
+                <a href="#news" class="quick-link">
+                    <div class="link-icon">
+                        <i class="fas fa-newspaper"></i>
+                    </div>
+                    <span>News</span>
+                </a>
+            </div>
+            
+            <div class="news-section">
+                <h3>Ultime News</h3>
+                <div id="newsPreview" class="news-preview">
+                    <!-- News caricate dinamicamente -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Fontane Screen -->
+        <section id="fontane-screen" class="screen">
+            <div class="screen-header">
+                <h2>Elenco Fontane</h2>
+                <button id="addFontanaBtn" class="btn-add hidden">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div id="fontaneList" class="list-container">
+                <!-- Fontane caricate dinamicamente -->
+            </div>
+        </section>
+
+        <!-- Beverini Screen -->
+        <section id="beverini-screen" class="screen">
+            <div class="screen-header">
+                <h2>Elenco Beverini</h2>
+                <button id="addBeverinoBtn" class="btn-add hidden">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div id="beveriniList" class="list-container">
+                <!-- Beverini caricati dinamicamente -->
+            </div>
+        </section>
+
+        <!-- Mappa Screen -->
+        <section id="mappa-screen" class="screen">
+            <div class="screen-header">
+                <h2>Mappa Interattiva</h2>
+                <div class="map-controls">
+                    <button id="locateMe" class="btn-icon">
+                        <i class="fas fa-location-arrow"></i>
+                    </button>
+                    <button id="toggleMapType" class="btn-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="map" class="map-container"></div>
+            <div class="map-legend">
+                <div class="legend-item">
+                    <span class="legend-color working"></span>
+                    <span>Funzionante</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color not-working"></span>
+                    <span>Non Funzionante</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color maintenance"></span>
+                    <span>Manutenzione</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- News Screen -->
+        <section id="news-screen" class="screen">
+            <div class="screen-header">
+                <h2>News & Aggiornamenti</h2>
+                <button id="addNewsBtn" class="btn-add hidden">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div id="newsContainer" class="news-container">
+                <!-- News complete caricate dinamicamente -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="#home" class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="#fontane" class="nav-item">
+            <i class="fas fa-fountain"></i>
+            <span>Fontane</span>
+        </a>
+        <a href="#beverini" class="nav-item">
+            <i class="fas fa-tint"></i>
+            <span>Beverini</span>
+        </a>
+        <a href="#mappa" class="nav-item">
+            <i class="fas fa-map-marked-alt"></i>
+            <span>Mappa</span>
+        </a>
+        <a href="#news" class="nav-item">
+            <i class="fas fa-newspaper"></i>
+            <span>News</span>
+        </a>
+    </nav>
+
+    <!-- Admin Modal -->
+    <div id="adminModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Accesso Amministratore</h3>
+                <button id="closeAdmin" class="btn-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="loginForm">
+                    <div class="form-group">
+                        <input type="email" id="adminEmail" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="adminPassword" placeholder="Password" required>
+                    </div>
+                    <button id="loginBtn" class="btn-primary btn-block">Accedi</button>
+                    <p id="loginError" class="error-message"></p>
+                </div>
+                <div id="adminPanel" class="hidden">
+                    <div class="admin-section">
+                        <h4>Gestione Dati</h4>
+                        <button id="syncData" class="btn-admin">
+                            <i class="fas fa-sync"></i> Sincronizza con Firebase
+                        </button>
+                        <button id="exportData" class="btn-admin">
+                            <i class="fas fa-file-export"></i> Esporta Excel
+                        </button>
+                        <button id="importData" class="btn-admin">
+                            <i class="fas fa-file-import"></i> Importa Excel
+                        </button>
+                        <button id="backupData" class="btn-admin">
+                            <i class="fas fa-database"></i> Backup Locale
+                        </button>
+                    </div>
+                    <div class="admin-section">
+                        <h4>Statistiche</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span>Fontane:</span>
+                                <span id="adminFountains">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Beverini:</span>
+                                <span id="adminBeverini">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>News:</span>
+                                <span id="adminNews">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="logoutBtn" class="btn-logout">
+                        <i class="fas fa-sign-out-alt"></i> Esci
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detailModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="detailTitle"></h3>
+                <button id="closeDetail" class="btn-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="detailBody">
+                <!-- Dettagli caricati dinamicamente -->
+            </div>
+            <div class="modal-footer">
+                <button id="navigateBtn" class="btn-primary">
+                    <i class="fas fa-directions"></i> Naviga
+                </button>
+                <button id="reportBtn" class="btn-secondary">
+                    <i class="fas fa-flag"></i> Segnala
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Install Prompt -->
+    <div id="installPrompt" class="install-prompt hidden">
+        <div class="prompt-content">
+            <p><i class="fas fa-download"></i> Installa l'app per un'esperienza migliore!</p>
+            <div class="prompt-actions">
+                <button id="installBtn" class="btn-primary">Installa</button>
+                <button id="dismissPrompt" class="btn-secondary">Più tardi</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
@@ -46,380 +398,64 @@
         
         console.log("Firebase inizializzato correttamente");
         
-        // Controlla stato autenticazione
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 console.log("Admin autenticato:", user.email);
                 window.isAdmin = true;
+                document.querySelectorAll('.btn-add').forEach(btn => btn.classList.remove('hidden'));
             } else {
                 console.log("Nessun admin autenticato");
                 window.isAdmin = false;
+                document.querySelectorAll('.btn-add').forEach(btn => btn.classList.add('hidden'));
             }
         });
     </script>
-    
-    <!-- Leaflet CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-</head>
-<body>
-    <!-- Loading Screen -->
-    <div id="loading-screen">
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <p>Caricamento in corso...</p>
-        </div>
-    </div>
-
-    <!-- Header -->
-    <header class="glass-header">
-        <div class="header-content">
-            <div class="logo-container">
-                <img src="images/logo-comune.png" alt="Comune di Napoli" class="logo-comune" id="main-logo">
-                <div class="app-title">
-                    <h1>Fontane & Beverini</h1>
-                    <p>Comune di Napoli</p>
-                </div>
-            </div>
-            <div class="header-actions">
-                <button id="search-toggle" class="icon-btn" title="Cerca">
-                    <span>🔍</span>
-                </button>
-                <button id="filter-toggle" class="icon-btn" title="Filtri">
-                    <span>⚙️</span>
-                </button>
-                <button id="refresh-btn" class="icon-btn" title="Aggiorna">
-                    <span>🔄</span>
-                </button>
-            </div>
-        </div>
-        
-        <!-- Barra di ricerca -->
-        <div id="search-bar" class="search-bar hidden">
-            <input type="text" id="search-input" placeholder="Cerca per indirizzo o nome...">
-            <button id="search-clear" class="clear-btn">✕</button>
-        </div>
-        
-        <!-- Filtri -->
-        <div id="filter-panel" class="filter-panel hidden">
-            <div class="filter-section">
-                <h3>Stato Fontane</h3>
-                <div class="filter-options">
-                    <label class="filter-checkbox">
-                        <input type="checkbox" id="filter-working" checked>
-                        <span class="checkmark"></span>
-                        <span class="status-indicator working"></span>
-                        Funzionanti
-                    </label>
-                    <label class="filter-checkbox">
-                        <input type="checkbox" id="filter-not-working" checked>
-                        <span class="checkmark"></span>
-                        <span class="status-indicator not-working"></span>
-                        Non funzionanti
-                    </label>
-                    <label class="filter-checkbox">
-                        <input type="checkbox" id="filter-maintenance" checked>
-                        <span class="checkmark"></span>
-                        <span class="status-indicator maintenance"></span>
-                        In manutenzione
-                    </label>
-                </div>
-            </div>
-            <div class="filter-section">
-                <h3>Tipo</h3>
-                <div class="filter-options">
-                    <label class="filter-checkbox">
-                        <input type="checkbox" id="filter-fountains" checked>
-                        <span class="checkmark"></span>
-                        Fontane
-                    </label>
-                    <label class="filter-checkbox">
-                        <input type="checkbox" id="filter-drinking" checked>
-                        <span class="checkmark"></span>
-                        Beverini
-                    </label>
-                </div>
-            </div>
-            <button id="apply-filters" class="apply-btn">Applica Filtri</button>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main id="main-content">
-        <!-- Home Screen -->
-        <section id="home-screen" class="screen active">
-            <div class="hero-section">
-                <div class="hero-image">
-                    <img src="images/sfondo-home.jpg" alt="Fontane di Napoli">
-                    <div class="hero-overlay">
-                        <h2>Acqua Pubblica Napoli</h2>
-                        <p>Trova le fontane e i beverini nella tua città</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stats-container">
-                <div class="stat-card glass-card">
-                    <div class="stat-icon">⛲</div>
-                    <h3>Fontane</h3>
-                    <p id="total-fountains">0</p>
-                    <small>Totale registrate</small>
-                </div>
-                <div class="stat-card glass-card">
-                    <div class="stat-icon">🚰</div>
-                    <h3>Beverini</h3>
-                    <p id="total-drinking">0</p>
-                    <small>Totale registrati</small>
-                </div>
-                <div class="stat-card glass-card">
-                    <div class="stat-icon">✅</div>
-                    <h3>Funzionanti</h3>
-                    <p id="total-working">0</p>
-                    <small>Attualmente attivi</small>
-                </div>
-            </div>
-            
-            <div class="quick-actions">
-                <button class="action-btn" data-target="fontane">
-                    <span class="action-icon">⛲</span>
-                    <span>Fontane</span>
-                </button>
-                <button class="action-btn" data-target="beverini">
-                    <span class="action-icon">🚰</span>
-                    <span>Beverini</span>
-                </button>
-                <button class="action-btn" data-target="mappa">
-                    <span class="action-icon">🗺️</span>
-                    <span>Mappa</span>
-                </button>
-                <button class="action-btn" data-target="news">
-                    <span class="action-icon">📰</span>
-                    <span>News</span>
-                </button>
-            </div>
-            
-            <div class="recent-news glass-card">
-                <h3>Ultime News</h3>
-                <div id="news-list" class="news-list">
-                    <!-- News caricate dinamicamente -->
-                </div>
-            </div>
-        </section>
-
-        <!-- Fontane Screen -->
-        <section id="fontane-screen" class="screen">
-            <div class="screen-header">
-                <h2>Fontane di Napoli</h2>
-                <div class="screen-controls">
-                    <button id="add-fountain-btn" class="add-btn hidden" title="Aggiungi fontana">
-                        <span>+</span>
-                    </button>
-                </div>
-            </div>
-            <div class="list-container" id="fontane-list">
-                <!-- Lista fontane -->
-            </div>
-        </section>
-
-        <!-- Beverini Screen -->
-        <section id="beverini-screen" class="screen">
-            <div class="screen-header">
-                <h2>Beverini di Napoli</h2>
-                <div class="screen-controls">
-                    <button id="add-drinking-btn" class="add-btn hidden" title="Aggiungi beverino">
-                        <span>+</span>
-                    </button>
-                </div>
-            </div>
-            <div class="list-container" id="beverini-list">
-                <!-- Lista beverini -->
-            </div>
-        </section>
-
-        <!-- Mappa Screen -->
-        <section id="mappa-screen" class="screen">
-            <div class="screen-header">
-                <h2>Mappa</h2>
-                <div class="screen-controls">
-                    <button id="locate-btn" class="icon-btn" title="La mia posizione">
-                        <span>📍</span>
-                    </button>
-                    <button id="map-type-btn" class="icon-btn" title="Cambia mappa">
-                        <span>🗺️</span>
-                    </button>
-                </div>
-            </div>
-            <div id="map-container"></div>
-            <div class="map-legend glass-card">
-                <div class="legend-item">
-                    <span class="legend-color working"></span>
-                    <span>Funzionante</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color not-working"></span>
-                    <span>Non funzionante</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color maintenance"></span>
-                    <span>Manutenzione</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- News Screen -->
-        <section id="news-screen" class="screen">
-            <div class="screen-header">
-                <h2>News & Aggiornamenti</h2>
-                <div class="screen-controls">
-                    <button id="add-news-btn" class="add-btn hidden" title="Aggiungi news">
-                        <span>+</span>
-                    </button>
-                </div>
-            </div>
-            <div class="news-container" id="news-container">
-                <!-- Lista completa news -->
-            </div>
-        </section>
-    </main>
-
-    <!-- Admin Login Modal -->
-    <div id="admin-modal" class="modal hidden">
-        <div class="modal-content glass-card">
-            <div class="modal-header">
-                <h3>Accesso Amministratore</h3>
-                <button id="close-admin" class="close-btn">✕</button>
-            </div>
-            <div class="modal-body">
-                <div id="admin-login">
-                    <input type="email" id="admin-email" placeholder="Email" required>
-                    <input type="password" id="admin-password" placeholder="Password" required>
-                    <button id="admin-login-btn" class="primary-btn">Accedi</button>
-                    <p id="admin-error" class="error-message"></p>
-                </div>
-                <div id="admin-panel" class="hidden">
-                    <div class="admin-section">
-                        <h4>Gestione Dati</h4>
-                        <button id="sync-data" class="admin-btn">Sincronizza con Firebase</button>
-                        <button id="export-data" class="admin-btn">Esporta Excel</button>
-                        <button id="import-data" class="admin-btn">Importa Excel</button>
-                        <button id="backup-data" class="admin-btn">Backup Locale</button>
-                    </div>
-                    <div class="admin-section">
-                        <h4>Statistiche</h4>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <span>Fontane:</span>
-                                <span id="admin-fountains">0</span>
-                            </div>
-                            <div class="stat-item">
-                                <span>Beverini:</span>
-                                <span id="admin-drinking">0</span>
-                            </div>
-                            <div class="stat-item">
-                                <span>Utenti Online:</span>
-                                <span id="admin-users">1</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="admin-section">
-                        <button id="admin-logout" class="logout-btn">Esci</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Navigation Bar -->
-    <nav class="bottom-nav glass-nav">
-        <button class="nav-btn active" data-target="home">
-            <span class="nav-icon">🏠</span>
-            <span class="nav-label">Home</span>
-        </button>
-        <button class="nav-btn" data-target="fontane">
-            <span class="nav-icon">⛲</span>
-            <span class="nav-label">Fontane</span>
-        </button>
-        <button class="nav-btn" data-target="beverini">
-            <span class="nav-icon">🚰</span>
-            <span class="nav-label">Beverini</span>
-        </button>
-        <button class="nav-btn" data-target="mappa">
-            <span class="nav-icon">🗺️</span>
-            <span class="nav-label">Mappa</span>
-        </button>
-        <button class="nav-btn" data-target="news">
-            <span class="nav-icon">📰</span>
-            <span class="nav-label">News</span>
-        </button>
-    </nav>
-
-    <!-- Modale per dettagli -->
-    <div id="detail-modal" class="modal hidden">
-        <div class="modal-content glass-card detail-modal">
-            <div class="modal-header">
-                <h3 id="detail-title"></h3>
-                <button id="close-detail" class="close-btn">✕</button>
-            </div>
-            <div class="modal-body" id="detail-body">
-                <!-- Dettagli caricati dinamicamente -->
-            </div>
-            <div class="modal-footer">
-                <button id="navigate-btn" class="primary-btn">Naviga</button>
-                <button id="report-btn" class="secondary-btn">Segnala</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Install Prompt -->
-    <div id="install-prompt" class="install-prompt glass-card hidden">
-        <div class="prompt-content">
-            <p>Installa l'app per un'esperienza migliore!</p>
-            <div class="prompt-buttons">
-                <button id="install-btn" class="primary-btn">Installa</button>
-                <button id="dismiss-install" class="secondary-btn">Più tardi</button>
-            </div>
-        </div>
-    </div>
-
+    
+    <!-- Main App JS -->
     <script src="app.js"></script>
+    
+    <!-- PWA Service Worker -->
     <script>
-        // Registra Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker registrato:', reg))
-                    .catch(err => console.log('Service Worker errore:', err));
+                    .then(registration => {
+                        console.log('ServiceWorker registrato:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker errore:', error);
+                    });
             });
         }
         
-        // Gestione installazione PWA
+        // Install Prompt
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             setTimeout(() => {
-                document.getElementById('install-prompt').classList.remove('hidden');
+                document.getElementById('installPrompt').classList.remove('hidden');
             }, 3000);
         });
         
-        document.getElementById('install-btn').addEventListener('click', () => {
+        document.getElementById('installBtn').addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('Utente ha installato la PWA');
-                    }
-                    deferredPrompt = null;
-                    document.getElementById('install-prompt').classList.add('hidden');
-                });
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('PWA installata');
+                }
+                deferredPrompt = null;
+                document.getElementById('installPrompt').classList.add('hidden');
             }
         });
         
-        document.getElementById('dismiss-install').addEventListener('click', () => {
-            document.getElementById('install-prompt').classList.add('hidden');
+        document.getElementById('dismissPrompt').addEventListener('click', () => {
+            document.getElementById('installPrompt').classList.add('hidden');
         });
     </script>
 </body>

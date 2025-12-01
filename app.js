@@ -1,5 +1,5 @@
 // Fontane & Beverini Napoli - PWA App
-// Backend: Firebase Firestore
+// Backend Firebase Firestore
 
 // Variabili globali
 let currentScreen = 'home';
@@ -9,15 +9,15 @@ let allFontane = [];
 let allBeverini = [];
 let allNews = [];
 let currentUser = null;
-let isAdminMode = false;
+let isAdmin = false;
 
-// Dati di fallback locale
+// Dati di fallback locali
 const LOCAL_DATA = {
     fontane: [
         {
             id: '1',
             nome: 'Fontana del Nettuno',
-            indirizzo: 'Piazza Municipio',
+            indirizzo: 'Piazza Municipio, Napoli',
             stato: 'funzionante',
             lat: 40.8415,
             lng: 14.2528,
@@ -27,12 +27,22 @@ const LOCAL_DATA = {
         {
             id: '2',
             nome: 'Fontana di Monteoliveto',
-            indirizzo: 'Piazza Monteoliveto',
+            indirizzo: 'Piazza Monteoliveto, Napoli',
             stato: 'manutenzione',
             lat: 40.8472,
             lng: 14.2514,
-            descrizione: 'Fontana barocca in restauro',
+            descrizione: 'Fontana barocca attualmente in restauro',
             data_aggiornamento: '2024-01-10'
+        },
+        {
+            id: '3',
+            nome: 'Fontana Medina',
+            indirizzo: 'Piazza Dante, Napoli',
+            stato: 'funzionante',
+            lat: 40.8486,
+            lng: 14.2497,
+            descrizione: 'Fontana pubblica recentemente ristrutturata',
+            data_aggiornamento: '2024-01-20'
         }
     ],
     beverini: [
@@ -43,8 +53,18 @@ const LOCAL_DATA = {
             lat: 40.8395,
             lng: 14.2497,
             tipo: 'fontanella',
-            descrizione: 'Beverino pubblico recentemente installato',
+            descrizione: 'Beverino pubblico con acqua potabile',
             data_aggiornamento: '2024-01-20'
+        },
+        {
+            id: '2',
+            indirizzo: 'Via dei Tribunali, 15',
+            stato: 'non_funzionante',
+            lat: 40.8512,
+            lng: 14.2589,
+            tipo: 'fontanella',
+            descrizione: 'Beverino storico in riparazione',
+            data_aggiornamento: '2024-01-18'
         }
     ],
     news: [
@@ -61,27 +81,40 @@ const LOCAL_DATA = {
             contenuto: 'Dal 1 al 15 febbraio 2024, alcuni beverini nel centro storico saranno in manutenzione straordinaria.',
             data: '2024-01-20',
             autore: 'Comune di Napoli'
+        },
+        {
+            id: '3',
+            titolo: 'Monitoraggio qualità acqua',
+            contenuto: 'Tutti i beverini pubblici sono stati sottoposti a controlli di qualità. I risultati confermano la potabilità dell\'acqua.',
+            data: '2024-01-18',
+            autore: 'Comune di Napoli'
         }
     ]
 };
 
-// Inizializzazione app
+// Inizializzazione dell'app
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('App Fontane & Beverini Napoli - Inizializzazione');
     
+    // Inizializza bottom navigation
+    initializeBottomNav();
+    
+    // Inizializza admin secret
+    setupAdminSecret();
+    
+    // Setup event listeners
+    setupEventListeners();
+    
     // Nascondi loading screen
     setTimeout(() => {
-        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('loading').style.display = 'none';
     }, 1000);
     
     // Inizializza Firebase
     await initializeFirebase();
     
-    // Carica dati
+    // Carica tutti i dati
     await loadAllData();
-    
-    // Inizializza UI
-    initializeUI();
     
     // Inizializza mappa
     initializeMap();
@@ -89,28 +122,129 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Aggiorna statistiche
     updateStats();
     
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Setup sequenza segreta admin
-    setupAdminSecret();
+    // Mostra home screen
+    showScreen('home');
     
     console.log('App inizializzata correttamente');
 });
+
+// ========== BOTTOM NAVIGATION ==========
+
+function initializeBottomNav() {
+    const navItems = document.querySelectorAll('.nav-item');
+    
+    navItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Rimuovi active da tutti
+            navItems.forEach(nav => nav.classList.remove('active'));
+            
+            // Aggiungi active a quello cliccato
+            this.classList.add('active');
+            
+            // Ottieni target screen
+            const target = this.getAttribute('href').substring(1);
+            
+            // Cambia schermata
+            showScreen(target);
+        });
+    });
+}
+
+// ========== SCREEN MANAGEMENT ==========
+
+function showScreen(screenId) {
+    // Nascondi tutte le schermate
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+    
+    // Mostra schermata target
+    const targetScreen = document.getElementById(screenId + '-screen');
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+        currentScreen = screenId;
+        
+        // Se è la mappa, aggiorna dimensioni
+        if (screenId === 'mappa' && map) {
+            setTimeout(() => {
+                map.invalidateSize();
+                updateMapMarkers();
+            }, 300);
+        }
+    }
+}
+
+// ========== ADMIN SECRET ==========
+
+function setupAdminSecret() {
+    let tapCount = 0;
+    let lastTapTime = 0;
+    
+    const logo = document.getElementById('admin-logo');
+    if (logo) {
+        logo.addEventListener('click', () => {
+            const now = Date.now();
+            
+            // Reset tap count se passato più di 1 secondo
+            if (now - lastTapTime > 1000) {
+                tapCount = 0;
+            }
+            
+            tapCount++;
+            lastTapTime = now;
+            
+            console.log(`Tap count: ${tapCount}`);
+            
+            // Se 5 tap, apri admin
+            if (tapCount >= 5) {
+                openAdminPanel();
+                tapCount = 0;
+                
+                // Feedback visivo
+                logo.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    logo.style.transform = 'scale(1)';
+                }, 200);
+            }
+        });
+    }
+}
+
+function openAdminPanel() {
+    const modal = document.getElementById('adminModal');
+    const loginForm = document.getElementById('loginForm');
+    const adminPanel = document.getElementById('adminPanel');
+    
+    // Reset form
+    document.getElementById('adminEmail').value = '';
+    document.getElementById('adminPassword').value = '';
+    document.getElementById('loginError').textContent = '';
+    
+    // Mostra login form
+    loginForm.classList.remove('hidden');
+    adminPanel.classList.add('hidden');
+    
+    // Mostra modale
+    modal.classList.remove('hidden');
+    
+    console.log('Admin panel aperto');
+}
 
 // ========== FIREBASE FUNCTIONS ==========
 
 async function initializeFirebase() {
     try {
-        // Controlla se Firebase è disponibile
         if (!window.firebaseApp || !window.firebaseDB) {
-            throw new Error('Firebase non inizializzato');
+            console.warn('Firebase non inizializzato, uso dati locali');
+            return false;
         }
         
-        console.log('Firebase pronto');
+        console.log('Firebase inizializzato correttamente');
         return true;
     } catch (error) {
-        console.error('Errore Firebase:', error);
+        console.error('Errore inizializzazione Firebase:', error);
         return false;
     }
 }
@@ -185,7 +319,7 @@ async function loadFromFirebase() {
 
 async function saveToFirebase(collectionName, data) {
     try {
-        if (!window.firebaseDB) return false;
+        if (!window.firebaseDB || !window.isAdmin) return false;
         
         const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
         
@@ -201,32 +335,14 @@ async function saveToFirebase(collectionName, data) {
     }
 }
 
-async function deleteFromFirebase(collectionName, id) {
-    try {
-        if (!window.firebaseDB) return false;
-        
-        const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
-        
-        const docRef = doc(window.firebaseDB, collectionName, id);
-        await deleteDoc(docRef);
-        
-        console.log(`Dato eliminato da ${collectionName}:`, id);
-        return true;
-        
-    } catch (error) {
-        console.error(`Errore eliminazione da ${collectionName}:`, error);
-        return false;
-    }
-}
-
 // ========== LOCAL STORAGE FUNCTIONS ==========
 
 function saveToLocalStorage() {
     try {
-        localStorage.setItem('fontaneData', JSON.stringify(allFontane));
-        localStorage.setItem('beveriniData', JSON.stringify(allBeverini));
-        localStorage.setItem('newsData', JSON.stringify(allNews));
-        localStorage.setItem('lastSync', new Date().toISOString());
+        localStorage.setItem('fontane_napoli_fontane', JSON.stringify(allFontane));
+        localStorage.setItem('fontane_napoli_beverini', JSON.stringify(allBeverini));
+        localStorage.setItem('fontane_napoli_news', JSON.stringify(allNews));
+        localStorage.setItem('fontane_napoli_last_sync', new Date().toISOString());
         console.log('Dati salvati in localStorage');
     } catch (error) {
         console.error('Errore salvataggio localStorage:', error);
@@ -235,15 +351,20 @@ function saveToLocalStorage() {
 
 function loadFromLocalStorage() {
     try {
-        const fontaneData = localStorage.getItem('fontaneData');
-        const beveriniData = localStorage.getItem('beveriniData');
-        const newsData = localStorage.getItem('newsData');
+        const fontaneData = localStorage.getItem('fontane_napoli_fontane');
+        const beveriniData = localStorage.getItem('fontane_napoli_beverini');
+        const newsData = localStorage.getItem('fontane_napoli_news');
         
         if (fontaneData) allFontane = JSON.parse(fontaneData);
         if (beveriniData) allBeverini = JSON.parse(beveriniData);
         if (newsData) allNews = JSON.parse(newsData);
         
         console.log(`Dati localStorage caricati: ${allFontane.length} fontane, ${allBeverini.length} beverini, ${allNews.length} news`);
+        
+        if (allFontane.length === 0 && allBeverini.length === 0 && allNews.length === 0) {
+            throw new Error('Nessun dato in localStorage');
+        }
+        
     } catch (error) {
         console.error('Errore caricamento localStorage:', error);
         // Usa dati di default
@@ -253,88 +374,10 @@ function loadFromLocalStorage() {
     }
 }
 
-// ========== UI FUNCTIONS ==========
-
-function initializeUI() {
-    // Setup navigazione
-    const navButtons = document.querySelectorAll('.nav-btn');
-    navButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            const target = e.currentTarget.getAttribute('data-target');
-            switchScreen(target);
-            
-            // Aggiorna stato bottoni nav
-            navButtons.forEach(btn => btn.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-        });
-    });
-    
-    // Setup quick actions
-    const actionButtons = document.querySelectorAll('.action-btn');
-    actionButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            const target = e.currentTarget.getAttribute('data-target');
-            switchScreen(target);
-            
-            // Aggiorna nav
-            navButtons.forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-target') === target) {
-                    btn.classList.add('active');
-                }
-            });
-        });
-    });
-    
-    // Setup bottoni header
-    document.getElementById('search-toggle').addEventListener('click', toggleSearch);
-    document.getElementById('filter-toggle').addEventListener('click', toggleFilters);
-    document.getElementById('refresh-btn').addEventListener('click', refreshData);
-    document.getElementById('search-clear').addEventListener('click', clearSearch);
-    document.getElementById('apply-filters').addEventListener('click', applyFilters);
-    
-    // Setup ricerca
-    const searchInput = document.getElementById('search-input');
-    searchInput.addEventListener('input', handleSearch);
-    
-    // Setup modali
-    document.getElementById('close-admin').addEventListener('click', () => {
-        document.getElementById('admin-modal').classList.add('hidden');
-    });
-    
-    document.getElementById('close-detail').addEventListener('click', () => {
-        document.getElementById('detail-modal').classList.add('hidden');
-    });
-}
-
-function switchScreen(screenName) {
-    console.log(`Cambio schermata: ${screenName}`);
-    
-    // Nascondi tutte le schermate
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
-    
-    // Mostra schermata richiesta
-    const targetScreen = document.getElementById(`${screenName}-screen`);
-    if (targetScreen) {
-        targetScreen.classList.add('active');
-        currentScreen = screenName;
-        
-        // Se è la mappa, ridisegnala
-        if (screenName === 'mappa') {
-            setTimeout(() => {
-                if (map) {
-                    map.invalidateSize();
-                    updateMapMarkers();
-                }
-            }, 300);
-        }
-    }
-}
+// ========== UI RENDER FUNCTIONS ==========
 
 function renderFontaneList() {
-    const container = document.getElementById('fontane-list');
+    const container = document.getElementById('fontaneList');
     if (!container) return;
     
     container.innerHTML = '';
@@ -343,7 +386,7 @@ function renderFontaneList() {
         container.innerHTML = `
             <div class="empty-state">
                 <p>Nessuna fontana disponibile</p>
-                <button id="add-first-fountain" class="secondary-btn">Aggiungi la prima</button>
+                ${isAdmin ? '<button class="btn-secondary" onclick="addNewItem(\'fontana\')">Aggiungi la prima</button>' : ''}
             </div>
         `;
         return;
@@ -351,7 +394,7 @@ function renderFontaneList() {
     
     allFontane.forEach(fontana => {
         const card = document.createElement('div');
-        card.className = 'item-card glass-card';
+        card.className = 'item-card';
         card.innerHTML = `
             <div class="item-header">
                 <h4>${fontana.nome}</h4>
@@ -360,8 +403,12 @@ function renderFontaneList() {
             <p class="item-address">${fontana.indirizzo}</p>
             <p class="item-desc">${fontana.descrizione || 'Nessuna descrizione'}</p>
             <div class="item-actions">
-                <button class="small-btn" onclick="showDetails('fontana', '${fontana.id}')">Dettagli</button>
-                <button class="small-btn" onclick="navigateTo(${fontana.lat}, ${fontana.lng})">Naviga</button>
+                <button class="btn-secondary" onclick="showDetails('fontana', '${fontana.id}')">
+                    <i class="fas fa-info-circle"></i> Dettagli
+                </button>
+                <button class="btn-primary" onclick="navigateTo(${fontana.lat}, ${fontana.lng})">
+                    <i class="fas fa-directions"></i> Naviga
+                </button>
             </div>
         `;
         container.appendChild(card);
@@ -369,7 +416,7 @@ function renderFontaneList() {
 }
 
 function renderBeveriniList() {
-    const container = document.getElementById('beverini-list');
+    const container = document.getElementById('beveriniList');
     if (!container) return;
     
     container.innerHTML = '';
@@ -378,7 +425,7 @@ function renderBeveriniList() {
         container.innerHTML = `
             <div class="empty-state">
                 <p>Nessun beverino disponibile</p>
-                <button id="add-first-drinking" class="secondary-btn">Aggiungi il primo</button>
+                ${isAdmin ? '<button class="btn-secondary" onclick="addNewItem(\'beverino\')">Aggiungi il primo</button>' : ''}
             </div>
         `;
         return;
@@ -386,7 +433,7 @@ function renderBeveriniList() {
     
     allBeverini.forEach(beverino => {
         const card = document.createElement('div');
-        card.className = 'item-card glass-card';
+        card.className = 'item-card';
         card.innerHTML = `
             <div class="item-header">
                 <h4>Beverino</h4>
@@ -395,8 +442,12 @@ function renderBeveriniList() {
             <p class="item-address">${beverino.indirizzo}</p>
             <p class="item-desc">${beverino.descrizione || 'Fontanella pubblica'}</p>
             <div class="item-actions">
-                <button class="small-btn" onclick="showDetails('beverino', '${beverino.id}')">Dettagli</button>
-                <button class="small-btn" onclick="navigateTo(${beverino.lat}, ${beverino.lng})">Naviga</button>
+                <button class="btn-secondary" onclick="showDetails('beverino', '${beverino.id}')">
+                    <i class="fas fa-info-circle"></i> Dettagli
+                </button>
+                <button class="btn-primary" onclick="navigateTo(${beverino.lat}, ${beverino.lng})">
+                    <i class="fas fa-directions"></i> Naviga
+                </button>
             </div>
         `;
         container.appendChild(card);
@@ -404,10 +455,10 @@ function renderBeveriniList() {
 }
 
 function renderNews() {
-    // Home news
-    const newsList = document.getElementById('news-list');
-    if (newsList) {
-        newsList.innerHTML = '';
+    // Home preview
+    const newsPreview = document.getElementById('newsPreview');
+    if (newsPreview) {
+        newsPreview.innerHTML = '';
         const recentNews = allNews.slice(0, 3);
         
         recentNews.forEach(news => {
@@ -416,20 +467,23 @@ function renderNews() {
             newsItem.innerHTML = `
                 <h4>${news.titolo}</h4>
                 <p>${news.contenuto.substring(0, 100)}...</p>
-                <small>${formatDate(news.data)} - ${news.autore}</small>
+                <div class="news-footer">
+                    <span>${news.autore}</span>
+                    <span>${formatDate(news.data)}</span>
+                </div>
             `;
-            newsList.appendChild(newsItem);
+            newsPreview.appendChild(newsItem);
         });
     }
     
     // News screen
-    const newsContainer = document.getElementById('news-container');
+    const newsContainer = document.getElementById('newsContainer');
     if (newsContainer) {
         newsContainer.innerHTML = '';
         
         allNews.forEach(news => {
             const newsCard = document.createElement('div');
-            newsCard.className = 'news-card glass-card';
+            newsCard.className = 'news-card';
             newsCard.innerHTML = `
                 <h3>${news.titolo}</h3>
                 <p>${news.contenuto}</p>
@@ -445,23 +499,30 @@ function renderNews() {
 
 function updateStats() {
     const totalFountains = allFontane.length;
-    const totalDrinking = allBeverini.length;
+    const totalBeverini = allBeverini.length;
     const totalWorking = allFontane.filter(f => f.stato === 'funzionante').length + 
                          allBeverini.filter(b => b.stato === 'funzionante').length;
     
-    document.getElementById('total-fountains').textContent = totalFountains;
-    document.getElementById('total-drinking').textContent = totalDrinking;
-    document.getElementById('total-working').textContent = totalWorking;
+    document.getElementById('totalFountains').textContent = totalFountains;
+    document.getElementById('totalBeverini').textContent = totalBeverini;
+    document.getElementById('totalWorking').textContent = totalWorking;
+    
+    // Aggiorna admin panel
+    if (isAdmin) {
+        document.getElementById('adminFountains').textContent = totalFountains;
+        document.getElementById('adminBeverini').textContent = totalBeverini;
+        document.getElementById('adminNews').textContent = allNews.length;
+    }
 }
 
 // ========== MAP FUNCTIONS ==========
 
 function initializeMap() {
-    const mapContainer = document.getElementById('map-container');
+    const mapContainer = document.getElementById('map');
     if (!mapContainer) return;
     
     // Centro su Napoli
-    map = L.map('map-container').setView([40.8518, 14.2681], 13);
+    map = L.map('map').setView([40.8518, 14.2681], 13);
     
     // Aggiungi tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -472,10 +533,6 @@ function initializeMap() {
     // Crea cluster
     markersCluster = L.markerClusterGroup();
     map.addLayer(markersCluster);
-    
-    // Aggiungi bottoni mappa
-    document.getElementById('locate-btn').addEventListener('click', locateUser);
-    document.getElementById('map-type-btn').addEventListener('click', toggleMapType);
     
     // Aggiorna marcatori
     updateMapMarkers();
@@ -491,17 +548,23 @@ function updateMapMarkers() {
     allFontane.forEach(fontana => {
         const marker = L.marker([fontana.lat, fontana.lng]);
         marker.bindPopup(`
-            <b>${fontana.nome}</b><br>
-            ${fontana.indirizzo}<br>
-            <i>${getStatusLabel(fontana.stato)}</i><br>
-            <button onclick="navigateTo(${fontana.lat}, ${fontana.lng})">Naviga qui</button>
+            <div class="map-popup">
+                <h4>${fontana.nome}</h4>
+                <p><strong>Indirizzo:</strong> ${fontana.indirizzo}</p>
+                <p><strong>Stato:</strong> ${getStatusLabel(fontana.stato)}</p>
+                <button onclick="navigateTo(${fontana.lat}, ${fontana.lng})" class="btn-primary">
+                    <i class="fas fa-directions"></i> Naviga qui
+                </button>
+            </div>
         `);
         
-        // Colore in base allo stato
+        // Icona personalizzata
         const icon = L.divIcon({
-            html: `<div class="map-marker ${fontana.stato}">⛲</div>`,
-            className: 'custom-marker',
-            iconSize: [30, 30]
+            html: `<div class="custom-marker fountain ${fontana.stato}">
+                     <i class="fas fa-fountain"></i>
+                   </div>`,
+            className: 'custom-div-icon',
+            iconSize: [40, 40]
         });
         marker.setIcon(icon);
         
@@ -512,16 +575,22 @@ function updateMapMarkers() {
     allBeverini.forEach(beverino => {
         const marker = L.marker([beverino.lat, beverino.lng]);
         marker.bindPopup(`
-            <b>Beverino</b><br>
-            ${beverino.indirizzo}<br>
-            <i>${getStatusLabel(beverino.stato)}</i><br>
-            <button onclick="navigateTo(${beverino.lat}, ${beverino.lng})">Naviga qui</button>
+            <div class="map-popup">
+                <h4>Beverino</h4>
+                <p><strong>Indirizzo:</strong> ${beverino.indirizzo}</p>
+                <p><strong>Stato:</strong> ${getStatusLabel(beverino.stato)}</p>
+                <button onclick="navigateTo(${beverino.lat}, ${beverino.lng})" class="btn-primary">
+                    <i class="fas fa-directions"></i> Naviga qui
+                </button>
+            </div>
         `);
         
         const icon = L.divIcon({
-            html: `<div class="map-marker ${beverino.stato}">🚰</div>`,
-            className: 'custom-marker',
-            iconSize: [30, 30]
+            html: `<div class="custom-marker drinking ${beverino.stato}">
+                     <i class="fas fa-tint"></i>
+                   </div>`,
+            className: 'custom-div-icon',
+            iconSize: [40, 40]
         });
         marker.setIcon(icon);
         
@@ -529,258 +598,28 @@ function updateMapMarkers() {
     });
 }
 
-function locateUser() {
-    if (!map) return;
-    
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const userLat = position.coords.latitude;
-                const userLng = position.coords.longitude;
-                
-                map.setView([userLat, userLng], 16);
-                
-                // Aggiungi marker posizione utente
-                L.marker([userLat, userLng])
-                    .addTo(map)
-                    .bindPopup('La tua posizione')
-                    .openPopup();
-            },
-            (error) => {
-                alert('Impossibile ottenere la posizione: ' + error.message);
-            }
-        );
-    } else {
-        alert('Geolocalizzazione non supportata dal browser');
-    }
-}
-
-function toggleMapType() {
-    if (!map) return;
-    
-    const currentLayer = map._layers[Object.keys(map._layers)[1]];
-    if (currentLayer._url && currentLayer._url.includes('openstreetmap')) {
-        // Cambia in satellite
-        map.eachLayer((layer) => {
-            if (layer._url) {
-                map.removeLayer(layer);
-            }
-        });
-        
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '© Esri'
-        }).addTo(map);
-    } else {
-        // Cambia in normale
-        map.eachLayer((layer) => {
-            if (layer._url) {
-                map.removeLayer(layer);
-            }
-        });
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-    }
-    
-    // Reimposta markers
-    updateMapMarkers();
-}
-
-// ========== SEARCH & FILTER FUNCTIONS ==========
-
-function toggleSearch() {
-    const searchBar = document.getElementById('search-bar');
-    const filterPanel = document.getElementById('filter-panel');
-    
-    searchBar.classList.toggle('hidden');
-    filterPanel.classList.add('hidden');
-    
-    if (!searchBar.classList.contains('hidden')) {
-        document.getElementById('search-input').focus();
-    }
-}
-
-function toggleFilters() {
-    const filterPanel = document.getElementById('filter-panel');
-    const searchBar = document.getElementById('search-bar');
-    
-    filterPanel.classList.toggle('hidden');
-    searchBar.classList.add('hidden');
-}
-
-function handleSearch() {
-    const searchTerm = document.getElementById('search-input').value.toLowerCase();
-    
-    if (currentScreen === 'fontane') {
-        const filtered = allFontane.filter(fontana =>
-            fontana.nome.toLowerCase().includes(searchTerm) ||
-            fontana.indirizzo.toLowerCase().includes(searchTerm) ||
-            fontana.descrizione.toLowerCase().includes(searchTerm)
-        );
-        renderFilteredFontane(filtered);
-    } else if (currentScreen === 'beverini') {
-        const filtered = allBeverini.filter(beverino =>
-            beverino.indirizzo.toLowerCase().includes(searchTerm) ||
-            beverino.descrizione.toLowerCase().includes(searchTerm)
-        );
-        renderFilteredBeverini(filtered);
-    }
-}
-
-function clearSearch() {
-    document.getElementById('search-input').value = '';
-    
-    if (currentScreen === 'fontane') {
-        renderFontaneList();
-    } else if (currentScreen === 'beverini') {
-        renderBeveriniList();
-    }
-}
-
-function applyFilters() {
-    const showWorking = document.getElementById('filter-working').checked;
-    const showNotWorking = document.getElementById('filter-not-working').checked;
-    const showMaintenance = document.getElementById('filter-maintenance').checked;
-    const showFountains = document.getElementById('filter-fountains').checked;
-    const showDrinking = document.getElementById('filter-drinking').checked;
-    
-    // Filtra per mappa
-    if (currentScreen === 'mappa') {
-        updateMapMarkers(); // Verrà implementato filtro
-    }
-    
-    document.getElementById('filter-panel').classList.add('hidden');
-}
-
-// ========== ADMIN FUNCTIONS ==========
-
-function setupAdminSecret() {
-    let tapCount = 0;
-    let lastTap = 0;
-    
-    document.getElementById('main-logo').addEventListener('click', () => {
-        const now = Date.now();
-        
-        if (now - lastTap < 1000) {
-            tapCount++;
-        } else {
-            tapCount = 1;
-        }
-        
-        lastTap = now;
-        
-        if (tapCount >= 5) {
-            showAdminLogin();
-            tapCount = 0;
-        }
-    });
-}
-
-async function showAdminLogin() {
-    const modal = document.getElementById('admin-modal');
-    const loginPanel = document.getElementById('admin-login');
-    const adminPanel = document.getElementById('admin-panel');
-    
-    // Reset form
-    document.getElementById('admin-email').value = '';
-    document.getElementById('admin-password').value = '';
-    document.getElementById('admin-error').textContent = '';
-    
-    // Mostra modale
-    modal.classList.remove('hidden');
-    
-    // Setup login button
-    document.getElementById('admin-login-btn').onclick = async () => {
-        const email = document.getElementById('admin-email').value;
-        const password = document.getElementById('admin-password').value;
-        
-        try {
-            const { signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js');
-            const auth = window.firebaseAuth;
-            
-            await signInWithEmailAndPassword(auth, email, password);
-            
-            // Login success
-            loginPanel.classList.add('hidden');
-            adminPanel.classList.remove('hidden');
-            isAdminMode = true;
-            
-            // Mostra bottoni admin
-            document.querySelectorAll('.add-btn').forEach(btn => btn.classList.remove('hidden'));
-            
-            // Aggiorna statistiche admin
-            document.getElementById('admin-fountains').textContent = allFontane.length;
-            document.getElementById('admin-drinking').textContent = allBeverini.length;
-            
-        } catch (error) {
-            document.getElementById('admin-error').textContent = 'Credenziali errate: ' + error.message;
-        }
-    };
-    
-    // Setup logout button
-    document.getElementById('admin-logout').onclick = async () => {
-        try {
-            const { signOut } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js');
-            const auth = window.firebaseAuth;
-            
-            await signOut(auth);
-            
-            modal.classList.add('hidden');
-            isAdminMode = false;
-            
-            // Nascondi bottoni admin
-            document.querySelectorAll('.add-btn').forEach(btn => btn.classList.add('hidden'));
-            
-        } catch (error) {
-            console.error('Errore logout:', error);
-        }
-    };
-    
-    // Setup altri bottoni admin
-    document.getElementById('sync-data').onclick = async () => {
-        await loadFromFirebase();
-        renderFontaneList();
-        renderBeveriniList();
-        renderNews();
-        updateStats();
-        updateMapMarkers();
-        alert('Dati sincronizzati con Firebase');
-    };
-    
-    document.getElementById('export-data').onclick = exportToExcel;
-    document.getElementById('import-data').onclick = importFromExcel;
-    document.getElementById('backup-data').onclick = backupLocalData;
-}
-
 // ========== UTILITY FUNCTIONS ==========
 
 function getStatusLabel(status) {
-    switch(status) {
-        case 'funzionante': return 'Funzionante';
-        case 'non_funzionante': return 'Non funzionante';
-        case 'manutenzione': return 'In manutenzione';
-        default: return 'Sconosciuto';
-    }
+    const labels = {
+        'funzionante': 'Funzionante',
+        'non_funzionante': 'Non Funzionante',
+        'manutenzione': 'In Manutenzione'
+    };
+    return labels[status] || 'Sconosciuto';
 }
 
 function formatDate(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString('it-IT');
-}
-
-function navigateTo(lat, lng) {
-    if (navigator.geolocation) {
-        const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
-        window.open(url, '_blank');
-    } else {
-        alert('Navigazione non supportata');
-    }
+    return date.toLocaleDateString('it-IT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
 }
 
 function showDetails(type, id) {
-    let item;
-    let title;
+    let item, title;
     
     if (type === 'fontana') {
         item = allFontane.find(f => f.id === id);
@@ -792,8 +631,8 @@ function showDetails(type, id) {
     
     if (!item) return;
     
-    document.getElementById('detail-title').textContent = title;
-    document.getElementById('detail-body').innerHTML = `
+    document.getElementById('detailTitle').textContent = title;
+    document.getElementById('detailBody').innerHTML = `
         <div class="detail-section">
             <h4>Indirizzo</h4>
             <p>${item.indirizzo}</p>
@@ -810,87 +649,416 @@ function showDetails(type, id) {
             <h4>Ultimo aggiornamento</h4>
             <p>${formatDate(item.data_aggiornamento || new Date().toISOString())}</p>
         </div>
+        ${item.lat && item.lng ? `
+        <div class="detail-section">
+            <h4>Coordinate</h4>
+            <p>${item.lat.toFixed(6)}, ${item.lng.toFixed(6)}</p>
+        </div>
+        ` : ''}
     `;
     
     // Setup bottoni
-    document.getElementById('navigate-btn').onclick = () => navigateTo(item.lat, item.lng);
-    document.getElementById('report-btn').onclick = () => reportIssue(type, id);
+    document.getElementById('navigateBtn').onclick = () => {
+        if (item.lat && item.lng) {
+            navigateTo(item.lat, item.lng);
+        }
+    };
     
-    document.getElementById('detail-modal').classList.remove('hidden');
+    document.getElementById('reportBtn').onclick = () => {
+        reportIssue(type, id);
+    };
+    
+    document.getElementById('detailModal').classList.remove('hidden');
+}
+
+function navigateTo(lat, lng) {
+    if (navigator.geolocation) {
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
+        window.open(url, '_blank');
+    } else {
+        alert('Navigazione non supportata dal tuo dispositivo');
+    }
 }
 
 function reportIssue(type, id) {
-    alert('Segnalazione inviata! Il problema sarà risolto al più presto.');
-    // Qui si potrebbe implementare l'invio della segnalazione a Firebase
+    alert('Segnalazione inviata al Comune di Napoli. Grazie per la tua segnalazione!');
+    // Qui si potrebbe implementare l'invio a Firebase
 }
 
-function refreshData() {
-    loadAllData();
-    showNotification('Dati aggiornati');
+function showNotification(message, type = 'info') {
+    // Implementazione base di notifica
+    console.log(`${type.toUpperCase()}: ${message}`);
+    // Qui si potrebbe implementare un toast notification
 }
 
-function showNotification(message) {
-    // Implementa una notifica toast
-    const notification = document.createElement('div');
-    notification.className = 'notification glass-card';
-    notification.textContent = message;
-    document.body.appendChild(notification);
+// ========== EVENT LISTENERS ==========
+
+function setupEventListeners() {
+    // Header buttons
+    document.getElementById('searchBtn').addEventListener('click', toggleSearch);
+    document.getElementById('filterBtn').addEventListener('click', toggleFilter);
+    document.getElementById('refreshBtn').addEventListener('click', refreshData);
+    document.getElementById('clearSearch').addEventListener('click', clearSearch);
+    document.getElementById('applyFilters').addEventListener('click', applyFilters);
     
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
+    // Map controls
+    document.getElementById('locateMe').addEventListener('click', locateUser);
+    document.getElementById('toggleMapType').addEventListener('click', toggleMapType);
+    
+    // Search input
+    document.getElementById('searchInput').addEventListener('input', handleSearch);
+    
+    // Modal buttons
+    document.getElementById('closeAdmin').addEventListener('click', () => {
+        document.getElementById('adminModal').classList.add('hidden');
+    });
+    
+    document.getElementById('closeDetail').addEventListener('click', () => {
+        document.getElementById('detailModal').classList.add('hidden');
+    });
+    
+    // Admin login
+    document.getElementById('loginBtn').addEventListener('click', adminLogin);
+    document.getElementById('logoutBtn').addEventListener('click', adminLogout);
+    
+    // Admin actions
+    document.getElementById('syncData').addEventListener('click', syncWithFirebase);
+    document.getElementById('exportData').addEventListener('click', exportToExcel);
+    document.getElementById('importData').addEventListener('click', importFromExcel);
+    document.getElementById('backupData').addEventListener('click', backupLocalData);
+    
+    // Add buttons
+    document.getElementById('addFontanaBtn').addEventListener('click', () => addNewItem('fontana'));
+    document.getElementById('addBeverinoBtn').addEventListener('click', () => addNewItem('beverino'));
+    document.getElementById('addNewsBtn').addEventListener('click', () => addNewItem('news'));
+    
+    // Online/offline detection
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 }
 
-// ========== EXPORT/IMPORT FUNCTIONS ==========
+// ========== SEARCH & FILTER FUNCTIONS ==========
+
+function toggleSearch() {
+    const searchBar = document.getElementById('searchBar');
+    const filterPanel = document.getElementById('filterPanel');
+    
+    searchBar.classList.toggle('hidden');
+    filterPanel.classList.add('hidden');
+    
+    if (!searchBar.classList.contains('hidden')) {
+        document.getElementById('searchInput').focus();
+    }
+}
+
+function toggleFilter() {
+    const filterPanel = document.getElementById('filterPanel');
+    const searchBar = document.getElementById('searchBar');
+    
+    filterPanel.classList.toggle('hidden');
+    searchBar.classList.add('hidden');
+}
+
+function handleSearch() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+    
+    if (currentScreen === 'fontane') {
+        const filtered = allFontane.filter(item =>
+            item.nome.toLowerCase().includes(searchTerm) ||
+            item.indirizzo.toLowerCase().includes(searchTerm) ||
+            (item.descrizione && item.descrizione.toLowerCase().includes(searchTerm))
+        );
+        renderFilteredFontane(filtered);
+    } else if (currentScreen === 'beverini') {
+        const filtered = allBeverini.filter(item =>
+            item.indirizzo.toLowerCase().includes(searchTerm) ||
+            (item.descrizione && item.descrizione.toLowerCase().includes(searchTerm))
+        );
+        renderFilteredBeverini(filtered);
+    }
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    
+    if (currentScreen === 'fontane') {
+        renderFontaneList();
+    } else if (currentScreen === 'beverini') {
+        renderBeveriniList();
+    }
+}
+
+function applyFilters() {
+    // Qui implementeresti la logica di filtro
+    document.getElementById('filterPanel').classList.add('hidden');
+    showNotification('Filtri applicati');
+}
+
+// ========== ADMIN FUNCTIONS ==========
+
+async function adminLogin() {
+    const email = document.getElementById('adminEmail').value;
+    const password = document.getElementById('adminPassword').value;
+    const errorElement = document.getElementById('loginError');
+    
+    try {
+        const { signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js');
+        const auth = window.firebaseAuth;
+        
+        await signInWithEmailAndPassword(auth, email, password);
+        
+        // Successo
+        isAdmin = true;
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+        
+        // Mostra bottoni admin
+        document.querySelectorAll('.btn-add').forEach(btn => btn.classList.remove('hidden'));
+        
+        // Aggiorna statistiche admin
+        updateStats();
+        
+        showNotification('Accesso amministratore effettuato', 'success');
+        
+    } catch (error) {
+        console.error('Errore login:', error);
+        errorElement.textContent = 'Credenziali errate. Riprova.';
+    }
+}
+
+async function adminLogout() {
+    try {
+        const { signOut } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js');
+        const auth = window.firebaseAuth;
+        
+        await signOut(auth);
+        
+        isAdmin = false;
+        document.getElementById('adminModal').classList.add('hidden');
+        
+        // Nascondi bottoni admin
+        document.querySelectorAll('.btn-add').forEach(btn => btn.classList.add('hidden'));
+        
+        showNotification('Disconnessione effettuata', 'success');
+        
+    } catch (error) {
+        console.error('Errore logout:', error);
+    }
+}
+
+async function syncWithFirebase() {
+    try {
+        showNotification('Sincronizzazione in corso...', 'info');
+        await loadFromFirebase();
+        renderFontaneList();
+        renderBeveriniList();
+        renderNews();
+        updateStats();
+        updateMapMarkers();
+        showNotification('Dati sincronizzati con successo', 'success');
+    } catch (error) {
+        console.error('Errore sincronizzazione:', error);
+        showNotification('Errore durante la sincronizzazione', 'error');
+    }
+}
 
 function exportToExcel() {
-    // Implementa esportazione Excel
-    alert('Esportazione Excel - Funzionalità da implementare');
+    // Implementazione base
+    const data = {
+        fontane: allFontane,
+        beverini: allBeverini,
+        news: allNews
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fontane-napoli-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    
+    showNotification('Backup esportato', 'success');
 }
 
 function importFromExcel() {
-    // Implementa importazione Excel
-    alert('Importazione Excel - Funzionalità da implementare');
+    // Implementazione base
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                
+                if (data.fontane) allFontane = data.fontane;
+                if (data.beverini) allBeverini = data.beverini;
+                if (data.news) allNews = data.news;
+                
+                saveToLocalStorage();
+                renderFontaneList();
+                renderBeveriniList();
+                renderNews();
+                updateStats();
+                updateMapMarkers();
+                
+                showNotification('Dati importati con successo', 'success');
+            } catch (error) {
+                console.error('Errore importazione:', error);
+                showNotification('Errore durante l\'importazione', 'error');
+            }
+        };
+        
+        reader.readAsText(file);
+    };
+    
+    input.click();
 }
 
 function backupLocalData() {
     saveToLocalStorage();
-    alert('Backup locale creato con successo!');
+    showNotification('Backup locale creato', 'success');
 }
 
-// ========== SETUP EVENT LISTENERS ==========
+// ========== MAP CONTROLS ==========
 
-function setupEventListeners() {
-    // Gestione offline/online
-    window.addEventListener('online', () => {
-        console.log('Connessione ripristinata');
-        loadFromFirebase();
-    });
+function locateUser() {
+    if (!map) return;
     
-    window.addEventListener('offline', () => {
-        console.log('Connessione persa - Modalità offline');
-        loadFromLocalStorage();
-    });
-    
-    // Pulsante aggiungi fontana (admin)
-    document.getElementById('add-fountain-btn').addEventListener('click', () => {
-        alert('Aggiungi fontana - Funzionalità admin');
-    });
-    
-    // Pulsante aggiungi beverino (admin)
-    document.getElementById('add-drinking-btn').addEventListener('click', () => {
-        alert('Aggiungi beverino - Funzionalità admin');
-    });
-    
-    // Pulsante aggiungi news (admin)
-    document.getElementById('add-news-btn').addEventListener('click', () => {
-        alert('Aggiungi news - Funzionalità admin');
-    });
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+                
+                map.setView([userLat, userLng], 16);
+                
+                // Aggiungi marker
+                L.marker([userLat, userLng])
+                    .addTo(map)
+                    .bindPopup('La tua posizione')
+                    .openPopup();
+            },
+            (error) => {
+                showNotification('Impossibile ottenere la posizione: ' + error.message, 'error');
+            }
+        );
+    } else {
+        showNotification('Geolocalizzazione non supportata', 'error');
+    }
 }
 
-// ========== GLOBAL FUNCTIONS ==========
+function toggleMapType() {
+    if (!map) return;
+    
+    // Implementazione base per cambiare tipo mappa
+    showNotification('Funzionalità in sviluppo', 'info');
+}
 
-// Funzioni accessibili globalmente
-window.navigateTo = navigateTo;
+// ========== NETWORK FUNCTIONS ==========
+
+function handleOnline() {
+    console.log('Online - Sincronizzazione dati');
+    syncWithFirebase();
+}
+
+function handleOffline() {
+    console.log('Offline - Modalità offline');
+    showNotification('Sei offline. I dati potrebbero non essere aggiornati.', 'warning');
+}
+
+// ========== HELPER FUNCTIONS ==========
+
+function addNewItem(type) {
+    if (!isAdmin) {
+        showNotification('Accesso amministratore richiesto', 'error');
+        return;
+    }
+    
+    // Implementazione base
+    showNotification(`Aggiungi nuovo ${type} - Funzionalità in sviluppo`, 'info');
+}
+
+function refreshData() {
+    loadAllData();
+    showNotification('Dati aggiornati', 'success');
+}
+
+function renderFilteredFontane(filtered) {
+    const container = document.getElementById('fontaneList');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    filtered.forEach(fontana => {
+        const card = document.createElement('div');
+        card.className = 'item-card';
+        card.innerHTML = `
+            <div class="item-header">
+                <h4>${fontana.nome}</h4>
+                <span class="status-badge ${fontana.stato}">${getStatusLabel(fontana.stato)}</span>
+            </div>
+            <p class="item-address">${fontana.indirizzo}</p>
+            <p class="item-desc">${fontana.descrizione || 'Nessuna descrizione'}</p>
+            <div class="item-actions">
+                <button class="btn-secondary" onclick="showDetails('fontana', '${fontana.id}')">
+                    <i class="fas fa-info-circle"></i> Dettagli
+                </button>
+                <button class="btn-primary" onclick="navigateTo(${fontana.lat}, ${fontana.lng})">
+                    <i class="fas fa-directions"></i> Naviga
+                </button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+    
+    if (filtered.length === 0) {
+        container.innerHTML = '<p class="empty-state">Nessuna fontana trovata</p>';
+    }
+}
+
+function renderFilteredBeverini(filtered) {
+    const container = document.getElementById('beveriniList');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    filtered.forEach(beverino => {
+        const card = document.createElement('div');
+        card.className = 'item-card';
+        card.innerHTML = `
+            <div class="item-header">
+                <h4>Beverino</h4>
+                <span class="status-badge ${beverino.stato}">${getStatusLabel(beverino.stato)}</span>
+            </div>
+            <p class="item-address">${beverino.indirizzo}</p>
+            <p class="item-desc">${beverino.descrizione || 'Fontanella pubblica'}</p>
+            <div class="item-actions">
+                <button class="btn-secondary" onclick="showDetails('beverino', '${beverino.id}')">
+                    <i class="fas fa-info-circle"></i> Dettagli
+                </button>
+                <button class="btn-primary" onclick="navigateTo(${beverino.lat}, ${beverino.lng})">
+                    <i class="fas fa-directions"></i> Naviga
+                </button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+    
+    if (filtered.length === 0) {
+        container.innerHTML = '<p class="empty-state">Nessun beverino trovato</p>';
+    }
+}
+
+// ========== GLOBAL EXPORTS ==========
+
+// Espone funzioni necessarie agli eventi onclick
 window.showDetails = showDetails;
+window.navigateTo = navigateTo;
 window.reportIssue = reportIssue;
+window.addNewItem = addNewItem;
+
+console.log('App.js caricato correttamente');
