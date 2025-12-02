@@ -4,13 +4,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fontane & Beverini - Napoli</title>
+    
+    <!-- ✅ PWA MANIFEST -->
     <link rel="manifest" href="manifest.json">
+    
+    <!-- ✅ FAVICON per browser desktop -->
+    <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="./images/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./images/favicon-32x32.png">
+    
+    <!-- ✅ APPLE ICONS (iOS) -->
+    <link rel="apple-touch-icon" href="./images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="./images/icona-avvio-144.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="./images/icona-avvio-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="./images/icona-avvio-512.png">
+    
+    <!-- ✅ SPLASH SCREEN iOS -->
+    <link rel="apple-touch-startup-image" 
+          href="./images/icona-avvio-splash.png"
+          media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" 
+          href="./images/icona-avvio-splash.png"
+          media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" 
+          href="./images/icona-avvio-splash.png"
+          media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" 
+          href="./images/icona-avvio-splash.png"
+          media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" 
+          href="./images/icona-avvio-splash.png"
+          media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" 
+          href="./images/icona-avvio-splash.png"
+          media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    
+    <!-- ✅ THEME COLOR -->
+    <meta name="theme-color" content="#3b82f6">
+    
+    <!-- ✅ iOS CONFIG -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Fontane Napoli">
+    
+    <!-- ✅ MICROSOFT TILE (Windows) -->
+    <meta name="msapplication-TileColor" content="#3b82f6">
+    <meta name="msapplication-TileImage" content="./images/icona-avvio-144.png">
+    
+    <!-- ✅ STILI ESTERNI -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -688,6 +736,13 @@
                     });
             });
         }
+        
+        // Verifica installazione PWA
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('PWA installabile rilevata');
+            e.preventDefault();
+            window.deferredPrompt = e;
+        });
     </script>
 </body>
 </html>

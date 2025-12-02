@@ -9,22 +9,22 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "./images/icona-avvio-192.png",
+      "src": "/images/icona-avvio-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/icona-avvio-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "./images/icona-avvio-512.png",
+      "src": "/images/icona-avvio-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "./images/icona-avvio-splash.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "splash"
     }
   ],
   "categories": ["navigation", "travel", "utilities"],
