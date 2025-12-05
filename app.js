@@ -5,7 +5,650 @@ const COLLECTIONS = {
     NEWS: 'news'
 };
 
-// Variabili globali
+// ============================================
+// GESTIONE ERRORI COMPLETA
+// ============================================
+
+class AppError extends Error {
+    constructor(message, code = 'UNKNOWN_ERROR', details = {}) {
+        super(message);
+        this.name = 'AppError';
+        this.code = code;
+        this.details = details;
+        this.timestamp = new Date().toISOString();
+    }
+}
+
+class FirebaseError extends AppError {
+    constructor(message, code, details) {
+        super(message, `FIREBASE_${code}`, details);
+        this.name = 'FirebaseError';
+    }
+}
+
+class NetworkError extends AppError {
+    constructor(message, details) {
+        super(message, 'NETWORK_ERROR', details);
+        this.name = 'NetworkError';
+    }
+}
+
+class ValidationError extends AppError {
+    constructor(message, field, value) {
+        super(message, 'VALIDATION_ERROR', { field, value });
+        this.name = 'ValidationError';
+    }
+}
+
+// Error handler globale
+window.addEventListener('error', function(event) {
+    console.error('Errore globale:', event.error);
+    logErrorToAnalytics(event.error, 'GLOBAL_ERROR', {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno
+    });
+    event.preventDefault();
+});
+
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Promise non gestita:', event.reason);
+    logErrorToAnalytics(event.reason, 'UNHANDLED_PROMISE_REJECTION', {
+        promise: event.promise
+    });
+});
+
+// Funzioni di gestione errori
+async function handleError(context, error, userMessage = null) {
+    console.error(`[${context}]`, error);
+    
+    // Log per analytics
+    logErrorToAnalytics(error, context);
+    
+    // Gestione specifica per tipo di errore
+    if (error instanceof FirebaseError) {
+        await handleFirebaseError(context, error);
+    } else if (error instanceof NetworkError) {
+        await handleNetworkError(context, error);
+    } else if (error instanceof ValidationError) {
+        await handleValidationError(context, error);
+    } else {
+        await handleGenericError(context, error);
+    }
+    
+    // Mostra messaggio all'utente
+    if (userMessage) {
+        showToast(userMessage, 'error', 5000);
+    }
+    
+    // Log attività
+    logActivity(`Errore in ${context}: ${error.message}`);
+}
+
+async function handleFirebaseError(context, error) {
+    console.error(`Firebase Error [${context}]:`, error.code, error.details);
+    
+    switch (error.code) {
+        case 'FIREBASE_PERMISSION_DENIED':
+            showToast('Accesso negato. Verifica i permessi.', 'error');
+            if (context.includes('admin')) {
+                logoutAdmin();
+            }
+            break;
+        case 'FIREBASE_UNAVAILABLE':
+            showToast('Servizio temporaneamente non disponibile', 'error');
+            saveOfflineData(context, error.details.data);
+            break;
+        case 'FIREBASE_NOT_FOUND':
+            showToast('Dato non trovato nel database', 'warning');
+            break;
+        default:
+            showToast('Errore database: ' + error.message, 'error');
+    }
+}
+
+async function handleNetworkError(context, error) {
+    console.warn(`Network Error [${context}]:`, error.details);
+    
+    if (error.details.data) {
+        saveOfflineData(context, error.details.data);
+    }
+    
+    document.getElementById('offline-indicator').style.display = 'block';
+    showToast('Connessione assente. Modalità offline attiva.', 'warning', 3000);
+}
+
+async function handleValidationError(context, error) {
+    console.warn(`Validation Error [${context}]:`, error.details);
+    
+    const field = error.details.field;
+    if (field) {
+        const input = document.getElementById(field);
+        if (input) {
+            input.style.borderColor = 'var(--primary-red)';
+            input.focus();
+            
+            setTimeout(() => {
+                input.style.borderColor = '';
+            }, 3000);
+        }
+    }
+    
+    showToast(error.message, 'error');
+}
+
+async function handleGenericError(context, error) {
+    console.error(`Generic Error [${context}]:`, error);
+    
+    let userMessage = 'Si è verificato un errore';
+    
+    if (error.message.includes('quota')) {
+        userMessage = 'Limite database raggiunto. Contatta l\'amministratore.';
+    } else if (error.message.includes('timeout')) {
+        userMessage = 'Timeout operazione. Riprova.';
+    } else if (error.message.includes('storage')) {
+        userMessage = 'Errore archiviazione. Verifica lo spazio.';
+    }
+    
+    showToast(userMessage, 'error');
+}
+
+// Funzioni di validazione
+function validateFontanaData(data) {
+    const errors = [];
+    
+    if (!data.nome || data.nome.trim().length < 2) {
+        errors.push(new ValidationError('Nome fontana richiesto (min 2 caratteri)', 'fontana-nome', data.nome));
+    }
+    
+    if (!data.indirizzo || data.indirizzo.trim().length < 5) {
+        errors.push(new ValidationError('Indirizzo richiesto', 'fontana-indirizzo', data.indirizzo));
+    }
+    
+    if (!isValidCoordinate(data.latitudine, data.longitudine)) {
+        errors.push(new ValidationError('Coordinate non valide', 'fontana-latitudine', data.latitudine));
+    }
+    
+    if (!['funzionante', 'non-funzionante', 'manutenzione'].includes(data.stato)) {
+        errors.push(new ValidationError('Stato non valido', 'fontana-stato', data.stato));
+    }
+    
+    return errors;
+}
+
+function validateBeverinoData(data) {
+    const errors = [];
+    
+    if (!data.nome || data.nome.trim().length < 2) {
+        errors.push(new ValidationError('Nome beverino richiesto', 'beverino-nome', data.nome));
+    }
+    
+    if (!isValidCoordinate(data.latitudine, data.longitudine)) {
+        errors.push(new ValidationError('Coordinate non valide', 'beverino-latitudine', data.latitudine));
+    }
+    
+    return errors;
+}
+
+// Wrapper per funzioni Firebase
+async function safeFirebaseOperation(operation, context, ...args) {
+    try {
+        return await operation(...args);
+    } catch (error) {
+        throw new FirebaseError(
+            error.message,
+            error.code || 'UNKNOWN',
+            { operation: context, args }
+        );
+    }
+}
+
+// ============================================
+// PERFORMANCE OPTIMIZATIONS
+// ============================================
+
+// Cache per immagini
+const imageCache = new Map();
+const MAX_IMAGE_CACHE_SIZE = 50;
+
+// Lazy loading per immagini
+function setupLazyLoading() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                const src = img.getAttribute('data-src');
+                
+                if (src && !img.src.includes(src)) {
+                    loadImageWithCache(img, src);
+                }
+                observer.unobserve(img);
+            }
+        });
+    }, {
+        rootMargin: '50px',
+        threshold: 0.1
+    });
+    
+    document.querySelectorAll('img[data-src]').forEach(img => {
+        observer.observe(img);
+    });
+}
+
+// Caricamento immagini con cache
+function loadImageWithCache(imgElement, src) {
+    if (imageCache.has(src)) {
+        imgElement.src = imageCache.get(src);
+        return;
+    }
+    
+    const img = new Image();
+    img.onload = () => {
+        if (imageCache.size >= MAX_IMAGE_CACHE_SIZE) {
+            const firstKey = imageCache.keys().next().value;
+            imageCache.delete(firstKey);
+        }
+        imageCache.set(src, src);
+        imgElement.src = src;
+    };
+    
+    img.onerror = () => {
+        imgElement.src = './images/sfondo-home.jpg';
+    };
+    
+    img.src = src;
+}
+
+// Debounce migliorato
+function advancedDebounce(func, wait, immediate = false) {
+    let timeout, result;
+    const debounced = function(...args) {
+        const context = this;
+        const later = function() {
+            timeout = null;
+            if (!immediate) result = func.apply(context, args);
+        };
+        const callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) result = func.apply(context, args);
+        return result;
+    };
+    
+    debounced.cancel = function() {
+        clearTimeout(timeout);
+        timeout = null;
+    };
+    
+    return debounced;
+}
+
+// ============================================
+// OFFLINE SYNC
+// ============================================
+
+let syncState = {
+    isSyncing: false,
+    lastSync: null,
+    pendingChanges: 0,
+    retryCount: 0
+};
+
+// Inizializza offline sync
+function initializeOfflineSync() {
+    if (!navigator.onLine) {
+        enableOfflineMode();
+    }
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    setInterval(checkSyncStatus, 60000);
+    loadSyncState();
+}
+
+// Abilita modalità offline
+function enableOfflineMode() {
+    document.getElementById('offline-indicator').style.display = 'block';
+    showToast('Modalità offline attiva. Le modifiche saranno sincronizzate dopo.', 'info', 5000);
+}
+
+// Disabilita modalità offline
+function disableOfflineMode() {
+    document.getElementById('offline-indicator').style.display = 'none';
+    triggerAutoSync();
+}
+
+// Gestisci evento online
+function handleOnline() {
+    disableOfflineMode();
+    showToast('Connessione ripristinata. Sincronizzazione in corso...', 'success');
+    checkForPendingSync();
+}
+
+// Gestisci evento offline
+function handleOffline() {
+    enableOfflineMode();
+}
+
+// Aggiungi operazione a coda sync
+async function addToSyncQueue(operation, collection, data, docId = null) {
+    const syncItem = {
+        operation,
+        collection,
+        data,
+        docId: docId || data.id,
+        timestamp: Date.now(),
+        metadata: {
+            userAgent: navigator.userAgent,
+            location: currentLatLng,
+            appVersion: '2.0.0'
+        }
+    };
+    
+    try {
+        await saveToLocalSyncQueue(syncItem);
+        
+        if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.ready;
+            
+            if ('sync' in registration) {
+                await registration.sync.register('sync-data');
+            }
+        }
+        
+        updateSyncUI();
+        return true;
+    } catch (error) {
+        console.error('[Offline] Errore aggiunta a coda sync:', error);
+        saveSyncItemToLocalStorage(syncItem);
+        return false;
+    }
+}
+
+// Salva in coda sync locale
+async function saveToLocalSyncQueue(item) {
+    const queue = await getLocalSyncQueue();
+    queue.push(item);
+    
+    if (queue.length > 100) {
+        queue.splice(0, queue.length - 100);
+    }
+    
+    localStorage.setItem('localSyncQueue', JSON.stringify(queue));
+    syncState.pendingChanges = queue.length;
+    saveSyncState();
+}
+
+// Ottieni coda sync locale
+async function getLocalSyncQueue() {
+    const queue = localStorage.getItem('localSyncQueue');
+    return queue ? JSON.parse(queue) : [];
+}
+
+// Salva sync item in localStorage
+function saveSyncItemToLocalStorage(item) {
+    const pendingItems = JSON.parse(localStorage.getItem('pendingSyncItems') || '[]');
+    pendingItems.push(item);
+    localStorage.setItem('pendingSyncItems', JSON.stringify(pendingItems));
+}
+
+// Trigger sync automatica
+async function triggerAutoSync() {
+    if (syncState.isSyncing) return;
+    
+    syncState.isSyncing = true;
+    updateSyncUI();
+    
+    try {
+        const queue = await getLocalSyncQueue();
+        
+        if (queue.length === 0) {
+            syncState.isSyncing = false;
+            return;
+        }
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (let i = 0; i < queue.length; i += 5) {
+            const batch = queue.slice(i, i + 5);
+            
+            const results = await Promise.allSettled(
+                batch.map(item => syncSingleItem(item))
+            );
+            
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled') {
+                    successCount++;
+                    removeFromLocalSyncQueue(batch[index].id);
+                } else {
+                    failCount++;
+                    incrementRetryCount(batch[index].id);
+                }
+            });
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        syncState.lastSync = Date.now();
+        syncState.pendingChanges = await getLocalSyncQueue().length;
+        syncState.retryCount = 0;
+        
+        showSyncResults(successCount, failCount);
+        
+    } catch (error) {
+        console.error('[Sync] Errore durante sync:', error);
+        syncState.retryCount++;
+        scheduleRetry();
+    } finally {
+        syncState.isSyncing = false;
+        updateSyncUI();
+        saveSyncState();
+    }
+}
+
+// Sincronizza singolo elemento
+async function syncSingleItem(item) {
+    const { doc, setDoc, deleteDoc } = await import(
+        "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+    );
+    
+    try {
+        switch (item.operation) {
+            case 'CREATE':
+            case 'UPDATE':
+                const docRef = doc(window.db, item.collection, item.docId);
+                await setDoc(docRef, item.data);
+                break;
+            case 'DELETE':
+                const deleteRef = doc(window.db, item.collection, item.docId);
+                await deleteDoc(deleteRef);
+                break;
+        }
+        return { success: true, id: item.id };
+    } catch (error) {
+        throw new Error(`Sync fallito: ${error.message}`);
+    }
+}
+
+// Rimuovi dalla coda locale
+function removeFromLocalSyncQueue(itemId) {
+    const queue = JSON.parse(localStorage.getItem('localSyncQueue') || '[]');
+    const newQueue = queue.filter(item => item.id !== itemId);
+    localStorage.setItem('localSyncQueue', JSON.stringify(newQueue));
+}
+
+// Programma retry
+function scheduleRetry() {
+    const backoffDelay = Math.min(300000, Math.pow(2, syncState.retryCount) * 5000);
+    
+    setTimeout(() => {
+        if (navigator.onLine) {
+            triggerAutoSync();
+        }
+    }, backoffDelay);
+}
+
+// Mostra risultati sync
+function showSyncResults(successCount, failCount) {
+    if (successCount > 0 || failCount > 0) {
+        const message = `Sincronizzazione: ${successCount} successi, ${failCount} falliti`;
+        
+        if (failCount === 0) {
+            showToast(message, 'success');
+        } else {
+            showToast(message, 'warning');
+        }
+    }
+}
+
+// Controlla stato sync
+async function checkSyncStatus() {
+    if (!navigator.onLine) return;
+    
+    const localQueue = await getLocalSyncQueue();
+    
+    if (localQueue.length > 0 && !syncState.isSyncing) {
+        triggerAutoSync();
+    }
+}
+
+// Verifica dati pendenti
+async function checkForPendingSync() {
+    const localQueue = await getLocalSyncQueue();
+    const pendingStorage = JSON.parse(localStorage.getItem('pendingSyncItems') || '[]');
+    
+    if (localQueue.length > 0 || pendingStorage.length > 0) {
+        if (pendingStorage.length > 0) {
+            pendingStorage.forEach(item => {
+                addToSyncQueue(item.operation, item.collection, item.data, item.docId);
+            });
+            localStorage.removeItem('pendingSyncItems');
+        }
+        
+        setTimeout(() => triggerAutoSync(), 2000);
+    }
+}
+
+// Aggiorna UI sync
+function updateSyncUI() {
+    let syncIndicator = document.getElementById('sync-indicator');
+    
+    if (!syncIndicator) {
+        syncIndicator = document.createElement('div');
+        syncIndicator.id = 'sync-indicator';
+        syncIndicator.className = 'sync-indicator';
+        syncIndicator.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        document.body.appendChild(syncIndicator);
+    }
+    
+    if (syncState.isSyncing) {
+        syncIndicator.classList.add('syncing');
+        syncIndicator.title = 'Sincronizzazione in corso...';
+    } else if (syncState.pendingChanges > 0) {
+        syncIndicator.classList.add('pending');
+        syncIndicator.title = `${syncState.pendingChanges} modifiche in attesa`;
+    } else {
+        syncIndicator.classList.remove('syncing', 'pending');
+        syncIndicator.title = 'Tutto sincronizzato';
+    }
+}
+
+// Salva stato sync
+function saveSyncState() {
+    localStorage.setItem('syncState', JSON.stringify(syncState));
+}
+
+// Carica stato sync
+function loadSyncState() {
+    const savedState = localStorage.getItem('syncState');
+    if (savedState) {
+        syncState = JSON.parse(savedState);
+        updateSyncUI();
+    }
+}
+
+// Funzione per salvataggio dati offline
+function saveOfflineData(context, data) {
+    try {
+        const offlineData = JSON.parse(localStorage.getItem('offlineData') || '[]');
+        offlineData.push({
+            type: context,
+            data: data,
+            timestamp: new Date().toISOString(),
+            attempts: 0
+        });
+        localStorage.setItem('offlineData', JSON.stringify(offlineData));
+        
+        showToast('Dati salvati offline. Sincronizzazione in background.', 'info');
+        
+    } catch (error) {
+        console.error('Errore salvataggio offline:', error);
+    }
+}
+
+// ============================================
+// ANALYTICS FUNCTIONS
+// ============================================
+
+function logErrorToAnalytics(error, context, additionalData = {}) {
+    const errorLog = {
+        timestamp: new Date().toISOString(),
+        context,
+        error: {
+            name: error.name,
+            message: error.message,
+            code: error.code,
+            stack: error.stack
+        },
+        userAgent: navigator.userAgent,
+        online: navigator.onLine,
+        url: window.location.href,
+        ...additionalData
+    };
+    
+    const analyticsLog = JSON.parse(localStorage.getItem('analytics_errors') || '[]');
+    analyticsLog.push(errorLog);
+    
+    if (analyticsLog.length > 100) {
+        analyticsLog.splice(0, analyticsLog.length - 100);
+    }
+    
+    localStorage.setItem('analytics_errors', JSON.stringify(analyticsLog));
+    
+    // Firebase Analytics se disponibile
+    if (window.firebaseAnalytics) {
+        window.firebaseAnalytics.logEvent('error_occurred', {
+            error_context: context,
+            error_message: error.message.substring(0, 100),
+            error_code: error.code || 'none'
+        });
+    }
+}
+
+function logPerformanceMetric(name, duration) {
+    const metrics = JSON.parse(localStorage.getItem('performance_metrics') || '[]');
+    metrics.push({
+        name,
+        duration,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent
+    });
+    
+    if (metrics.length > 100) {
+        metrics.splice(0, metrics.length - 100);
+    }
+    
+    localStorage.setItem('performance_metrics', JSON.stringify(metrics));
+}
+
+// ============================================
+// VARIABILI GLOBALI ORIGINALI
+// ============================================
+
 let appData = {
     fontane: [],
     beverini: [],
@@ -27,6 +670,10 @@ let searchTimeout;
 let isAdminAuthenticated = false;
 let adminAuthTimeout = null;
 
+// ============================================
+// FUNZIONI ORIGINALI (MODIFICATE CON NUOVE FEATURES)
+// ============================================
+
 // Firebase Firestore functions
 async function loadFirebaseData(type) {
     try {
@@ -39,10 +686,9 @@ async function loadFirebaseData(type) {
         };
         
         const collectionName = collectionMap[type];
-        console.log(`Caricamento dati da collection: ${collectionName}`);
         
         const dataRef = collection(window.db, collectionName);
-        const snapshot = await getDocs(dataRef);
+        const snapshot = await safeFirebaseOperation(getDocs, `getDocs_${type}`, dataRef);
         
         const data = [];
         snapshot.forEach(doc => {
@@ -75,9 +721,8 @@ async function loadFirebaseData(type) {
         
         return data;
     } catch (error) {
-        console.error(`Errore nel caricamento ${type}:`, error);
+        await handleError(`loadFirebaseData_${type}`, error, `Utilizzo dati locali per ${type}`);
         loadLocalData(type);
-        showToast(`Utilizzo dati locali per ${type}`, 'info');
         return appData[type];
     }
 }
@@ -90,12 +735,10 @@ async function saveFirebaseData(type, item, id = null) {
         const collectionName = COLLECTIONS[type.toUpperCase()];
         
         if (id) {
-            // Update existing
             const docRef = doc(window.db, collectionName, id);
             await updateDoc(docRef, item);
             savedId = id;
         } else {
-            // Create new
             const dataRef = collection(window.db, collectionName);
             const newDoc = await addDoc(dataRef, item);
             savedId = newDoc.id;
@@ -327,72 +970,52 @@ function logoutAdmin() {
 
 // Navigation and Screen Management
 function showScreen(screenId) {
-    // Salva lo stato corrente
     const currentScreen = screenHistory[screenHistory.length - 1];
     
-    // Se già siamo su questa schermata, non fare nulla
     if (currentScreen === screenId) return;
     
-    // Nascondi tutte le schermate
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
         screen.style.display = 'none';
     });
     
-    // Mostra la nuova schermata
     const targetScreen = document.getElementById(screenId);
     if (targetScreen) {
-        targetScreen.style.display = 'flex'; // Cambiato da 'block' a 'flex'
+        targetScreen.style.display = 'flex';
         setTimeout(() => {
             targetScreen.classList.add('active');
         }, 10);
         
-        // Aggiungi alla cronologia
         screenHistory.push(screenId);
         if (screenHistory.length > 10) {
             screenHistory = screenHistory.slice(-10);
         }
         
-        // Scrolla in alto
         window.scrollTo(0, 0);
-        
-        // Inizializza il contenuto
         initializeScreenContent(screenId);
     }
     
-    // Aggiorna la tab bar
     updateTabBar(screenId);
-    
-    // Nascondi il pulsante di navigazione
     document.getElementById('fixed-navigate-btn').classList.add('hidden');
 }
 
 function goBack() {
     if (screenHistory.length > 1) {
-        // Rimuovi la schermata corrente
         screenHistory.pop();
-        
-        // Torna alla schermata precedente
         const previousScreen = screenHistory[screenHistory.length - 1];
         
-        // Nascondi tutte le schermate
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
         });
         
-        // Mostra la schermata precedente
         const targetScreen = document.getElementById(previousScreen);
         if (targetScreen) {
             targetScreen.style.display = 'block';
             setTimeout(() => {
                 targetScreen.classList.add('active');
             }, 10);
-            
-            // Inizializza il contenuto
             initializeScreenContent(previousScreen);
         }
-        
-        // Aggiorna la tab bar
         updateTabBar(previousScreen);
     } else {
         showScreen('home-screen');
@@ -1344,64 +1967,105 @@ function editFontana(id) {
     showAdminTab('fontane-admin');
 }
 
+// MODIFICA: saveFontana con supporto offline
 async function saveFontana(e) {
     e.preventDefault();
     
-    const id = document.getElementById('fontana-id').value;
-    const nome = document.getElementById('fontana-nome').value;
-    const indirizzo = document.getElementById('fontana-indirizzo').value;
-    const stato = document.getElementById('fontana-stato').value;
-    const anno = document.getElementById('fontana-anno').value;
-    const descrizione = document.getElementById('fontana-descrizione').value;
-    const storico = document.getElementById('fontana-storico').value;
-    const latitudine = parseFloat(document.getElementById('fontana-latitudine').value) || 0;
-    const longitudine = parseFloat(document.getElementById('fontana-longitudine').value) || 0;
-    const immagine = document.getElementById('fontana-immagine').value;
-    
-    const fontanaData = {
-        nome,
-        indirizzo,
-        stato,
-        anno,
-        descrizione,
-        storico,
-        latitudine,
-        longitudine,
-        immagine,
-        last_modified: new Date().toISOString()
-    };
-    
     try {
-        let savedId;
+        const id = document.getElementById('fontana-id').value;
+        const nome = document.getElementById('fontana-nome').value.trim();
+        const indirizzo = document.getElementById('fontana-indirizzo').value.trim();
+        const stato = document.getElementById('fontana-stato').value;
+        const anno = document.getElementById('fontana-anno').value.trim();
+        const descrizione = document.getElementById('fontana-descrizione').value.trim();
+        const storico = document.getElementById('fontana-storico').value.trim();
+        const latitudine = parseFloat(document.getElementById('fontana-latitudine').value) || 0;
+        const longitudine = parseFloat(document.getElementById('fontana-longitudine').value) || 0;
+        const immagine = document.getElementById('fontana-immagine').value.trim();
         
-        if (id && id.trim() !== '') {
-            // Update existing
-            savedId = await saveFirebaseData('fontane', fontanaData, id);
-            const index = appData.fontane.findIndex(f => f.id == id);
-            if (index !== -1) {
-                appData.fontane[index] = { id, ...fontanaData };
+        const fontanaData = {
+            nome,
+            indirizzo,
+            stato,
+            anno,
+            descrizione,
+            storico,
+            latitudine,
+            longitudine,
+            immagine,
+            last_modified: new Date().toISOString()
+        };
+        
+        // Validazione
+        const validationErrors = validateFontanaData(fontanaData);
+        if (validationErrors.length > 0) {
+            throw validationErrors[0];
+        }
+        
+        let savedId;
+        const operation = id ? 'UPDATE' : 'CREATE';
+        
+        if (navigator.onLine) {
+            // Online: salva direttamente
+            if (id && id.trim() !== '') {
+                savedId = await safeFirebaseOperation(
+                    saveFirebaseData,
+                    'update_fontana',
+                    'fontane',
+                    fontanaData,
+                    id
+                );
+                
+                const index = appData.fontane.findIndex(f => f.id == id);
+                if (index !== -1) {
+                    appData.fontane[index] = { id, ...fontanaData };
+                }
+                showToast('Fontana modificata con successo', 'success');
+            } else {
+                savedId = await safeFirebaseOperation(
+                    saveFirebaseData,
+                    'create_fontana',
+                    'fontane',
+                    fontanaData
+                );
+                
+                appData.fontane.push({ id: savedId, ...fontanaData });
+                showToast(`Fontana aggiunta con successo (ID: ${savedId})`, 'success');
             }
-            showToast('Fontana modificata con successo', 'success');
         } else {
-            // Create new
-            savedId = await saveFirebaseData('fontane', fontanaData);
-            appData.fontane.push({ id: savedId, ...fontanaData });
-            showToast(`Fontana aggiunta con successo (ID: ${savedId})`, 'success');
+            // Offline: aggiungi a coda sync
+            savedId = id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            await addToSyncQueue(
+                operation,
+                'fontane',
+                fontanaData,
+                savedId
+            );
+            
+            if (operation === 'UPDATE') {
+                const index = appData.fontane.findIndex(f => f.id == id);
+                if (index !== -1) {
+                    appData.fontane[index] = { id: savedId, ...fontanaData };
+                }
+            } else {
+                appData.fontane.push({ id: savedId, ...fontanaData });
+            }
+            
+            showToast('Fontana salvata localmente. Sarà sincronizzata online dopo.', 'info');
         }
         
         saveLocalData();
         loadAdminFontane();
         resetFontanaForm();
         
-        // Update UI
         loadFontane();
         updateDashboardStats();
         
-        console.log('Fontana salvata con successo, ID:', savedId);
+        console.log('Fontana salvata, ID:', savedId);
         
     } catch (error) {
-        console.error('Errore nel salvataggio della fontana:', error);
-        showToast('Errore nel salvataggio della fontana: ' + error.message, 'error');
+        await handleError('saveFontana', error, 'Errore nel salvataggio della fontana');
     }
 }
 
@@ -1414,7 +2078,16 @@ async function deleteFontana(id) {
     if (!confirm('Sei sicuro di voler eliminare questa fontana?')) return;
     
     try {
-        await deleteFirebaseData('fontane', id);
+        if (navigator.onLine) {
+            await deleteFirebaseData('fontane', id);
+        } else {
+            // Offline: aggiungi a coda sync
+            const fontana = appData.fontane.find(f => f.id == id);
+            if (fontana) {
+                await addToSyncQueue('DELETE', 'fontane', fontana, id);
+            }
+        }
+        
         appData.fontane = appData.fontane.filter(f => f.id != id);
         
         saveLocalData();
@@ -1466,18 +2139,17 @@ function editBeverino(id) {
     showAdminTab('beverini-admin');
 }
 
+// MODIFICA: saveBeverino con supporto offline
 async function saveBeverino(e) {
     e.preventDefault();
     
     const id = document.getElementById('beverino-id').value;
-    const nome = document.getElementById('beverino-nome').value;
-    const indirizzo = document.getElementById('beverino-indirizzo').value;
+    const nome = document.getElementById('beverino-nome').value.trim();
+    const indirizzo = document.getElementById('beverino-indirizzo').value.trim();
     const stato = document.getElementById('beverino-stato').value;
     const latitudine = parseFloat(document.getElementById('beverino-latitudine').value) || 0;
     const longitudine = parseFloat(document.getElementById('beverino-longitudine').value) || 0;
-    const immagine = document.getElementById('beverino-immagine').value;
-    
-    console.log('Dati beverino da salvare:', { id, nome, indirizzo, stato, latitudine, longitudine, immagine });
+    const immagine = document.getElementById('beverino-immagine').value.trim();
     
     const beverinoData = {
         nome,
@@ -1490,40 +2162,71 @@ async function saveBeverino(e) {
     };
     
     try {
-        let savedId;
+        const validationErrors = validateBeverinoData(beverinoData);
+        if (validationErrors.length > 0) {
+            throw validationErrors[0];
+        }
         
-        if (id && id.trim() !== '') {
-            // Update existing
-            console.log('Aggiornamento beverino esistente ID:', id);
-            savedId = await saveFirebaseData('beverini', beverinoData, id);
-            
-            const index = appData.beverini.findIndex(b => b.id == id);
-            if (index !== -1) {
-                appData.beverini[index] = { id, ...beverinoData };
+        let savedId;
+        const operation = id ? 'UPDATE' : 'CREATE';
+        
+        if (navigator.onLine) {
+            if (id && id.trim() !== '') {
+                savedId = await safeFirebaseOperation(
+                    saveFirebaseData,
+                    'update_beverino',
+                    'beverini',
+                    beverinoData,
+                    id
+                );
+                
+                const index = appData.beverini.findIndex(b => b.id == id);
+                if (index !== -1) {
+                    appData.beverini[index] = { id, ...beverinoData };
+                }
+                showToast('Beverino modificato con successo', 'success');
+            } else {
+                savedId = await safeFirebaseOperation(
+                    saveFirebaseData,
+                    'create_beverino',
+                    'beverini',
+                    beverinoData
+                );
+                
+                appData.beverini.push({ id: savedId, ...beverinoData });
+                showToast(`Beverino aggiunto con successo (ID: ${savedId})`, 'success');
             }
-            showToast('Beverino modificato con successo', 'success');
         } else {
-            // Create new
-            console.log('Creazione nuovo beverino');
-            savedId = await saveFirebaseData('beverini', beverinoData);
+            savedId = id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             
-            appData.beverini.push({ id: savedId, ...beverinoData });
-            showToast(`Beverino aggiunto con successo (ID: ${savedId})`, 'success');
+            await addToSyncQueue(
+                operation,
+                'beverini',
+                beverinoData,
+                savedId
+            );
+            
+            if (operation === 'UPDATE') {
+                const index = appData.beverini.findIndex(b => b.id == id);
+                if (index !== -1) {
+                    appData.beverini[index] = { id: savedId, ...beverinoData };
+                }
+            } else {
+                appData.beverini.push({ id: savedId, ...beverinoData });
+            }
+            
+            showToast('Beverino salvato localmente. Sarà sincronizzato online dopo.', 'info');
         }
         
         saveLocalData();
         loadAdminBeverini();
         resetBeverinoForm();
         
-        // Update UI
         loadBeverini();
         updateDashboardStats();
         
-        console.log('Beverino salvato con successo, ID:', savedId);
-        
     } catch (error) {
-        console.error('Errore nel salvataggio del beverino:', error);
-        showToast('Errore nel salvataggio del beverino: ' + error.message, 'error');
+        await handleError('saveBeverino', error, 'Errore nel salvataggio del beverino');
     }
 }
 
@@ -1536,7 +2239,15 @@ async function deleteBeverino(id) {
     if (!confirm('Sei sicuro di voler eliminare questo beverino?')) return;
     
     try {
-        await deleteFirebaseData('beverini', id);
+        if (navigator.onLine) {
+            await deleteFirebaseData('beverini', id);
+        } else {
+            const beverino = appData.beverini.find(b => b.id == id);
+            if (beverino) {
+                await addToSyncQueue('DELETE', 'beverini', beverino, id);
+            }
+        }
+        
         appData.beverini = appData.beverini.filter(b => b.id != id);
         
         saveLocalData();
@@ -1608,17 +2319,50 @@ async function saveNews(e) {
     
     try {
         let savedId;
-        if (id && id.trim() !== '') {
-            savedId = await saveFirebaseData('news', newsData, id);
-            const index = appData.news.findIndex(n => n.id == id);
-            if (index !== -1) {
-                appData.news[index] = { id, ...newsData };
+        if (navigator.onLine) {
+            if (id && id.trim() !== '') {
+                savedId = await safeFirebaseOperation(
+                    saveFirebaseData,
+                    'update_news',
+                    'news',
+                    newsData,
+                    id
+                );
+                const index = appData.news.findIndex(n => n.id == id);
+                if (index !== -1) {
+                    appData.news[index] = { id, ...newsData };
+                }
+                showToast('News modificata con successo', 'success');
+            } else {
+                savedId = await safeFirebaseOperation(
+                    saveFirebaseData,
+                    'create_news',
+                    'news',
+                    newsData
+                );
+                appData.news.push({ id: savedId, ...newsData });
+                showToast(`News aggiunta con successo (ID: ${savedId})`, 'success');
             }
-            showToast('News modificata con successo', 'success');
         } else {
-            savedId = await saveFirebaseData('news', newsData);
-            appData.news.push({ id: savedId, ...newsData });
-            showToast(`News aggiunta con successo (ID: ${savedId})`, 'success');
+            savedId = id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            await addToSyncQueue(
+                id ? 'UPDATE' : 'CREATE',
+                'news',
+                newsData,
+                savedId
+            );
+            
+            if (id) {
+                const index = appData.news.findIndex(n => n.id == id);
+                if (index !== -1) {
+                    appData.news[index] = { id: savedId, ...newsData };
+                }
+            } else {
+                appData.news.push({ id: savedId, ...newsData });
+            }
+            
+            showToast('News salvata localmente. Sarà sincronizzata online dopo.', 'info');
         }
         
         saveLocalData();
@@ -1629,8 +2373,7 @@ async function saveNews(e) {
         updateDashboardStats();
         
     } catch (error) {
-        console.error('Errore nel salvataggio della news:', error);
-        showToast('Errore nel salvataggio della news: ' + error.message, 'error');
+        await handleError('saveNews', error, 'Errore nel salvataggio della news');
     }
 }
 
@@ -1643,7 +2386,15 @@ async function deleteNews(id) {
     if (!confirm('Sei sicuro di voler eliminare questa news?')) return;
     
     try {
-        await deleteFirebaseData('news', id);
+        if (navigator.onLine) {
+            await deleteFirebaseData('news', id);
+        } else {
+            const news = appData.news.find(n => n.id == id);
+            if (news) {
+                await addToSyncQueue('DELETE', 'news', news, id);
+            }
+        }
+        
         appData.news = appData.news.filter(n => n.id != id);
         
         saveLocalData();
@@ -1988,26 +2739,17 @@ function handleUrlParameters() {
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', function() {
-    // Load initial data
     loadLocalData();
-    
-    // Check online status
     checkOnlineStatus();
-    
-    // Show home screen
     showScreen('home-screen');
-    
-    // Handle URL parameters
     handleUrlParameters();
     
-    // Load data from Firebase
     setTimeout(async () => {
         try {
             await loadFirebaseData('fontane');
             await loadFirebaseData('beverini');
             await loadFirebaseData('news');
             
-            // Update UI if needed
             if (document.getElementById('fontane-list').innerHTML.includes('Caricamento')) {
                 loadFontane();
             }
@@ -2023,45 +2765,44 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 1000);
     
-    // Event listeners for authentication modal
     document.getElementById('admin-password').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             checkAdminAuth();
         }
     });
     
-    // Click outside admin auth modal to close
     document.getElementById('admin-auth').addEventListener('click', function(e) {
         if (e.target === this) {
             closeAdminAuth();
         }
     });
     
-    // Online/offline events
     window.addEventListener('online', checkOnlineStatus);
     window.addEventListener('offline', checkOnlineStatus);
     
-    // Image error handling
     document.addEventListener('error', function(e) {
         if (e.target.tagName === 'IMG') {
             e.target.src = './images/sfondo-home.jpg';
         }
     }, true);
     
-    // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && document.getElementById('admin-panel').style.display === 'flex') {
             closeAdminPanel();
         }
     });
     
-    // Close admin panel when clicking outside
     document.getElementById('admin-panel').addEventListener('click', function(e) {
         if (e.target === this) {
             closeAdminPanel();
         }
     });
     
-    // Log app start
+    // Inizializza nuove funzionalità
+    initializeOfflineSync();
+    setTimeout(() => {
+        setupLazyLoading();
+    }, 1000);
+    
     logActivity('Applicazione avviata');
 });

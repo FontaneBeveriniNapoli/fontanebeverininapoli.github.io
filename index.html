@@ -722,7 +722,13 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    
+    <!-- ✅ FILE PRINCIPALI ORIGINALI -->
     <script src="app.js"></script>
+    
+    <!-- ✅ ANALYTICS (NUOVO FILE) -->
+    <script src="./analytics.js"></script>
+    
     <script>
         // Service Worker Registration
         if ('serviceWorker' in navigator) {
@@ -742,6 +748,86 @@
             console.log('PWA installabile rilevata');
             e.preventDefault();
             window.deferredPrompt = e;
+        });
+        
+        // ✅ INIZIALIZZAZIONE ANALYTICS INTEGRATA
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Inizializza analytics
+                if (window.Analytics) {
+                    await window.Analytics.initialize();
+                    
+                    // Traccia avvio app
+                    window.Analytics.trackEvent('app', 'started', null, null, {
+                        online: navigator.onLine,
+                        pwa: window.matchMedia('(display-mode: standalone)').matches,
+                        platform: navigator.platform
+                    });
+                    
+                    // Traccia prima pagina
+                    window.Analytics.trackPageView('app_loaded', {
+                        load_time: window.performance.timing.loadEventEnd - window.performance.timing.navigationStart
+                    });
+                }
+                
+                // Traccia navigazione schermate
+                const originalShowScreen = window.showScreen;
+                if (originalShowScreen) {
+                    window.showScreen = function(screenId) {
+                        const currentScreen = window.screenHistory ? window.screenHistory[window.screenHistory.length - 1] : 'home-screen';
+                        
+                        // Traccia cambio schermata
+                        if (window.Analytics) {
+                            window.Analytics.trackEvent('navigation', 'screen_change', `${currentScreen}_to_${screenId}`, null, {
+                                from_screen: currentScreen,
+                                to_screen: screenId,
+                                method: 'function'
+                            });
+                            window.Analytics.trackPageView(`screen_${screenId}`, {
+                                screen_name: screenId,
+                                screen_type: screenId.includes('detail') ? 'detail' : 
+                                          screenId.includes('list') ? 'list' : 'home'
+                            });
+                        }
+                        
+                        return originalShowScreen.call(this, screenId);
+                    };
+                }
+                
+                // Traccia click sui pulsanti
+                document.querySelectorAll('.home-btn, .tab-btn, .back-btn, .detail-action-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const screen = this.closest('.screen')?.id || 'unknown';
+                        const buttonId = this.className || this.id || 'unknown_button';
+                        
+                        if (window.Analytics) {
+                            window.Analytics.trackEvent('ui', 'button_click', buttonId, null, {
+                                screen: screen,
+                                button_id: buttonId
+                            });
+                        }
+                    });
+                });
+                
+                // Traccia form submissions
+                document.querySelectorAll('form').forEach(form => {
+                    form.addEventListener('submit', function() {
+                        const fieldCount = this.querySelectorAll('input, select, textarea').length;
+                        
+                        if (window.Analytics) {
+                            window.Analytics.trackEvent('form', 'submission', this.id, fieldCount, {
+                                success: true,
+                                form_id: this.id
+                            });
+                        }
+                    });
+                });
+                
+                console.log('[Analytics] Tracciamento inizializzato con successo');
+                
+            } catch (error) {
+                console.error('[Analytics] Errore inizializzazione:', error);
+            }
         });
     </script>
 </body>
