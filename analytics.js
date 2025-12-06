@@ -1,5 +1,3 @@
-[file name]: analytics.js
-[file content begin]
 // Analytics Manager
 class AnalyticsManager {
     constructor() {
@@ -33,33 +31,6 @@ class AnalyticsManager {
             imageLoadTimes: [],
             dataFetchTimes: []
         };
-        
-        // Initialize Service Worker for analytics
-        this.initializeServiceWorkerSupport();
-    }
-    
-    async initializeServiceWorkerSupport() {
-        if ('serviceWorker' in navigator) {
-            try {
-                const registration = await navigator.serviceWorker.ready;
-                console.log('[Analytics] Service Worker pronto');
-                
-                // Send analytics config to Service Worker
-                if (registration.active) {
-                    registration.active.postMessage({
-                        type: 'ANALYTICS_CONFIG',
-                        config: {
-                            enabled: this.config.trackingEnabled,
-                            sessionId: this.session.id,
-                            userId: this.user.id
-                        }
-                    });
-                }
-                
-            } catch (error) {
-                console.warn('[Analytics] Service Worker non disponibile:', error);
-            }
-        }
     }
     
     async initialize() {
@@ -735,17 +706,6 @@ window.Analytics = new AnalyticsManager();
 // Inizializzazione automatica
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Wait for Service Worker to be ready
-        if ('serviceWorker' in navigator) {
-            try {
-                await navigator.serviceWorker.ready;
-                console.log('[Analytics] Service Worker pronto');
-            } catch (error) {
-                console.warn('[Analytics] Service Worker non disponibile:', error);
-            }
-        }
-        
-        // Initialize analytics
         await window.Analytics.initialize();
         
         // Traccia avvio app
@@ -754,8 +714,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             pwa: window.matchMedia('(display-mode: standalone)').matches,
             platform: navigator.platform,
             screen_size: `${window.screen.width}x${window.screen.height}`,
-            viewport_size: `${window.innerWidth}x${window.innerHeight}`,
-            service_worker: 'serviceWorker' in navigator
+            viewport_size: `${window.innerWidth}x${window.innerHeight}`
         });
         
         // Traccia prima pagina
@@ -880,4 +839,3 @@ window.analyticsFunctions = {
         return null;
     }
 };
-[file content end]
