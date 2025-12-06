@@ -60,53 +60,6 @@ function forceServiceWorkerUpdate() {
                     showToast('Aggiornamento Service Worker forzato', 'info');
                 }
             });
-    }
-}
-
-// Pulisci cache Service Worker (per sviluppo)
-function clearServiceWorkerCache() {
-    if ('serviceWorker' in navigator) {
-        caches.keys().then(function(cacheNames) {
-            cacheNames.forEach(function(cacheName) {
-                caches.delete(cacheName);
-                console.log('Cache eliminata:', cacheName);
-            });
-            showToast('Cache Service Worker pulita', 'info');
-        });
-        
-        // Deregistra Service Worker
-        navigator.serviceWorker.getRegistrations()
-            .then(function(registrations) {
-                registrations.forEach(function(registration) {
-                    registration.unregister();
-                    console.log('Service Worker deregistrato');
-                });
-            });
-    }
-}
-
-// Verifica supporto API
-function checkServiceWorkerSupport() {
-    const supports = {
-        serviceWorker: 'serviceWorker' in navigator,
-        sync: 'sync' in (navigator.serviceWorker || {}),
-        periodicSync: 'periodicSync' in (navigator.serviceWorker || {}),
-        push: 'PushManager' in window,
-        notification: 'Notification' in window,
-        cache: 'caches' in window
-    };
-    
-    console.log('Supporto API:', supports);
-    return supports;
-}
-
-// Firebase Collections
-const COLLECTIONS = {
-    FONTANE: 'fontane',
-    BEVERINI: 'beverini',
-    NEWS: 'news'
-};
-
 // ============================================
 // GESTIONE ERRORI COMPLETA
 // ============================================
