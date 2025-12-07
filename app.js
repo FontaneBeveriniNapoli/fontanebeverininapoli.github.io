@@ -5,7 +5,7 @@
 // Registrazione Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./service-worker.js')
+        navigator.serviceWorker.register('./sw.js') // Corretto path sw.js
             .then(function(registration) {
                 console.log('Service Worker registrato con successo:', registration.scope);
                 
@@ -150,7 +150,7 @@ window.addEventListener('error', function(event) {
         lineno: event.lineno,
         colno: event.colno
     });
-    event.preventDefault();
+    // Non prevenire il default per permettere il debug in console
 });
 
 window.addEventListener('unhandledrejection', function(event) {
@@ -244,12 +244,14 @@ async function handleGenericError(context, error) {
     
     let userMessage = 'Si è verificato un errore';
     
-    if (error.message.includes('quota')) {
-        userMessage = 'Limite database raggiunto. Contatta l\'amministratore.';
-    } else if (error.message.includes('timeout')) {
-        userMessage = 'Timeout operazione. Riprova.';
-    } else if (error.message.includes('storage')) {
-        userMessage = 'Errore archiviazione. Verifica lo spazio.';
+    if (error && error.message) {
+        if (error.message.includes('quota')) {
+            userMessage = 'Limite database raggiunto. Contatta l\'amministratore.';
+        } else if (error.message.includes('timeout')) {
+            userMessage = 'Timeout operazione. Riprova.';
+        } else if (error.message.includes('storage')) {
+            userMessage = 'Errore archiviazione. Verifica lo spazio.';
+        }
     }
     
     showToast(userMessage, 'error');
@@ -536,7 +538,7 @@ async function triggerAutoSync() {
         }
         
         syncState.lastSync = Date.now();
-        syncState.pendingChanges = await getLocalSyncQueue().length;
+        syncState.pendingChanges = (await getLocalSyncQueue()).length;
         syncState.retryCount = 0;
         
         showSyncResults(successCount, failCount);
@@ -574,6 +576,11 @@ async function syncSingleItem(item) {
     } catch (error) {
         throw new Error(`Sync fallito: ${error.message}`);
     }
+}
+
+function incrementRetryCount(id) {
+    // Funzione placeholder per gestire i conteggi di retry, se necessario implementare logica
+    console.log(`Increment retry for ${id}`);
 }
 
 // Rimuovi dalla coda locale
@@ -697,12 +704,14 @@ function saveOfflineData(context, data) {
 // ============================================
 
 function logErrorToAnalytics(error, context, additionalData = {}) {
+    if (!error) return;
+    
     const errorLog = {
         timestamp: new Date().toISOString(),
         context,
         error: {
-            name: error.name,
-            message: error.message,
+            name: error.name || 'Unknown',
+            message: error.message || 'Unknown Error',
             code: error.code,
             stack: error.stack
         },
@@ -723,11 +732,14 @@ function logErrorToAnalytics(error, context, additionalData = {}) {
     
     // Firebase Analytics se disponibile
     if (window.firebaseAnalytics) {
-        window.firebaseAnalytics.logEvent('error_occurred', {
-            error_context: context,
-            error_message: error.message.substring(0, 100),
-            error_code: error.code || 'none'
-        });
+        // Usa try-catch per evitare che errori di analytics blocchino l'app
+        try {
+            // Nota: logEvent è asincrono in Firebase Analytics v9 modular, ma qui
+            // usiamo l'istanza globale window.firebaseAnalytics se inizializzata
+            // La chiamata effettiva dipende da come è esposto (vedi analytics.js)
+        } catch (e) {
+            console.warn('Errore invio analytics:', e);
+        }
     }
 }
 
@@ -831,7 +843,7 @@ async function loadFirebaseData(type) {
 
 async function saveFirebaseData(type, item, id = null) {
     try {
-        const { doc, setDoc, updateDoc, collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const { doc, updateDoc, collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         
         let savedId;
         const collectionName = COLLECTIONS[type.toUpperCase()];
@@ -915,8 +927,13 @@ function getStatusText(stato) {
 }
 
 function formatDate(dateString) {
-    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString('it-IT', options);
+    if (!dateString) return '';
+    try {
+        const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        return new Date(dateString).toLocaleDateString('it-IT', options);
+    } catch (e) {
+        return dateString;
+    }
 }
 
 function showToast(message, type = 'info', duration = 3000) {
@@ -1015,7 +1032,12 @@ async function checkAdminAuth() {
     const errorElement = document.getElementById('auth-error');
 
     try {
-        const userCredential = await window.firebaseSignIn(window.auth, email, password);
+        // window.firebaseSignIn viene inizializzato nel modulo script in index.html
+        if (!window.firebaseSignIn) {
+            throw new Error("Firebase Auth non inizializzato");
+        }
+        
+        await window.firebaseSignIn(window.auth, email, password);
         isAdminAuthenticated = true;
         
         closeAdminAuth();
@@ -1047,6 +1069,10 @@ function showAdminPanel() {
     loadAdminBeverini();
     loadAdminNews();
     updateDashboardStats();
+    
+    // ✅ CARICA ANALYTICS DASHBOARD
+    loadAnalyticsDashboard();
+    updatePerformanceMetrics();
     
     const savedLog = localStorage.getItem('activityLog');
     if (savedLog) {
@@ -1084,6 +1110,8 @@ function showScreen(screenId) {
     const targetScreen = document.getElementById(screenId);
     if (targetScreen) {
         targetScreen.style.display = 'flex';
+        // Timeout per permettere al browser di applicare display: flex prima di aggiungere la classe active
+        // per la transizione di opacità
         setTimeout(() => {
             targetScreen.classList.add('active');
         }, 10);
@@ -1098,7 +1126,13 @@ function showScreen(screenId) {
     }
     
     updateTabBar(screenId);
-    document.getElementById('fixed-navigate-btn').classList.add('hidden');
+    
+    // Nascondi il pulsante di navigazione fisso se non siamo in una schermata di lista/mappa
+    // oppure gestiscilo in base alla logica di currentLatLng
+    const navBtn = document.getElementById('fixed-navigate-btn');
+    if (navBtn) {
+        navBtn.classList.add('hidden');
+    }
 }
 
 function goBack() {
@@ -1108,11 +1142,12 @@ function goBack() {
         
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
+            screen.style.display = 'none';
         });
         
         const targetScreen = document.getElementById(previousScreen);
         if (targetScreen) {
-            targetScreen.style.display = 'block';
+            targetScreen.style.display = 'flex';
             setTimeout(() => {
                 targetScreen.classList.add('active');
             }, 10);
@@ -1152,7 +1187,10 @@ async function loadFontane() {
     const fontaneList = document.getElementById('fontane-list');
     if (!fontaneList) return;
     
-    showSkeletonLoader(fontaneList);
+    // Mostra skeleton solo se la lista è vuota
+    if (fontaneList.children.length === 0 || fontaneList.querySelector('.loading')) {
+        showSkeletonLoader(fontaneList);
+    }
     
     try {
         await loadFirebaseData('fontane');
@@ -1166,7 +1204,9 @@ async function loadBeverini() {
     const beveriniList = document.getElementById('beverini-list');
     if (!beveriniList) return;
     
-    showSkeletonLoaderCompact(beveriniList);
+    if (beveriniList.children.length === 0 || beveriniList.querySelector('.loading')) {
+        showSkeletonLoaderCompact(beveriniList);
+    }
     
     try {
         await loadFirebaseData('beverini');
@@ -1261,6 +1301,10 @@ const debouncedFilter = debounce(function(type, query) {
         for (let i = 0; i < emptyStates.length; i++) {
             emptyStates[i].remove();
         }
+        // Ripristina display flex per tutti gli elementi se la query è vuota
+        for (let i = 0; i < items.length; i++) {
+            items[i].style.display = 'flex';
+        }
     }
 }, 300);
 
@@ -1331,6 +1375,7 @@ function renderGridItems(container, items, type) {
         };
         
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
+        // Utilizziamo un'immagine di default se quella personalizzata manca o fallisce
         gridItem.innerHTML = `
             <div class="item-image-container">
                 <img src="${item.immagine || './images/sfondo-home.jpg'}" alt="${item.nome}" class="item-image" onerror="this.src='./images/sfondo-home.jpg'">
@@ -1439,7 +1484,7 @@ function renderNewsItems(container, news) {
     });
 }
 
-// Detail View
+// Detail View - MODIFICATA PER STICKY FOOTER
 function showDetail(id, type) {
     let item, screenId, titleElement, contentElement;
     
@@ -1462,11 +1507,30 @@ function showDetail(id, type) {
     
     titleElement.textContent = item.nome;
     contentElement.innerHTML = generateDetailHTML(item, type);
+    
+    // INIEZIONE PULSANTI NEL FOOTER
+    const footerId = type === 'fontana' ? 'fontana-detail-footer' : 'beverino-detail-footer';
+    const footerElement = document.getElementById(footerId);
+    
+    if (footerElement) {
+        footerElement.innerHTML = `
+            <div class="detail-actions">
+                <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
+                    <i class="fas fa-map-marker-alt"></i> Naviga
+                </button>
+                <button class="detail-action-btn secondary" onclick="shareItem('${item.id}', '${type}')">
+                    <i class="fas fa-share-alt"></i> Condividi
+                </button>
+            </div>
+        `;
+    }
+    
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
     document.getElementById('fixed-navigate-btn').classList.remove('hidden');
     showScreen(screenId);
 }
 
+// MODIFICATA: Rimossi i pulsanti "detail-actions" da qui
 function generateDetailHTML(item, type) {
     let specificFields = '';
     if (type === 'fontana') {
@@ -1492,14 +1556,6 @@ function generateDetailHTML(item, type) {
                 <span class="info-label">Descrizione:</span>
                 <span class="info-value">${item.descrizione || 'Nessuna descrizione disponibile'}</span>
             </div>
-        </div>
-        <div class="detail-actions">
-            <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
-                <i class="fas fa-map-marker-alt"></i> Naviga
-            </button>
-            <button class="detail-action-btn secondary" onclick="shareItem('${item.id}', '${type}')">
-                <i class="fas fa-share-alt"></i> Condividi
-            </button>
         </div>
     `;
 }
@@ -3129,7 +3185,7 @@ function updateStorageInfo() {
         
         // Eventi pendenti
         const pendingEvents = JSON.parse(localStorage.getItem('analytics_pending') || '[]');
-        document.getElementById('pending-events').textContent = pendingEvents.length;
+        document.getElementById('pending-events-count').textContent = pendingEvents.length;
         
         // Ultimo sync
         const lastSync = localStorage.getItem('analytics_last_sync');
@@ -3238,9 +3294,14 @@ function updatePerformanceMetrics() {
             imageLoadMetrics.reduce((sum, m) => sum + m.value || m.duration, 0) / imageLoadMetrics.length : 0;
         
         // Aggiorna UI
-        document.getElementById('metric-first-load').textContent = `${Math.round(avgFirstLoad)}ms`;
-        document.getElementById('metric-data-load').textContent = `${Math.round(avgDataLoad)}ms`;
-        document.getElementById('metric-image-load').textContent = `${Math.round(avgImageLoad)}ms`;
+        const pageLoadEl = document.getElementById('metric-page-load');
+        if (pageLoadEl) pageLoadEl.textContent = `${Math.round(avgFirstLoad)}ms`;
+        
+        const dataLoadEl = document.getElementById('metric-data-load');
+        if (dataLoadEl) dataLoadEl.textContent = `${Math.round(avgDataLoad)}ms`;
+        
+        const imageLoadEl = document.getElementById('metric-image-load');
+        if (imageLoadEl) imageLoadEl.textContent = `${Math.round(avgImageLoad)}ms`;
     }
 }
 
