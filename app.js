@@ -1048,10 +1048,6 @@ function showAdminPanel() {
     loadAdminNews();
     updateDashboardStats();
     
-    // ✅ CARICA ANALYTICS DASHBOARD
-    loadAnalyticsDashboard();
-    updatePerformanceMetrics();
-    
     const savedLog = localStorage.getItem('activityLog');
     if (savedLog) {
         activityLog = JSON.parse(savedLog);
@@ -1443,7 +1439,7 @@ function renderNewsItems(container, news) {
     });
 }
 
-// Detail View - MODIFICATA PER STICKY FOOTER
+// Detail View
 function showDetail(id, type) {
     let item, screenId, titleElement, contentElement;
     
@@ -1466,30 +1462,11 @@ function showDetail(id, type) {
     
     titleElement.textContent = item.nome;
     contentElement.innerHTML = generateDetailHTML(item, type);
-    
-    // INIEZIONE PULSANTI NEL FOOTER
-    const footerId = type === 'fontana' ? 'fontana-detail-footer' : 'beverino-detail-footer';
-    const footerElement = document.getElementById(footerId);
-    
-    if (footerElement) {
-        footerElement.innerHTML = `
-            <div class="detail-actions">
-                <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
-                    <i class="fas fa-map-marker-alt"></i> Naviga
-                </button>
-                <button class="detail-action-btn secondary" onclick="shareItem('${item.id}', '${type}')">
-                    <i class="fas fa-share-alt"></i> Condividi
-                </button>
-            </div>
-        `;
-    }
-    
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
     document.getElementById('fixed-navigate-btn').classList.remove('hidden');
     showScreen(screenId);
 }
 
-// MODIFICATA: Rimossi i pulsanti "detail-actions" da qui
 function generateDetailHTML(item, type) {
     let specificFields = '';
     if (type === 'fontana') {
@@ -1515,6 +1492,14 @@ function generateDetailHTML(item, type) {
                 <span class="info-label">Descrizione:</span>
                 <span class="info-value">${item.descrizione || 'Nessuna descrizione disponibile'}</span>
             </div>
+        </div>
+        <div class="detail-actions">
+            <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
+                <i class="fas fa-map-marker-alt"></i> Naviga
+            </button>
+            <button class="detail-action-btn secondary" onclick="shareItem('${item.id}', '${type}')">
+                <i class="fas fa-share-alt"></i> Condividi
+            </button>
         </div>
     `;
 }
