@@ -997,22 +997,48 @@
     <script src="./analytics.js"></script>
     
     <script>
-        // Service Worker Registration
+        // ✅ SERVICE WORKER REGISTRATION - VERSIONE ROBUSTA PER GITHUB PAGES
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => {
-                        console.log('Service Worker registrato con successo:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('Registrazione Service Worker fallita:', error);
-                    });
+                const swUrl = './sw.js';
+                
+                // Prima verifica se il file esiste
+                fetch(swUrl, { mode: 'no-cors' })
+                  .then(response => {
+                      // Usa no-cors mode per evitare CORS issues su GitHub Pages
+                      return navigator.serviceWorker.register(swUrl)
+                          .then(registration => {
+                              console.log('✅ Service Worker registrato con successo:', registration.scope);
+                              
+                              // Controlla aggiornamenti
+                              registration.addEventListener('updatefound', () => {
+                                  const newWorker = registration.installing;
+                                  console.log('🔄 Nuova versione del Service Worker trovata');
+                                  
+                                  newWorker.addEventListener('statechange', () => {
+                                      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                          console.log('📦 Nuova versione pronta per l\'aggiornamento');
+                                          showToast('Nuova versione disponibile! Ricarica la pagina.', 'info');
+                                      }
+                                  });
+                              });
+                              
+                              return registration;
+                          });
+                  })
+                  .catch(error => {
+                      console.warn('⚠️ Registrazione Service Worker fallita:', error.message);
+                      // Non bloccare l'app se il Service Worker fallisce
+                      showToast('Modalità offline limitata', 'warning');
+                  });
             });
+        } else {
+            console.log('ℹ️ Service Worker non supportato dal browser');
         }
         
         // Verifica installazione PWA
         window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('PWA installabile rilevata');
+            console.log('📱 PWA installabile rilevata');
             e.preventDefault();
             window.deferredPrompt = e;
         });

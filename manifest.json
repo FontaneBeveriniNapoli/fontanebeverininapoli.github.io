@@ -1,5 +1,3 @@
-[file name]: manifest.json
-[file content begin]
 {
   "name": "Fontane & Beverini - Napoli",
   "short_name": "Fontane Napoli",
@@ -165,4 +163,3 @@
     }
   ]
 }
-[file content end]
