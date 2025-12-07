@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fontane & Beverini - Napoli</title>
     
-    <!-- ✅ PWA META TAGS -->
     <meta name="application-name" content="Fontane Napoli">
     <meta name="description" content="Gestione intelligente delle risorse idriche cittadine">
     <meta name="mobile-web-app-capable" content="yes">
@@ -13,32 +12,25 @@
     <meta name="apple-mobile-web-app-title" content="Fontane Napoli">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <!-- ✅ THEME COLOR PER ANDROID & iOS -->
     <meta name="theme-color" content="#3b82f6">
     <meta name="msapplication-TileColor" content="#3b82f6">
     
-    <!-- ✅ DISPLAY MODE -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="display" content="standalone">
     
-    <!-- ✅ ORIENTATION -->
     <meta name="orientation" content="portrait">
     
-    <!-- ✅ PWA MANIFEST -->
     <link rel="manifest" href="./manifest.json">
     
-    <!-- ✅ FAVICON per browser desktop -->
     <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
     <link rel="icon" type="image/png" sizes="16x16" href="./images/favicon-16x16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="./images/favicon-32x32.png">
     
-    <!-- ✅ APPLE ICONS (iOS) -->
     <link rel="apple-touch-icon" href="./images/apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="144x144" href="./images/icona-avvio-144.png">
     <link rel="apple-touch-icon" sizes="192x192" href="./images/icona-avvio-192.png">
     <link rel="apple-touch-icon" sizes="512x512" href="./images/icona-avvio-512.png">
     
-    <!-- ✅ SPLASH SCREEN iOS -->
     <link rel="apple-touch-startup-image" 
           href="./images/icona-avvio-splash.png"
           media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
@@ -58,19 +50,15 @@
           href="./images/icona-avvio-splash.png"
           media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
     
-    <!-- ✅ THEME COLOR -->
     <meta name="theme-color" content="#3b82f6">
     
-    <!-- ✅ iOS CONFIG -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Fontane Napoli">
     
-    <!-- ✅ MICROSOFT TILE (Windows) -->
     <meta name="msapplication-TileColor" content="#3b82f6">
     <meta name="msapplication-TileImage" content="./images/icona-avvio-144.png">
     
-    <!-- ✅ STILI ESTERNI -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
@@ -79,7 +67,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Firebase SDK - COMPLETO CON ANALYTICS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -116,7 +103,6 @@
     </div>
     <div class="toast" id="toast"></div>
 
-    <!-- Modal di autenticazione admin -->
     <div class="auth-overlay" id="admin-auth">
         <div class="auth-modal">
             <h2 class="auth-title">Accesso Amministratore</h2>
@@ -165,8 +151,7 @@
             </header>
 
             <div class="admin-config-section">
-                <!-- Configurazione Firebase -->
-            </div>
+                </div>
 
             <div class="admin-tabs">
                 <button class="admin-tab-btn active" data-tab="dashboard-admin">Dashboard</button>
@@ -488,7 +473,6 @@
                 </div>
             </div>
 
-            <!-- ✅ SEZIONE ANALYTICS COMPLETA -->
             <div class="admin-tab-content" id="analytics-admin">
                 <div class="analytics-header">
                     <h3>Dashboard Analytics</h3>
@@ -592,8 +576,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="analytics-errors-table">
-                                    <!-- Popolato dinamicamente -->
-                                </tbody>
+                                    </tbody>
                             </table>
                         </div>
                     </div>
@@ -611,8 +594,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="analytics-events-table">
-                                    <!-- Popolato dinamicamente -->
-                                </tbody>
+                                    </tbody>
                             </table>
                         </div>
                     </div>
@@ -767,7 +749,6 @@
     </div>
 
     <div class="app-container">
-        <!-- Pulsante admin icona sola -->
         <div class="admin-icon-btn-container">
             <button class="admin-icon-btn" onclick="openAdminPanel()" title="Amministratore">
                 <i class="fas fa-cog"></i>
@@ -990,29 +971,53 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     
-    <!-- ✅ FILE PRINCIPALI -->
     <script src="./app.js"></script>
     
-    <!-- ✅ ANALYTICS COMPLETO -->
-    <script src="./analytics.js"></script>
+    <script src="./analytics.js" defer></script>
     
     <script>
-        // Service Worker Registration
+        // ✅ SERVICE WORKER REGISTRATION - VERSIONE ROBUSTA PER GITHUB PAGES
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => {
-                        console.log('Service Worker registrato con successo:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('Registrazione Service Worker fallita:', error);
-                    });
+                const swUrl = './sw.js';
+                
+                // Prima verifica se il file esiste
+                fetch(swUrl, { mode: 'no-cors' })
+                  .then(response => {
+                      // Usa no-cors mode per evitare CORS issues su GitHub Pages
+                      return navigator.serviceWorker.register(swUrl)
+                          .then(registration => {
+                              console.log('✅ Service Worker registrato con successo:', registration.scope);
+                              
+                              // Controlla aggiornamenti
+                              registration.addEventListener('updatefound', () => {
+                                  const newWorker = registration.installing;
+                                  console.log('🔄 Nuova versione del Service Worker trovata');
+                                  
+                                  newWorker.addEventListener('statechange', () => {
+                                      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                          console.log('📦 Nuova versione pronta per l\'aggiornamento');
+                                          showToast('Nuova versione disponibile! Ricarica la pagina.', 'info');
+                                      }
+                                  });
+                              });
+                              
+                              return registration;
+                          });
+                  })
+                  .catch(error => {
+                      console.warn('⚠️ Registrazione Service Worker fallita:', error.message);
+                      // Non bloccare l'app se il Service Worker fallisce
+                      showToast('Modalità offline limitata', 'warning');
+                  });
             });
+        } else {
+            console.log('ℹ️ Service Worker non supportato dal browser');
         }
         
         // Verifica installazione PWA
         window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('PWA installabile rilevata');
+            console.log('📱 PWA installabile rilevata');
             e.preventDefault();
             window.deferredPrompt = e;
         });

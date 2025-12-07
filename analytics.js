@@ -1,5 +1,3 @@
-[file name]: analytics.js
-[file content begin]
 // Analytics Manager
 class AnalyticsManager {
     constructor() {
@@ -732,8 +730,24 @@ class AnalyticsManager {
 // Inizializza Analytics Manager
 window.Analytics = new AnalyticsManager();
 
-// Inizializzazione automatica
+// Inizializzazione automatica MODIFICATA per attendere Firebase
 document.addEventListener('DOMContentLoaded', async () => {
+    // Funzione helper per attendere Firebase
+    const waitForFirebase = (retries = 0) => {
+        return new Promise((resolve) => {
+            if (window.app && window.firebaseAnalytics) {
+                resolve();
+            } else if (retries > 20) { // Timeout dopo ~10 secondi
+                console.warn('[Analytics] Firebase non disponibile dopo timeout. Avvio limitato.');
+                resolve();
+            } else {
+                setTimeout(() => {
+                    waitForFirebase(retries + 1).then(resolve);
+                }, 500);
+            }
+        });
+    };
+
     try {
         // Wait for Service Worker to be ready
         if ('serviceWorker' in navigator) {
@@ -744,6 +758,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.warn('[Analytics] Service Worker non disponibile:', error);
             }
         }
+        
+        // ATTESA ESPLICITA DI FIREBASE
+        await waitForFirebase();
         
         // Initialize analytics
         await window.Analytics.initialize();
@@ -880,4 +897,3 @@ window.analyticsFunctions = {
         return null;
     }
 };
-[file content end]

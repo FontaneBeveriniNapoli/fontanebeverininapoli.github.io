@@ -1,5 +1,3 @@
-[file name]: sw.js
-[file content begin]
 const CACHE_NAME = 'fontane-beverini-v2.0.2';
 const STATIC_CACHE = 'static-v2';
 const DYNAMIC_CACHE = 'dynamic-v2';
@@ -10,6 +8,7 @@ const STATIC_ASSETS = [
   './style.css',
   './app.js',
   './analytics.js',
+  './firebase-init.js',
   './manifest.json',
   './images/logo-app.png',
   './images/logo-comune.png',
@@ -36,7 +35,7 @@ const EXTERNAL_ASSETS = [
   'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png'
 ];
 
-// Install Service Worker
+// Install Service Worker - VERSIONE CORRETTA PER GITHUB PAGES
 self.addEventListener('install', event => {
   console.log('[Service Worker] Installazione in corso...');
   
@@ -44,9 +43,23 @@ self.addEventListener('install', event => {
     caches.open(STATIC_CACHE)
       .then(cache => {
         console.log('[Service Worker] Cache asset statici');
-        return cache.addAll(STATIC_ASSETS).catch(error => {
-          console.warn('[Service Worker] Errore cache asset statici:', error);
+        // Cache solo i file che esistono realmente, gestendo errori singolarmente
+        const cachePromises = STATIC_ASSETS.map(url => {
+          return fetch(url, { mode: 'no-cors' })
+            .then(response => {
+              if (response.ok || response.type === 'opaque') {
+                return cache.put(url, response.clone());
+              }
+              console.warn(`[Service Worker] Asset non trovato: ${url}`);
+              return Promise.resolve();
+            })
+            .catch(error => {
+              console.warn(`[Service Worker] Errore caching ${url}:`, error.message);
+              return Promise.resolve(); // Non bloccare l'installazione
+            });
         });
+        
+        return Promise.all(cachePromises);
       })
       .then(() => {
         console.log('[Service Worker] Installazione completata');
@@ -54,6 +67,7 @@ self.addEventListener('install', event => {
       })
       .catch(error => {
         console.error('[Service Worker] Errore installazione:', error);
+        return self.skipWaiting(); // IMPORTANTE: Salta comunque l'attesa
       })
   );
 });
@@ -83,7 +97,7 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch Strategy: Cache First with Network Fallback
+// Fetch Strategy: Cache First with Network Fallback - VERSIONE ROBUSTA
 self.addEventListener('fetch', event => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
@@ -135,22 +149,12 @@ self.addEventListener('fetch', event => {
     return;
   }
   
+  // Per GitHub Pages, gestisci le richieste in modo più robusto
   event.respondWith(
     caches.match(event.request)
       .then(cachedResponse => {
-        // If cached, return it and update in background
+        // If cached, return it
         if (cachedResponse) {
-          // Background update for HTML files
-          if (event.request.headers.get('accept')?.includes('text/html')) {
-            fetch(event.request)
-              .then(response => {
-                if (response.ok) {
-                  caches.open(DYNAMIC_CACHE)
-                    .then(cache => cache.put(event.request, response));
-                }
-              })
-              .catch(() => {}); // Ignore errors
-          }
           return cachedResponse;
         }
         
@@ -158,7 +162,14 @@ self.addEventListener('fetch', event => {
         return fetch(event.request)
           .then(response => {
             // Don't cache error responses
-            if (!response.ok) return response;
+            if (!response.ok) {
+              // Se la richiesta fallisce e stiamo cercando index.html, serviamo una versione offline
+              if (event.request.url.includes('index.html') || 
+                  event.request.headers.get('accept')?.includes('text/html')) {
+                return caches.match('./index.html');
+              }
+              return response;
+            }
             
             // Clone and cache successful responses
             const responseToCache = response.clone();
@@ -168,7 +179,7 @@ self.addEventListener('fetch', event => {
             return response;
           })
           .catch(error => {
-            console.warn('[Service Worker] Fetch fallback:', error);
+            console.warn('[Service Worker] Fetch fallback:', error.message);
             
             // Return offline page for HTML requests
             if (event.request.headers.get('accept')?.includes('text/html')) {
@@ -178,6 +189,13 @@ self.addEventListener('fetch', event => {
             // Return placeholder for images
             if (event.request.destination === 'image') {
               return caches.match('./images/sfondo-home.jpg');
+            }
+
+            // MODIFICA: Per evitare SyntaxError sugli script
+            if (event.request.destination === 'script') {
+                 return new Response('/* Offline script placeholder */', {
+                    headers: { 'Content-Type': 'application/javascript' }
+                 });
             }
             
             // Return offline message for other requests
@@ -443,4 +461,3 @@ self.addEventListener('error', event => {
 self.addEventListener('unhandledrejection', event => {
   console.error('[Service Worker] Promise non gestita:', event.reason);
 });
-[file content end]
