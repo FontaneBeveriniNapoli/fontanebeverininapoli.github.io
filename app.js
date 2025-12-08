@@ -1071,7 +1071,7 @@ function logoutAdmin() {
 }
 
 // Navigation and Screen Management
-function showScreen(screenId) {
+function showScreen(screenId, skipHistory = false) {
     const currentScreen = screenHistory[screenHistory.length - 1];
     
     if (currentScreen === screenId) return;
@@ -1088,9 +1088,11 @@ function showScreen(screenId) {
             targetScreen.classList.add('active');
         }, 10);
         
-        screenHistory.push(screenId);
-        if (screenHistory.length > 10) {
-            screenHistory = screenHistory.slice(-10);
+        if (!skipHistory) {
+            screenHistory.push(screenId);
+            if (screenHistory.length > 10) {
+                screenHistory = screenHistory.slice(-10);
+            }
         }
         
         window.scrollTo(0, 0);
@@ -1099,28 +1101,44 @@ function showScreen(screenId) {
     
     updateTabBar(screenId);
     document.getElementById('fixed-navigate-btn').classList.add('hidden');
+    
+    // ✅ AGGIUNGI ALLA HISTORY DEL BROWSER (solo se non stiamo tornando indietro)
+    if (!skipHistory) {
+        history.pushState({ screen: screenId }, '', `#${screenId}`);
+    }
 }
 
-function goBack() {
-    if (screenHistory.length > 1) {
-        screenHistory.pop();
-        const previousScreen = screenHistory[screenHistory.length - 1];
-        
-        document.querySelectorAll('.screen').forEach(screen => {
-            screen.classList.remove('active');
-        });
-        
-        const targetScreen = document.getElementById(previousScreen);
-        if (targetScreen) {
-            targetScreen.style.display = 'block';
-            setTimeout(() => {
-                targetScreen.classList.add('active');
-            }, 10);
-            initializeScreenContent(previousScreen);
+// ✅ FUNZIONE HELPER PER CHIUDERE MODALI
+function closeAnyOpenModal() {
+    const modals = [
+        { element: document.getElementById('admin-panel'), close: closeAdminPanel },
+        { element: document.getElementById('navigation-modal'), close: closeNavigationModal },
+        { element: document.getElementById('info-modal'), close: closeInfoModal },
+        { element: document.getElementById('admin-auth'), close: closeAdminAuth }
+    ];
+    
+    for (const modal of modals) {
+        if (modal.element && modal.element.style.display === 'flex') {
+            modal.close();
+            return true; // Modal chiuso
         }
-        updateTabBar(previousScreen);
+    }
+    return false; // Nessun modal aperto
+}
+
+// ✅ GESTIONE PULSANTE INDIETRO ANDROID
+function goBack() {
+    // Prima chiudi eventuali modali
+    if (closeAnyOpenModal()) {
+        return;
+    }
+    
+    // Poi gestisci la navigazione
+    if (screenHistory.length > 1) {
+        history.back(); // Triggera l'evento popstate
     } else {
-        showScreen('home-screen');
+        // Siamo alla home - lascia che il browser gestisca (uscita dall'app)
+        history.back();
     }
 }
 
@@ -1440,7 +1458,7 @@ function renderNewsItems(container, news) {
 }
 
 // Detail View
-function showDetail(id, type) {
+function showDetail(id, type, skipHistory = false) {
     let item, screenId, titleElement, contentElement;
     
     if (type === 'fontana') {
@@ -1464,7 +1482,7 @@ function showDetail(id, type) {
     contentElement.innerHTML = generateDetailHTML(item, type);
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
     document.getElementById('fixed-navigate-btn').classList.remove('hidden');
-    showScreen(screenId);
+    showScreen(screenId, skipHistory);
 }
 
 function generateDetailHTML(item, type) {
@@ -2069,7 +2087,6 @@ function editFontana(id) {
     showAdminTab('fontane-admin');
 }
 
-// MODIFICA: saveFontana con supporto offline
 async function saveFontana(e) {
     e.preventDefault();
     
@@ -2241,7 +2258,6 @@ function editBeverino(id) {
     showAdminTab('beverini-admin');
 }
 
-// MODIFICA: saveBeverino con supporto offline
 async function saveBeverino(e) {
     e.preventDefault();
     
@@ -2833,81 +2849,12 @@ function handleUrlParameters() {
     const fontanaId = urlParams.get('fontana');
     const beverinoId = urlParams.get('beverino');
     if (fontanaId) {
-        showDetail(fontanaId, 'fontana');
+        showDetail(fontanaId, 'fontana', true); // ✅ TRUE per skipHistory
     } else if (beverinoId) {
-        showDetail(beverinoId, 'beverino');
+        showDetail(beverinoId, 'beverino', true); // ✅ TRUE per skipHistory
     }
 }
 
-// Initialize App
-document.addEventListener('DOMContentLoaded', function() {
-    loadLocalData();
-    checkOnlineStatus();
-    showScreen('home-screen');
-    handleUrlParameters();
-    
-    setTimeout(async () => {
-        try {
-            await loadFirebaseData('fontane');
-            await loadFirebaseData('beverini');
-            await loadFirebaseData('news');
-            
-            if (document.getElementById('fontane-list').innerHTML.includes('Caricamento')) {
-                loadFontane();
-            }
-            if (document.getElementById('beverini-list').innerHTML.includes('Caricamento')) {
-                loadBeverini();
-            }
-            if (document.getElementById('news-list').innerHTML.includes('Caricamento')) {
-                loadNews();
-            }
-            
-        } catch (error) {
-            showToast('Utilizzo dati locali', 'info');
-        }
-    }, 1000);
-    
-    document.getElementById('admin-password').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            checkAdminAuth();
-        }
-    });
-    
-    document.getElementById('admin-auth').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeAdminAuth();
-        }
-    });
-    
-    window.addEventListener('online', checkOnlineStatus);
-    window.addEventListener('offline', checkOnlineStatus);
-    
-    document.addEventListener('error', function(e) {
-        if (e.target.tagName === 'IMG') {
-            e.target.src = './images/sfondo-home.jpg';
-        }
-    }, true);
-    
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && document.getElementById('admin-panel').style.display === 'flex') {
-            closeAdminPanel();
-        }
-    });
-    
-    document.getElementById('admin-panel').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeAdminPanel();
-        }
-    });
-    
-    // Inizializza nuove funzionalità
-    initializeOfflineSync();
-    setTimeout(() => {
-        setupLazyLoading();
-    }, 1000);
-    
-    logActivity('Applicazione avviata');
-});
 // ============================================
 // ANALYTICS DASHBOARD FUNCTIONS
 // ============================================
@@ -3235,7 +3182,7 @@ function updatePerformanceMetrics() {
             dataLoadMetrics.reduce((sum, m) => sum + m.duration, 0) / dataLoadMetrics.length : 0;
         
         const avgImageLoad = imageLoadMetrics.length > 0 ? 
-            imageLoadMetrics.reduce((sum, m) => sum + m.value || m.duration, 0) / imageLoadMetrics.length : 0;
+            imageLoadMetrics.reduce((sum, m) => m.value || m.duration, 0) / imageLoadMetrics.length : 0;
         
         // Aggiorna UI
         document.getElementById('metric-first-load').textContent = `${Math.round(avgFirstLoad)}ms`;
@@ -3413,3 +3360,134 @@ function showAdminPanel() {
         updateActivityLog();
     }
 }
+
+// ============================================
+// ✅ GESTIONE PULSANTE INDIETRO ANDROID (NUOVO)
+// ============================================
+
+// Listener per evento popstate (pulsante indietro browser/Android)
+window.addEventListener('popstate', function(event) {
+    // Prima chiudi eventuali modali
+    if (closeAnyOpenModal()) {
+        return;
+    }
+    
+    // Determina quale schermata mostrare
+    let targetScreen = 'home-screen';
+    if (event.state && event.state.screen) {
+        targetScreen = event.state.screen;
+    }
+    
+    // Mostra la schermata SENZA aggiungerla alla history (evita loop)
+    showScreen(targetScreen, true);
+    
+    // Aggiorna screenHistory per mantenerlo sincronizzato
+    if (screenHistory.length > 1 && !event.state) {
+        screenHistory.pop();
+    }
+});
+
+// ✅ PREVENZIONE USCITA ACCIDENTALE DALL'APP (DOPPIO TAP)
+let backButtonPressCount = 0;
+let backButtonTimer = null;
+
+window.addEventListener('beforeunload', function(e) {
+    // Se siamo in una schermata interna, preveni l'uscita
+    if (screenHistory.length > 1) {
+        e.preventDefault();
+        e.returnValue = '';
+        goBack();
+        return '';
+    }
+    
+    // Se siamo alla home, mostra conferma solo se l'utente preme due volte rapidamente
+    backButtonPressCount++;
+    if (backButtonPressCount === 1) {
+        backButtonTimer = setTimeout(() => {
+            backButtonPressCount = 0;
+        }, 2000);
+        
+        // Mostra toast invece di alert per UX migliore
+        showToast('Premi di nuovo per uscire', 'warning', 2000);
+        event.preventDefault();
+        return false;
+    } else {
+        clearTimeout(backButtonTimer);
+        backButtonPressCount = 0;
+        // Permetti l'uscita
+        return;
+    }
+});
+
+// ============================================
+// Inizializzazione App
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadLocalData();
+    checkOnlineStatus();
+    showScreen('home-screen', true); // ✅ TRUE per skipHistory all'inizio
+    handleUrlParameters();
+    
+    setTimeout(async () => {
+        try {
+            await loadFirebaseData('fontane');
+            await loadFirebaseData('beverini');
+            await loadFirebaseData('news');
+            
+            if (document.getElementById('fontane-list').innerHTML.includes('Caricamento')) {
+                loadFontane();
+            }
+            if (document.getElementById('beverini-list').innerHTML.includes('Caricamento')) {
+                loadBeverini();
+            }
+            if (document.getElementById('news-list').innerHTML.includes('Caricamento')) {
+                loadNews();
+            }
+            
+        } catch (error) {
+            showToast('Utilizzo dati locali', 'info');
+        }
+    }, 1000);
+    
+    document.getElementById('admin-password').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            checkAdminAuth();
+        }
+    });
+    
+    document.getElementById('admin-auth').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAdminAuth();
+        }
+    });
+    
+    window.addEventListener('online', checkOnlineStatus);
+    window.addEventListener('offline', checkOnlineStatus);
+    
+    document.addEventListener('error', function(e) {
+        if (e.target.tagName === 'IMG') {
+            e.target.src = './images/sfondo-home.jpg';
+        }
+    }, true);
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.getElementById('admin-panel').style.display === 'flex') {
+            closeAdminPanel();
+        }
+    });
+    
+    document.getElementById('admin-panel').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAdminPanel();
+        }
+    });
+    
+    // Inizializza nuove funzionalità
+    initializeOfflineSync();
+    setTimeout(() => {
+        setupLazyLoading();
+    }, 1000);
+    
+    logActivity('Applicazione avviata');
+});
