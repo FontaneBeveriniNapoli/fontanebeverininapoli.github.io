@@ -15,18 +15,13 @@
     padding: 0;
     box-sizing: border-box;
 }
-html, body {
-    height: 100%;
-    overscroll-behavior-y: none; /* Evita il rimbalzo dell'intera pagina */
-}
 body {
     font-family: 'Inter', sans-serif;
     background: var(--background);
     color: var(--dark-text);
     line-height: 1.6;
     min-height: 100vh;
-    min-height: 100dvh;
-    overflow: hidden; /* Blocca lo scroll del body, usiamo quello di .screen */
+    overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
     margin: 0;
     padding: 0;
@@ -34,7 +29,7 @@ body {
 .app-container {
     max-width: 100%;
     margin: 0 auto;
-    height: 100%;
+    min-height: 100vh;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -44,52 +39,29 @@ body {
     flex: 1;
     width: 100%;
     position: relative;
-    height: 100%;
+    min-height: calc(100vh - 60px); /* Sottrae altezza tab bar */
     opacity: 0;
     transition: opacity 0.3s ease;
-    /* ABILITA SCORRIMENTO FLUIDO */
-    overflow-y: auto; 
-    -webkit-overflow-scrolling: touch; /* Fondamentale per inerzia su mobile */
-    scroll-behavior: smooth;
 }
 .screen.active {
     display: flex !important;
     flex-direction: column;
     opacity: 1;
 }
-
-/* --- HOME PAGE STABILIZZATA --- */
 #home-screen {
-    background: transparent;
-    position: relative;
+    background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
+                url('./images/sfondo-home.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     padding: 30px 20px;
     flex: 1;
-    height: 100%;
-    overflow-y: auto; /* Permette scroll se contenuto eccede */
-    -webkit-overflow-scrolling: touch;
+    min-height: calc(100vh - 60px);
 }
-
-#home-screen::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
-                url('./images/sfondo-home.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    pointer-events: none;
-}
-/* ----------------------------- */
-
 .logo-container {
     margin-bottom: 25px;
     text-align: left;
@@ -315,12 +287,14 @@ body {
         max-width: 100%;
     }
 }
+/* Stile per il pulsante admin icona sola */
 .admin-icon-btn-container {
     position: absolute;
     top: 20px;
     right: 20px;
     z-index: 1000;
 }
+
 .admin-icon-btn {
     width: 40px;
     height: 40px;
@@ -339,6 +313,7 @@ body {
     position: relative;
     overflow: hidden;
 }
+
 .admin-icon-btn::before {
     content: '';
     position: absolute;
@@ -349,25 +324,32 @@ body {
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     transition: left 0.5s;
 }
+
 .admin-icon-btn:hover::before {
     left: 100%;
 }
+
 .admin-icon-btn:hover {
     background: rgba(255, 255, 255, 0.25);
     border-color: rgba(255, 255, 255, 0.7);
     transform: scale(1.1);
 }
+
 .admin-icon-btn:active {
     transform: scale(0.95);
 }
+
 .admin-icon-btn i {
     color: var(--primary-purple);
 }
+
+/* Per desktop */
 @media (min-width: 1024px) {
     .admin-icon-btn-container {
         top: 30px;
         right: 30px;
     }
+    
     .admin-icon-btn {
         width: 45px;
         height: 45px;
@@ -388,7 +370,7 @@ body {
     flex-shrink: 0;
 }
 #home-screen .app-header {
-    background: transparent;
+    background: linear-gradient(135deg, var(--primary-blue), #1d4ed8);
 }
 #fontane-screen .app-header,
 #fontana-detail-screen .app-header {
@@ -426,25 +408,27 @@ body {
     font-size: 1rem;
     opacity: 0.9;
 }
-/* ABILITA SCORRIMENTO FLUIDO ANCHE QUI */
+/* Padding aumentato per liste */
 .content-area {
     padding: 20px;
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 120px;
-    -webkit-overflow-scrolling: touch;
+    padding-bottom: 120px; 
 }
 .content-area::-webkit-scrollbar {
     width: 6px;
 }
+
 .content-area::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 10px;
 }
+
 .content-area::-webkit-scrollbar-thumb {
     background: #c1c1c1;
     border-radius: 10px;
 }
+
 .content-area::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
@@ -635,12 +619,12 @@ body {
     display: flex;
     flex-direction: column;
 }
+/* MODIFICA: Aggiunto padding-bottom per permettere lo scroll fino ai pulsanti */
 .detail-content {
     padding: 20px;
     flex: 1;
     overflow-y: auto;
     padding-bottom: 140px;
-    -webkit-overflow-scrolling: touch; /* Momentum scrolling */
 }
 .detail-image {
     width: 100%;
@@ -674,6 +658,7 @@ body {
     min-width: 100px;
     flex-shrink: 0;
 }
+/* word-break per testo lungo */
 .info-value {
     color: var(--light-text);
     flex: 1;
@@ -682,6 +667,7 @@ body {
     white-space: pre-wrap;
     min-width: 0;
 }
+/* Pulsante navigazione alzato */
 .fixed-navigate-btn {
     position: fixed;
     bottom: 90px;
@@ -1222,6 +1208,7 @@ body {
     background: #9ca3af;
     cursor: not-allowed;
 }
+/* Alzato FAB admin */
 .admin-fab {
     position: fixed;
     bottom: 100px;
@@ -1285,6 +1272,7 @@ body {
     color: var(--dark-text);
     font-weight: 600;
 }
+/* Alzato controlli mappa */
 .map-controls {
     position: absolute;
     bottom: 110px;
