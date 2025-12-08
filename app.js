@@ -3553,3 +3553,259 @@ document.addEventListener('DOMContentLoaded', function() {
     
     logActivity('Applicazione avviata');
 });
+// ===== SPLASH SCREEN MANAGEMENT (VERSIONE CON PROGRESS BAR) =====
+
+let splashProgressInterval;
+let splashProgress = 0;
+let splashMinTime = 1500; // Mostra per almeno 1.5 secondi
+let splashStartTime = Date.now();
+
+// Funzione per nascondere lo splash screen
+function hideSplashScreen() {
+    clearInterval(splashProgressInterval);
+    
+    const splashScreen = document.getElementById('splash-screen');
+    if (splashScreen) {
+        splashScreen.classList.add('hidden');
+        
+        // Rimuovi completamente dopo l'animazione
+        setTimeout(() => {
+            splashScreen.style.display = 'none';
+            console.log('✅ Splash screen nascosto');
+            
+            // Inizializza l'app dopo che lo splash screen è nascosto
+            initializeAppAfterSplash();
+        }, 500);
+    }
+}
+
+// Funzione per mostrare lo splash screen
+function showSplashScreen() {
+    const splashScreen = document.getElementById('splash-screen');
+    if (splashScreen) {
+        splashScreen.style.display = 'flex';
+        splashScreen.classList.remove('hidden');
+        splashScreen.style.opacity = '1';
+        splashScreen.style.visibility = 'visible';
+        
+        // Resetta il progresso
+        splashProgress = 0;
+        splashStartTime = Date.now();
+        updateSplashProgress(10); // Inizia subito con 10%
+    }
+}
+
+// Aggiorna la barra di progresso
+function updateSplashProgress(increment) {
+    splashProgress += increment;
+    if (splashProgress > 100) splashProgress = 100;
+    
+    const progressBar = document.querySelector('.splash-progress-bar');
+    if (progressBar) {
+        progressBar.style.width = splashProgress + '%';
+    }
+    
+    // Aggiorna il testo
+    const splashText = document.querySelector('.splash-text');
+    if (splashText) {
+        if (splashProgress < 30) {
+            splashText.textContent = 'Caricamento iniziale...';
+        } else if (splashProgress < 60) {
+            splashText.textContent = 'Caricamento dati...';
+        } else if (splashProgress < 90) {
+            splashText.textContent = 'Preparazione interfaccia...';
+        } else {
+            splashText.textContent = 'Completamento...';
+        }
+    }
+}
+
+// Inizializza l'app dopo lo splash screen
+function initializeAppAfterSplash() {
+    console.log('🚀 App inizializzata dopo splash screen');
+    
+    // Inizializza tutto qui...
+    if (typeof loadAllData === 'function') {
+        loadAllData();
+    }
+    
+    // Controlla se c'è un parametro admin nell'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('admin') && urlParams.get('admin') === 'true') {
+        setTimeout(() => {
+            openAdminAuth();
+        }, 300);
+    }
+    
+    // Se ci sono altri parametri, gestiscili
+    if (urlParams.has('screen')) {
+        const screen = urlParams.get('screen');
+        setTimeout(() => {
+            showScreen(screen + '-screen');
+        }, 400);
+    }
+    
+    // Verifica installazione PWA
+    window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('📱 PWA installabile rilevata');
+        e.preventDefault();
+        window.deferredPrompt = e;
+    });
+}
+
+// Gestione del caricamento della pagina
+window.addEventListener('load', function() {
+    console.log('📄 Pagina completamente caricata');
+    
+    // Inizia la progress bar
+    splashProgressInterval = setInterval(() => {
+        const elapsed = Date.now() - splashStartTime;
+        const progressNeeded = Math.min(90, Math.floor((elapsed / splashMinTime) * 100));
+        
+        if (progressNeeded > splashProgress) {
+            updateSplashProgress(progressNeeded - splashProgress);
+        }
+        
+        // Se è passato il tempo minimo e abbiamo raggiunto il 90%, completa
+        if (elapsed >= splashMinTime && splashProgress >= 90) {
+            updateSplashProgress(10); // Completa al 100%
+            clearInterval(splashProgressInterval);
+            hideSplashScreen();
+        }
+    }, 100);
+    
+    // Fallback: nascondi dopo 3 secondi massimo
+    setTimeout(() => {
+        if (document.getElementById('splash-screen') && 
+            !document.getElementById('splash-screen').classList.contains('hidden')) {
+            console.log('⏱️ Timeout splash screen (3s)');
+            hideSplashScreen();
+        }
+    }, 3000);
+});
+
+// Nascondi lo splash screen anche se c'è un errore di caricamento
+window.addEventListener('error', function(e) {
+    console.error('❌ Errore durante il caricamento:', e.message);
+    
+    const splashText = document.querySelector('.splash-text');
+    if (splashText) {
+        splashText.textContent = 'Errore di caricamento, riprovare...';
+        splashText.style.color = '#ff6b6b';
+    }
+    
+    setTimeout(() => {
+        hideSplashScreen();
+    }, 1000);
+});
+
+// Gestisci il caso in cui la pagina viene caricata dalla cache
+if (document.readyState === 'complete') {
+    console.log('⚡ Pagina già caricata dalla cache');
+    
+    // Mostra comunque lo splash screen brevemente per coerenza
+    showSplashScreen();
+    setTimeout(() => {
+        updateSplashProgress(100);
+        setTimeout(hideSplashScreen, 500);
+    }, 800);
+}
+
+// Verifica quando la pagina è diventata interattiva
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 DOM completamente caricato e parsato');
+    updateSplashProgress(20); // Aggiorna progresso
+});
+
+// Monitora il caricamento delle risorse
+window.addEventListener('DOMContentLoaded', function() {
+    // Conta le risorse ancora da caricare
+    const resources = document.querySelectorAll('img, script, link[rel="stylesheet"]');
+    let loadedResources = 0;
+    const totalResources = resources.length;
+    
+    resources.forEach(resource => {
+        if (resource.complete || resource.readyState === 'complete') {
+            loadedResources++;
+        } else {
+            resource.addEventListener('load', function() {
+                loadedResources++;
+                const progress = Math.min(70, 20 + (loadedResources / totalResources) * 50);
+                updateSplashProgress(progress - splashProgress);
+            });
+            
+            resource.addEventListener('error', function() {
+                loadedResources++;
+                // Non bloccare per errori di risorse
+            });
+        }
+    });
+    
+    // Se tutte le risorse sono già caricate
+    if (loadedResources === totalResources) {
+        updateSplashProgress(70);
+    }
+});
+
+// ===== GESTIONE BACK BUTTON PER SPLASH =====
+
+// Impedisci il back button quando lo splash screen è visibile
+let splashVisible = true;
+
+// Sovrascrivi la funzione goBack per gestire lo splash screen
+const originalGoBack = window.goBack;
+if (originalGoBack) {
+    window.goBack = function() {
+        if (!splashVisible) {
+            originalGoBack();
+        } else {
+            console.log('🔙 Back button bloccato durante splash screen');
+        }
+    };
+}
+
+// Aggiorna lo stato quando lo splash screen è nascosto
+const splashScreen = document.getElementById('splash-screen');
+if (splashScreen) {
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'class') {
+                if (splashScreen.classList.contains('hidden')) {
+                    splashVisible = false;
+                    console.log('🎯 Splash screen nascosto, back button abilitato');
+                } else {
+                    splashVisible = true;
+                }
+            }
+        });
+    });
+    
+    observer.observe(splashScreen, { attributes: true });
+}
+
+// Pulsante di emergenza per saltare lo splash screen (debug)
+document.addEventListener('keydown', function(e) {
+    // Premendo ESC durante lo splash screen, lo salti
+    if (e.key === 'Escape' && splashVisible) {
+        console.log('🚨 Splash screen saltato con ESC');
+        hideSplashScreen();
+    }
+});
+
+// Touch per saltare splash screen (doppio tap)
+let lastTap = 0;
+document.addEventListener('touchend', function(e) {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap;
+    
+    if (tapLength < 500 && tapLength > 0 && splashVisible) {
+        // Doppio tap rilevato
+        console.log('👆 Doppio tap per saltare splash screen');
+        hideSplashScreen();
+        e.preventDefault();
+    }
+    
+    lastTap = currentTime;
+});
+
+console.log('✨ Sistema splash screen inizializzato');
