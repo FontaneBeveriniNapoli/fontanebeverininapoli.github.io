@@ -96,7 +96,7 @@
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <!-- SPLASH SCREEN - Aggiungi questo all'inizio -->
+    <!-- 1. SPLASH SCREEN -->
     <div id="splash-screen">
         <div class="splash-container">
             <img src="./images/icona-avvio-splash.png" alt="ABC Napoli F&B" class="splash-image">
@@ -107,11 +107,14 @@
         </div>
     </div>
     
+    <!-- 2. INDICATORI DI STATO -->
     <div class="offline-indicator" id="offline-indicator">
         <i class="fas fa-wifi"></i> Connessione assente
     </div>
     <div class="toast" id="toast"></div>
 
+    <!-- 3. MODALI E OVERLAY -->
+    <!-- Modale autenticazione admin -->
     <div class="auth-overlay" id="admin-auth">
         <div class="auth-modal">
             <h2 class="auth-title">Accesso Amministratore</h2>
@@ -123,6 +126,7 @@
         </div>
     </div>
 
+    <!-- Modale di navigazione -->
     <div class="modal-overlay" id="navigation-modal">
         <div class="modal-content">
             <h3 class="modal-title">Scegli l'app di navigazione</h3>
@@ -140,6 +144,7 @@
         </div>
     </div>
 
+    <!-- Modale info -->
     <div class="modal-overlay" id="info-modal">
         <div class="modal-content">
             <h3 class="modal-title" id="info-modal-title">Informazioni</h3>
@@ -150,6 +155,7 @@
         </div>
     </div>
 
+    <!-- Pannello admin -->
     <div class="admin-panel-overlay" id="admin-panel">
         <div class="admin-panel-content">
             <header class="admin-panel-header">
@@ -160,7 +166,8 @@
             </header>
 
             <div class="admin-config-section">
-                </div>
+                <!-- Configurazione -->
+            </div>
 
             <div class="admin-tabs">
                 <button class="admin-tab-btn active" data-tab="dashboard-admin">Dashboard</button>
@@ -757,13 +764,17 @@
         </div>
     </div>
 
+    <!-- 4. CONTAINER PRINCIPALE APP -->
     <div class="app-container">
+        <!-- Pulsante admin -->
         <div class="admin-icon-btn-container">
             <button class="admin-icon-btn" onclick="openAdminPanel()" title="Amministratore">
                 <i class="fas fa-cog"></i>
             </button>
         </div>
 
+        <!-- 5. SCHERMATE PRINCIPALI -->
+        <!-- Home screen -->
         <div class="screen active" id="home-screen">
             <div class="logo-container">
                 <div class="app-logo logo-with-image"></div>
@@ -799,6 +810,7 @@
             </div>
         </div>
 
+        <!-- Fontane screen -->
         <div class="screen list-screen" id="fontane-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
@@ -830,11 +842,12 @@
                     </div>
                 </div>
             </div>
-            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
+            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn-fontane" onclick="navigateToFixed()">
                 <i class="fas fa-map-marker-alt"></i> Naviga Verso
             </button>
         </div>
 
+        <!-- Beverini screen -->
         <div class="screen list-screen" id="beverini-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
@@ -866,11 +879,12 @@
                     </div>
                 </div>
             </div>
-            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
+            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn-beverini" onclick="navigateToFixed()">
                 <i class="fas fa-map-marker-alt"></i> Naviga Verso
             </button>
         </div>
 
+        <!-- News screen -->
         <div class="screen list-screen" id="news-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
@@ -887,6 +901,7 @@
             </div>
         </div>
 
+        <!-- Fontana detail screen -->
         <div class="screen detail-screen" id="fontana-detail-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
@@ -897,11 +912,12 @@
                     <div class="loading-spinner"></div>
                 </div>
             </div>
-            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
+            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn-fontana-detail" onclick="navigateToFixed()">
                 <i class="fas fa-map-marker-alt"></i> Naviga Verso
             </button>
         </div>
 
+        <!-- Beverino detail screen -->
         <div class="screen detail-screen" id="beverino-detail-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
@@ -912,11 +928,12 @@
                     <div class="loading-spinner"></div>
                 </div>
             </div>
-            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
+            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn-beverino-detail" onclick="navigateToFixed()">
                 <i class="fas fa-map-marker-alt"></i> Naviga Verso
             </button>
         </div>
 
+        <!-- Mappa screen -->
         <div class="screen" id="mappa-screen">
             <header class="app-header" style="position: absolute; top: 0; left: 0; right: 0; z-index: 1000; padding: 15px 20px;">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
@@ -953,6 +970,7 @@
             </div>
         </div>
 
+        <!-- 6. TAB BAR -->
         <div class="tab-bar">
             <button class="tab-btn active" data-target="home-screen" onclick="showScreen('home-screen')">
                 <span class="tab-icon"><i class="fas fa-home"></i></span>
@@ -977,6 +995,7 @@
         </div>
     </div>
 
+    <!-- 7. SCRIPTS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     
