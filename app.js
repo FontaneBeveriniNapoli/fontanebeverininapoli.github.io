@@ -1146,6 +1146,14 @@ function showScreen(screenId) {
     
     updateTabBar(screenId);
     document.getElementById('fixed-navigate-btn').classList.add('hidden');
+    
+    // ** Aggiunto: Pulisci il backPressTimer se navighiamo in avanti **
+    if (backPressTimer) {
+        clearTimeout(backPressTimer);
+        backPressTimer = null;
+        const toast = document.getElementById('toast');
+        if (toast) toast.classList.remove('show');
+    }
 }
 
 function goBack() {
@@ -3703,7 +3711,7 @@ window.addEventListener('load', function() {
         }
     }, 100);
     
-    // Fallback: nascondi dopo 5 secondi massimo (MODIFICATO per i problemi su desktop/mobile)
+    // Fallback: nascondi dopo 5 secondi massimo (Timeout aumentato per stabilità)
     setTimeout(() => {
         if (document.getElementById('splash-screen') && 
             !document.getElementById('splash-screen').classList.contains('hidden')) {
