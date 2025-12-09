@@ -3703,14 +3703,14 @@ window.addEventListener('load', function() {
         }
     }, 100);
     
-    // Fallback: nascondi dopo 3 secondi massimo (RIPRISTINATO)
+    // Fallback: nascondi dopo 5 secondi massimo (MODIFICATO per i problemi su desktop/mobile)
     setTimeout(() => {
         if (document.getElementById('splash-screen') && 
             !document.getElementById('splash-screen').classList.contains('hidden')) {
-            console.log('⏱️ Timeout splash screen (3s)');
+            console.log('⏱️ Timeout splash screen (5s)');
             hideSplashScreen();
         }
-    }, 3000);
+    }, 5000);
 });
 
 // Nascondi lo splash screen anche se c'è un errore di caricamento
