@@ -1145,9 +1145,11 @@ function showScreen(screenId) {
     }
     
     updateTabBar(screenId);
+    
+    // CORREZIONE: Nascondi sempre il pulsante di navigazione quando si cambia schermata
     document.getElementById('fixed-navigate-btn').classList.add('hidden');
     
-    // ** Aggiunto: Pulisci il backPressTimer se navighiamo in avanti **
+    // Pulisci il backPressTimer se navighiamo in avanti dalla Home
     if (backPressTimer) {
         clearTimeout(backPressTimer);
         backPressTimer = null;
@@ -1157,6 +1159,9 @@ function showScreen(screenId) {
 }
 
 function goBack() {
+    // CORREZIONE: Nascondi subito il pulsante di navigazione all'inizio di goBack
+    document.getElementById('fixed-navigate-btn').classList.add('hidden');
+    
     if (screenHistory.length > 1) {
         screenHistory.pop();
         const previousScreen = screenHistory[screenHistory.length - 1];
