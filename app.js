@@ -1112,19 +1112,17 @@ function logoutAdmin() {
     logActivity('Logout amministratore');
 }
 
-// Navigation and Screen Management - MODIFICATO
+// Navigation and Screen Management
 function showScreen(screenId) {
     const currentScreen = screenHistory[screenHistory.length - 1];
     
     if (currentScreen === screenId) return;
     
-    // Nascondi tutte le schermate
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
         screen.style.display = 'none';
     });
     
-    // Mostra la nuova schermata
     const targetScreen = document.getElementById(screenId);
     if (targetScreen) {
         targetScreen.style.display = 'flex';
@@ -1132,15 +1130,9 @@ function showScreen(screenId) {
             targetScreen.classList.add('active');
         }, 10);
         
-        // Aggiungi alla history solo se non è un ritorno
-        if (!screenId.includes('detail-screen') || 
-            !currentScreen.includes('detail-screen')) {
-            screenHistory.push(screenId);
-            
-            // Limita la history a 10 elementi
-            if (screenHistory.length > 10) {
-                screenHistory = screenHistory.slice(-10);
-            }
+        screenHistory.push(screenId);
+        if (screenHistory.length > 10) {
+            screenHistory = screenHistory.slice(-10);
         }
         
         window.scrollTo(0, 0);
@@ -1149,64 +1141,28 @@ function showScreen(screenId) {
     
     updateTabBar(screenId);
     document.getElementById('fixed-navigate-btn').classList.add('hidden');
-    
-    console.log('Screen mostrato:', screenId, 'History:', screenHistory);
 }
 
-// MODIFICATO: goBack() con gestione migliore della history
 function goBack() {
-    console.log('goBack chiamato - History:', screenHistory);
-    
     if (screenHistory.length > 1) {
-        // Togli la schermata corrente
         screenHistory.pop();
         const previousScreen = screenHistory[screenHistory.length - 1];
         
-        // Se stiamo tornando alla home da una schermata principale
-        // resettiamo la history per evitare loop
-        if (previousScreen === 'home-screen') {
-            screenHistory = ['home-screen'];
-        }
-        
-        // Nascondi tutte le schermate
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
-            screen.style.display = 'none';
         });
         
-        // Mostra la schermata precedente
         const targetScreen = document.getElementById(previousScreen);
         if (targetScreen) {
-            targetScreen.style.display = 'flex';
+            targetScreen.style.display = 'block';
             setTimeout(() => {
                 targetScreen.classList.add('active');
             }, 10);
             initializeScreenContent(previousScreen);
         }
-        
-        // Aggiorna tab bar
         updateTabBar(previousScreen);
-        
-        // Nascondi il pulsante di navigazione fisso se siamo tornati alla home
-        if (previousScreen === 'home-screen') {
-            document.getElementById('fixed-navigate-btn').classList.add('hidden');
-        }
-        
-        console.log('Nuova history:', screenHistory);
     } else {
-        // Se siamo già alla home, mostra conferma di uscita
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            // In PWA, chiedi conferma
-            if (confirm('Vuoi uscire dall\'applicazione?')) {
-                // Chiudi la PWA (se supportato)
-                if (navigator.app && navigator.app.exitApp) {
-                    navigator.app.exitApp();
-                }
-            }
-        } else {
-            // In browser, rimani sulla home
-            showScreen('home-screen');
-        }
+        showScreen('home-screen');
     }
 }
 
@@ -2400,7 +2356,7 @@ async function saveBeverino(e) {
                     appData.beverini[index] = { id: savedId, ...beverinoData };
                 }
             } else {
-                appData.beverini.push({ id: savedId, ...beverinoData };
+                appData.beverini.push({ id: savedId, ...beverinoData });
             }
             
             showToast('Beverino salvato localmente. Sarà sincronizzato online dopo.', 'info');
@@ -3408,7 +3364,7 @@ function forceSyncAnalytics() {
 }
 
 // ============================================
-// GESTIONE TASTO INDIETRO ANDROID (MODIFICATO)
+// GESTIONE TASTO INDIETRO ANDROID (CORRETTO)
 // ============================================
 
 // Gestione tasto indietro fisico/software
@@ -3444,13 +3400,11 @@ function setupBackButtonHandler() {
 }
 
 /**
- * Gestisce la logica del tasto indietro (MODIFICATO).
+ * Gestisce la logica del tasto indietro.
  * @returns {boolean} true se l'azione è stata gestita internamente (non uscire), false se si deve uscire.
  */
 function handleBackNavigation() {
     console.log('Tasto indietro premuto - Stato navigazione:', screenHistory);
-    
-    const currentScreen = screenHistory[screenHistory.length - 1];
     
     // 1. Controllo Modali/Overlay (Priorità massima)
     
@@ -3499,20 +3453,19 @@ function handleBackNavigation() {
     // 2. Controllo Navigazione Schermate
     
     // Se siamo nella schermata di dettaglio, torniamo alla lista
+    const currentScreen = screenHistory[screenHistory.length - 1];
     if (currentScreen && currentScreen.includes('detail-screen')) {
         goBack();
         return true;
     }
     
-    // Se siamo in una lista (fontane, beverini, mappa, news) torna alla home
-    if (currentScreen && !currentScreen.includes('detail-screen') && 
-        currentScreen !== 'home-screen') {
-        
-        showScreen('home-screen');
+    // Se non siamo nella home, torna indietro nella cronologia schermate
+    if (currentScreen !== 'home-screen') {
+        goBack();
         return true;
-    }
-    
-    // 3. Siamo nella Home -> gestione uscita
+    } 
+
+    // 3. Siamo nella Home e nessun modale è aperto -> Uscita
     return false;
 }
 
