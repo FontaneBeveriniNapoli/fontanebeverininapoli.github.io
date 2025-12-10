@@ -202,7 +202,8 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 30px 20px;
+    /* MODIFICATO: Aumentato il padding superiore per spingere gli elementi verso il basso */
+    padding: 60px 20px 30px; 
     flex: 1;
     min-height: calc(100vh - 60px);
 }
@@ -224,8 +225,10 @@ body {
         0 4px 10px rgba(0, 0, 0, 0.2),    /* Ombra scura per sollevare (profondità) */
         0 0 15px rgba(59, 130, 246, 0.3); /* Un tocco di blu per l'acqua */
     
+    /* MODIFICATO: Ridotto il font size del 20% (da 5rem a 4rem) */
+    font-size: 4rem; 
+    
     /* Stili di base */
-    font-size: 5rem;
     font-weight: 900;
     text-transform: uppercase;
     pointer-events: none;
@@ -321,7 +324,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    margin-top: auto;
+    /* MODIFICATO: Rimosso margin-top: auto per far scendere gli elementi centrali */
+    /* margin-top: auto; */ 
     margin-bottom: auto;
 }
 
@@ -488,20 +492,11 @@ body {
         margin-left: 10px;
         max-width: 100%;
     }
-    /* Regolazione per schermi molto piccoli */
+    /* MODIFICATO: Ridotto il font size del 20% (da 4rem a 3.2rem) */
     .city-name {
-        font-size: 4rem; 
+        font-size: 3.2rem; 
     }
 }
-
-/* Per schermi molto bassi (opzionale - se da problemi) */
-/* @media (max-height: 650px) {
-    .city-name {
-        top: 10px; 
-        font-size: 3.5rem; 
-    }
-} */
-
 
 /* Stile per il pulsante admin icona sola */
 .admin-icon-btn-container {
@@ -572,10 +567,10 @@ body {
         font-size: 1.3rem;
     }
     
-    /* Regolazione per schermi Desktop */
+    /* MODIFICATO: Ridotto il font size del 20% (da 10rem a 8rem) */
     .city-name {
         top: 20%;
-        font-size: 10rem;
+        font-size: 8rem;
         /* Ombra più sottile per schermi più grandi */
         text-shadow: 
             0 0 10px rgba(255, 255, 255, 0.3), 
