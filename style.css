@@ -202,42 +202,9 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    /* MODIFICATO: Aumentato il padding superiore per spingere gli elementi verso il basso */
-    padding: 60px 20px 30px; 
+    padding: 30px 20px;
     flex: 1;
     min-height: calc(100vh - 60px);
-}
-
-/* Stile per la scritta "NAPOLI" nella Home Screen con effetto acqua/watermark */
-.city-name {
-    position: absolute;
-    top: 15%;
-    left: 50%;
-    transform: translateX(-50%);
-    
-    /* EFFETTO ACQUA / VETRO */
-    color: rgba(255, 255, 255, 0.5); /* Bianco semi-trasparente */
-    opacity: 0.9; /* Opacità elevata per l'effetto base */
-    
-    /* Ombra multipla per effetto riflesso e profondità (Simula la rifrazione) */
-    text-shadow: 
-        0 0 5px rgba(255, 255, 255, 0.4), /* Effetto 'glow' morbido (luce sull'acqua) */
-        0 4px 10px rgba(0, 0, 0, 0.2),    /* Ombra scura per sollevare (profondità) */
-        0 0 15px rgba(59, 130, 246, 0.3); /* Un tocco di blu per l'acqua */
-    
-    /* MODIFICATO: Ridotto il font size del 20% (da 5rem a 4rem) */
-    font-size: 4rem; 
-    
-    /* Stili di base */
-    font-weight: 900;
-    text-transform: uppercase;
-    pointer-events: none;
-    z-index: 10;
-    line-height: 1;
-    white-space: nowrap;
-    
-    /* Transizione opzionale per fluidità */
-    transition: all 0.5s ease;
 }
 
 .logo-container {
@@ -324,8 +291,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    /* MODIFICATO: Rimosso margin-top: auto per far scendere gli elementi centrali */
-    /* margin-top: auto; */ 
+    margin-top: auto;
     margin-bottom: auto;
 }
 
@@ -492,10 +458,6 @@ body {
         margin-left: 10px;
         max-width: 100%;
     }
-    /* MODIFICATO: Ridotto il font size del 20% (da 4rem a 3.2rem) */
-    .city-name {
-        font-size: 3.2rem; 
-    }
 }
 
 /* Stile per il pulsante admin icona sola */
@@ -565,17 +527,6 @@ body {
         width: 45px;
         height: 45px;
         font-size: 1.3rem;
-    }
-    
-    /* MODIFICATO: Ridotto il font size del 20% (da 10rem a 8rem) */
-    .city-name {
-        top: 20%;
-        font-size: 8rem;
-        /* Ombra più sottile per schermi più grandi */
-        text-shadow: 
-            0 0 10px rgba(255, 255, 255, 0.3), 
-            0 5px 15px rgba(0, 0, 0, 0.15),
-            0 0 20px rgba(59, 130, 246, 0.2);
     }
 }
 
@@ -1606,10 +1557,6 @@ body {
     background: #2563eb;
 }
 
-.admin-fab:active {
-    transform: scale(0.95);
-}
-
 .import-section {
     margin-bottom: 20px;
     padding: 15px;
@@ -1659,7 +1606,7 @@ body {
 /* Alzato controlli mappa */
 .map-controls {
     position: absolute;
-    bottom: 250px; /* MODIFICATO: Spostato più in alto */
+    bottom: 250px;
     left: 10px;
     z-index: 1000;
     display: flex;
