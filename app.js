@@ -1532,6 +1532,7 @@ function showDetail(id, type) {
     showScreen(screenId);
 }
 
+// ✅ MODIFICA C: generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
     let specificFields = '';
     if (type === 'fontana') {
@@ -1543,6 +1544,16 @@ function generateDetailHTML(item, type) {
     
     // MODIFICA: Determina l'immagine di fallback condizionale
     const fallbackImage = type === 'fontana' ? './images/sfondo-home.jpg' : './images/default-beverino.jpg';
+
+    // ✅ LOGICA CONDIZIONALE: crea il blocco HTML solo se la descrizione non è vuota.
+    const descriptionHTML = (item.descrizione && item.descrizione.trim())
+        ? `
+            <div class="info-item">
+                <span class="info-label">Descrizione:</span>
+                <span class="info-value">${item.descrizione}</span>
+            </div>
+        ` 
+        : ''; // Se vuota, la riga non appare
 
     return `
         <img src="${item.immagine || fallbackImage}" class="detail-image" alt="${item.nome}" onerror="this.src='${fallbackImage}'">
@@ -1556,10 +1567,9 @@ function generateDetailHTML(item, type) {
                 <span class="info-value">${getStatusText(item.stato)}</span>
             </div>
             ${specificFields}
-            <div class="info-item">
-                <span class="info-label">Descrizione:</span>
-                <span class="info-value">${item.descrizione || 'Nessuna descrizione disponibile'}</span>
-            </div>
+            
+            ${descriptionHTML}
+            
         </div>
         <div class="detail-actions">
             <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
@@ -2294,6 +2304,7 @@ async function loadAdminBeverini() {
     });
 }
 
+// ✅ MODIFICA A: editBeverino con caricamento campo descrizione
 function editBeverino(id) {
     const beverino = appData.beverini.find(b => b.id == id);
     if (!beverino) return;
@@ -2302,6 +2313,10 @@ function editBeverino(id) {
     document.getElementById('beverino-nome').value = beverino.nome || '';
     document.getElementById('beverino-indirizzo').value = beverino.indirizzo || '';
     document.getElementById('beverino-stato').value = beverino.stato || 'funzionante';
+    
+    // ✅ CARICA LA DESCRIZIONE
+    document.getElementById('beverino-descrizione').value = beverino.descrizione || ''; 
+    
     document.getElementById('beverino-latitudine').value = beverino.latitudine || '';
     document.getElementById('beverino-longitudine').value = beverino.longitudine || '';
     document.getElementById('beverino-immagine').value = beverino.immagine || '';
@@ -2309,7 +2324,7 @@ function editBeverino(id) {
     showAdminTab('beverini-admin');
 }
 
-// MODIFICA: saveBeverino con supporto offline
+// ✅ MODIFICA B: saveBeverino con salvataggio campo descrizione e supporto offline
 async function saveBeverino(e) {
     e.preventDefault();
     
@@ -2321,6 +2336,9 @@ async function saveBeverino(e) {
     const longitudine = parseFloat(document.getElementById('beverino-longitudine').value) || 0;
     const immagine = document.getElementById('beverino-immagine').value.trim();
     
+    // ✅ LEGGE LA DESCRIZIONE DAL FORM
+    const descrizione = document.getElementById('beverino-descrizione').value.trim();
+    
     const beverinoData = {
         nome,
         indirizzo,
@@ -2328,6 +2346,8 @@ async function saveBeverino(e) {
         latitudine,
         longitudine,
         immagine,
+        // ✅ INCLUDE LA DESCRIZIONE NEI DATI
+        descrizione, 
         last_modified: new Date().toISOString()
     };
     
@@ -2781,6 +2801,8 @@ function importBeverini(data) {
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
+        // Assumiamo che la descrizione possa essere importata se presente nel file
+        descrizione: item.Descrizione || item.descrizione || '', 
         last_modified: new Date().toISOString()
     }));
 
@@ -2854,7 +2876,7 @@ function downloadTemplate(type) {
             break;
         case 'beverini':
             columns = [
-                'Nome', 'Indirizzo', 'Stato', 'Latitudine', 'Longitudine', 'Immagine'
+                'Nome', 'Indirizzo', 'Stato', 'Latitudine', 'Longitudine', 'Immagine', 'Descrizione' // Aggiunta Descrizione per coerenza
             ];
             filename = 'template_beverini.xlsx';
             sheetName = 'Beverini';
@@ -2927,7 +2949,7 @@ function loadAnalyticsDashboard() {
     // Aggiorna info sessione
     updateSessionInfo();
     
-    // Aggiorna stato storage
+    // Aggiorna info storage
     updateStorageInfo();
     
     // Aggiorna grafico
@@ -3415,7 +3437,6 @@ function setupBackButtonHandler() {
         } else {
             // Se siamo nella Home e non ci sono modali aperti (actionTaken = false),
             // lasciamo che l'evento popstate faccia il suo corso.
-            // In una PWA questo chiuderà l'app o la metterà in background.
              if (window.matchMedia('(display-mode: standalone)').matches) {
                 // Se volessimo chiedere conferma/evitare l'uscita automatica,
                 // qui bisognerebbe re-iniettare uno stato, ma in questo caso 
