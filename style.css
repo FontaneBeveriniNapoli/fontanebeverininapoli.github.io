@@ -198,46 +198,58 @@ body {
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
+    
+    /* MODIFICHE PER LAYOUT FLEX E SPAZIO BIANCO */
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start; /* Allinea in alto */
     align-items: center;
     padding: 30px 20px;
     flex: 1;
     min-height: calc(100vh - 60px);
-    position: relative; /* Necessario per l'overlay posizionato in modo assoluto */
+    position: relative;
+    /* FINE MODIFICHE LAYOUT */
 }
 
-/* ===== STILE AGGIUNTIVO PER NAPOLI OVERLAY ===== */
+/* ===== STILE AGGIUNTIVO PER NAPOLI OVERLAY (MODIFICATO) ===== */
 #home-napoli-overlay {
-    /* Posizionamento assoluto per sovrapporre e non influenzare il layout */
+    /* Posizionamento assoluto per NON influenzare il layout */
     position: absolute;
-    top: 50%; /* Centrato verticalmente rispetto alla home-screen */
-    left: 50%; /* Centrato orizzontalmente */
-    transform: translate(-50%, -50%); /* Vero centramento */
+    
+    /* Posizionamento preciso sotto il sottotitolo (da calcolare in base agli elementi fissi) */
+    /* Lo centreremo tramite text-align e lo piazzeremo sotto il logo/titolo */
+    
+    /* MODIFICA: Allineamento - Usiamo top/left per il posizionamento esatto */
+    top: 40%; /* Regolato manualmente per stare sotto il sottotitolo in mobile */
+    left: 50%;
+    transform: translateX(-50%);
     
     /* Stile del testo */
-    font-family: 'Inter', sans-serif; /* Stesso carattere */
-    color: white; /* Stesso colore del titolo */
-    font-weight: 700; /* Stesso peso del titolo */
+    font-family: 'Inter', sans-serif;
+    color: white; 
+    font-weight: 700; 
     
-    /* Carattere più grande di home-title (1.8rem) */
-    font-size: 3.5rem; /* Esempio: 3.5rem è visibilmente più grande */
+    /* MODIFICA: Carattere più grande (era 3.5rem) */
+    font-size: 5rem; 
     
-    /* Trasparenza (molto importante) */
-    opacity: 0.1; 
+    /* MODIFICA: Trasparenza (meno trasparente, era 0.1) */
+    opacity: 0.25; 
     
-    /* Assicura che sia sempre al centro e sopra lo sfondo ma sotto il contenuto */
+    /* Effetto Acqua */
+    text-shadow: 
+        0 0 20px rgba(255, 255, 255, 0.4), /* Bagliore chiaro */
+        0 4px 10px rgba(0, 0, 0, 0.5);   /* Ombra scura per profondità */
+    
+    /* Fondo sfumato trasparente per effetto vetro/acqua */
+    background: linear-gradient(0deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; /* Permette al colore bianco di essere il gradiente */
+    text-fill-color: transparent;
+    
+    /* Assicura che sia sempre al centro e sotto il contenuto */
     z-index: 5;
     
-    /* Effetto ombra per leggibilità minima sullo sfondo */
-    text-shadow: 0 0 10px rgba(0,0,0,0.5); 
-    
-    /* Impedisce di interagire con il testo trasparente */
     pointer-events: none;
-    
-    /* Permette il layout flex dell'elemento genitore di centrarlo meglio */
-    align-self: center;
     text-align: center;
     white-space: nowrap;
 }
@@ -245,15 +257,17 @@ body {
 /* Adattamento per dispositivi più grandi */
 @media (min-width: 1024px) {
     #home-napoli-overlay {
-        font-size: 6rem; /* Aumenta ancora su desktop */
-        opacity: 0.08; /* Leggermente più opaco se necessario */
+        font-size: 9rem; /* Aumenta ancora su desktop */
+        opacity: 0.2; 
+        top: 40%; /* Regolato */
     }
 }
 
 /* Adattamento per dispositivi piccoli per evitare che sia troppo invadente */
 @media (max-width: 380px) {
     #home-napoli-overlay {
-        font-size: 3rem; 
+        font-size: 4rem; 
+        top: 45%; /* Regolato */
     }
 }
 /* FINE STILE AGGIUNTIVO */
@@ -271,6 +285,7 @@ body {
     align-self: flex-start;
     margin-left: 20px;
     flex-shrink: 0;
+    z-index: 10;
 }
 
 .app-logo {
@@ -323,7 +338,7 @@ body {
     margin-bottom: 12px;
     text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     width: 100%;
-    position: relative; /* Assicura che sia sopra l'overlay Napoli */
+    position: relative; 
     z-index: 10;
 }
 
@@ -336,7 +351,7 @@ body {
     max-width: 320px;
     margin-bottom: 20px;
     text-shadow: 0 1px 5px rgba(0,0,0,0.3);
-    position: relative; /* Assicura che sia sopra l'overlay Napoli */
+    position: relative; 
     z-index: 10;
 }
 
@@ -346,9 +361,12 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    margin-top: auto;
-    margin-bottom: auto;
-    position: relative; /* Assicura che sia sopra l'overlay Napoli */
+    /* MODIFICA: Usiamo margin-top auto per spingere i pulsanti verso il basso 
+       ma rimuoviamo margin-bottom auto per comprimere lo spazio libero in fondo */
+    margin-top: auto; 
+    margin-bottom: 0; /* Rimosso auto */
+    
+    position: relative; 
     z-index: 10;
 }
 
@@ -1997,6 +2015,8 @@ body {
     #home-screen {
         background-attachment: scroll;
         padding: 50px 20px;
+        /* Rimuovi l'allineamento verticale automatico qui per lasciare spazio ai pulsanti */
+        justify-content: flex-start;
     }
     .logo-container {
         max-width: 600px;
