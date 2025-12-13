@@ -1532,6 +1532,18 @@ function showDetail(id, type) {
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
     document.getElementById('fixed-navigate-btn').classList.remove('hidden');
     showScreen(screenId);
+    
+    // ✅ FORZA SCROLL ALL'INIZIO DOPO IL RENDER
+    setTimeout(() => {
+        // Verifica che sia davvero una schermata di dettaglio
+        if (screenHistory[screenHistory.length - 1].includes('detail')) {
+            window.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: 'instant' // Disabilita animazione per scroll immediato
+            });
+        }
+    }, 100); // Ritardo di 100ms per assicurare il completamento del render
 }
 
 // ✅ MODIFICA C: generateDetailHTML con logica condizionale per nascondere la descrizione vuota
@@ -1924,7 +1936,7 @@ function selectSearchResult(index) {
         `)
         .openPopup();
 
-    map.setView([result.lat, result.lon], 16);
+    map.setView([result.lat], [result.lon], 16);
 
     document.getElementById('map-search-results').style.display = 'none';
     document.getElementById('map-search-input').value = '';

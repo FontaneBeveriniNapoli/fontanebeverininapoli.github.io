@@ -846,6 +846,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    scroll-behavior: auto; /* Disabilita scroll smooth automatico del browser */
 }
 
 /* MODIFICA: Aggiunto padding-bottom per permettere lo scroll fino ai pulsanti */
@@ -1609,6 +1610,13 @@ body {
     margin-bottom: 10px;
     color: var(--dark-text);
     font-weight: 600;
+}
+
+.export-options, .import-options {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
 }
 
 /* Alzato controlli mappa */
