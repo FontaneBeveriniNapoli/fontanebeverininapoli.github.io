@@ -184,6 +184,7 @@ body {
     min-height: calc(100vh - 60px); /* Sottrae altezza tab bar */
     opacity: 0;
     transition: opacity 0.3s ease;
+    overflow-y: auto; /* Aggiunto per gli schermi non-home */
 }
 
 .screen.active {
@@ -192,6 +193,7 @@ body {
     opacity: 1;
 }
 
+/* ⭐ MODIFICHE HOME SCREEN PER FULL VIEWPORT E CANCELLAZIONE BORDO BIANCO ⭐ */
 #home-screen {
     background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
                 url('./images/sfondo-home.jpg');
@@ -204,8 +206,16 @@ body {
     align-items: center;
     padding: 30px 20px;
     flex: 1;
-    min-height: calc(100vh - 60px);
+    min-height: 100vh; /* OCCUPA TUTTA LA VIEWPORT */
+    position: absolute; /* POSIZIONA ASSOLUTAMENTE PER COPRIRE TUTTO */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1; /* Sotto la tab-bar e i modali */
+    padding-bottom: 90px; /* Aggiunge padding per i contenuti sopra il tab-bar fisso */
 }
+/* ⭐ FINE MODIFICHE HOME SCREEN ⭐ */
 
 .logo-container {
     margin-bottom: 25px;
@@ -272,6 +282,7 @@ body {
     margin-bottom: 12px;
     text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     width: 100%;
+    z-index: 10;
 }
 
 .home-subtitle {
@@ -283,7 +294,33 @@ body {
     max-width: 320px;
     margin-bottom: 20px;
     text-shadow: 0 1px 5px rgba(0,0,0,0.3);
+    z-index: 10;
 }
+
+/* ⭐ WATERMARK NAPOLI HOME SCREEN ⭐ */
+.home-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 15vw; /* Dimensione base (mobile) */
+    font-weight: 900;
+    color: white;
+    opacity: 0.12;
+    pointer-events: none;
+    user-select: none;
+    text-shadow: 0 0 10px rgba(0,0,0,0.5);
+    line-height: 1;
+    z-index: 5; /* Sotto i contenuti ma sopra lo sfondo */
+    letter-spacing: 0.1em;
+}
+
+@media (min-width: 768px) {
+    .home-watermark {
+        font-size: 10vw; /* Ridotta su desktop per essere adeguata */
+    }
+}
+/* ⭐ FINE WATERMARK NAPOLI HOME SCREEN ⭐ */
 
 .home-buttons {
     width: 100%;
@@ -293,6 +330,7 @@ body {
     gap: 16px;
     margin-top: auto;
     margin-bottom: auto;
+    z-index: 10;
 }
 
 .button-row {
@@ -1939,6 +1977,12 @@ body {
     #home-screen {
         background-attachment: scroll;
         padding: 50px 20px;
+        min-height: 100vh; /* Mantieni per coerenza con la modifica full viewport */
+        position: absolute; /* Mantieni per coerenza con la modifica full viewport */
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
     }
     .logo-container {
         max-width: 600px;
@@ -2026,6 +2070,7 @@ body {
         width: calc(100% - 40px);
         box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
         padding-bottom: 8px; /* Reset del padding mobile */
+        z-index: 1000;
     }
     .tab-btn {
         font-size: 0.85rem;
@@ -2644,6 +2689,8 @@ body {
     
     #home-screen {
         padding: 20px 15px;
+        min-height: 100vh;
+        position: absolute;
     }
     
     .content-area {
