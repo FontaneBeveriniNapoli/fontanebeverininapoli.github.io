@@ -170,7 +170,6 @@ body {
 .app-container {
     max-width: 100%;
     margin: 0 auto;
-    /* ⭐ CORREZIONE: Imposta min-height su body/html, qui min-height deve essere dinamico ⭐ */
     min-height: 100vh; 
     position: relative;
     display: flex;
@@ -194,7 +193,7 @@ body {
     opacity: 1;
 }
 
-/* ⭐ NUOVI STILI HOME SCREEN: Risolve scroll/bordo bianco e mantiene i limiti laterali ⭐ */
+/* ⭐ STILI HOME SCREEN: Risolve scroll/bordo bianco e mantiene i limiti laterali ⭐ */
 #home-screen {
     background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
                 url('./images/sfondo-home.jpg');
@@ -208,16 +207,15 @@ body {
     padding: 30px 20px;
     flex: 1;
     
-    /* ⭐ MODIFICA CHIAVE: Forziamo l'altezza a 100vh per evitare il bordo bianco/scroll indesiderato ⭐ */
+    /* MODIFICA CHIAVE: Forziamo l'altezza a 100vh per evitare il bordo bianco/scroll indesiderato */
     min-height: 100vh; 
     
-    /* Rimuoviamo il posizionamento assoluto/fixed problematico */
     position: relative; 
     
     z-index: 1; 
     padding-bottom: 90px; /* Mantiene lo spazio per la tab bar */
 }
-/* ⭐ FINE NUOVI STILI HOME SCREEN ⭐ */
+/* ⭐ FINE STILI HOME SCREEN ⭐ */
 
 .logo-container {
     margin-bottom: 25px;
@@ -299,7 +297,7 @@ body {
     z-index: 10;
 }
 
-/* ⭐ WATERMARK NAPOLI HOME SCREEN - OPACITÀ AUMENTATA ⭐ */
+/* ⭐ WATERMARK NAPOLI HOME SCREEN - RISOLVE A CAPO E AUMENTA OPACITÀ ⭐ */
 .home-watermark {
     position: absolute;
     top: 50%;
@@ -314,19 +312,17 @@ body {
     text-shadow: 0 0 10px rgba(0,0,0,0.5);
     line-height: 1;
     z-index: 5; /* Sotto i contenuti ma sopra lo sfondo */
-    letter-spacing: 0.1em;
-    max-width: 90%; 
-    word-break: break-all;
+    /* RIMOSSO: max-width e word-break per evitare che vada a capo */
+    white-space: nowrap; /* ⭐ FORZA IL TESTO SU UNA SOLA RIGA ⭐ */
     text-align: center;
 }
 
 @media (min-width: 768px) {
     .home-watermark {
         font-size: 10vw; /* Ridotta su desktop per essere adeguata */
-        max-width: 70%; 
     }
 }
-/* ⭐ FINE WATERMARK NAPOLI HOME SCREEN - OPACITÀ AUMENTATA ⭐ */
+/* ⭐ FINE WATERMARK NAPOLI HOME SCREEN - RISOLVE A CAPO E AUMENTA OPACITÀ ⭐ */
 
 .home-buttons {
     width: 100%;
