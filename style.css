@@ -198,79 +198,14 @@ body {
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
-    
-    /* MODIFICHE PER LAYOUT FLEX E SPAZIO BIANCO */
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; /* Allinea in alto */
+    justify-content: center;
     align-items: center;
     padding: 30px 20px;
     flex: 1;
     min-height: calc(100vh - 60px);
-    position: relative;
-    /* FINE MODIFICHE LAYOUT */
 }
-
-/* ===== STILE AGGIUNTIVO PER NAPOLI OVERLAY (MODIFICATO) ===== */
-#home-napoli-overlay {
-    /* Posizionamento assoluto per NON influenzare il layout */
-    position: absolute;
-    
-    /* Posizionamento preciso sotto il sottotitolo (da calcolare in base agli elementi fissi) */
-    /* Lo centreremo tramite text-align e lo piazzeremo sotto il logo/titolo */
-    
-    /* MODIFICA: Allineamento - Usiamo top/left per il posizionamento esatto */
-    top: 40%; /* Regolato manualmente per stare sotto il sottotitolo in mobile */
-    left: 50%;
-    transform: translateX(-50%);
-    
-    /* Stile del testo */
-    font-family: 'Inter', sans-serif;
-    color: white; 
-    font-weight: 700; 
-    
-    /* MODIFICA: Carattere più grande (era 3.5rem) */
-    font-size: 5rem; 
-    
-    /* MODIFICA: Trasparenza (meno trasparente, era 0.1) */
-    opacity: 0.25; 
-    
-    /* Effetto Acqua */
-    text-shadow: 
-        0 0 20px rgba(255, 255, 255, 0.4), /* Bagliore chiaro */
-        0 4px 10px rgba(0, 0, 0, 0.5);   /* Ombra scura per profondità */
-    
-    /* Fondo sfumato trasparente per effetto vetro/acqua */
-    background: linear-gradient(0deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent; /* Permette al colore bianco di essere il gradiente */
-    text-fill-color: transparent;
-    
-    /* Assicura che sia sempre al centro e sotto il contenuto */
-    z-index: 5;
-    
-    pointer-events: none;
-    text-align: center;
-    white-space: nowrap;
-}
-
-/* Adattamento per dispositivi più grandi */
-@media (min-width: 1024px) {
-    #home-napoli-overlay {
-        font-size: 9rem; /* Aumenta ancora su desktop */
-        opacity: 0.2; 
-        top: 40%; /* Regolato */
-    }
-}
-
-/* Adattamento per dispositivi piccoli per evitare che sia troppo invadente */
-@media (max-width: 380px) {
-    #home-napoli-overlay {
-        font-size: 4rem; 
-        top: 45%; /* Regolato */
-    }
-}
-/* FINE STILE AGGIUNTIVO */
 
 .logo-container {
     margin-bottom: 25px;
@@ -285,7 +220,6 @@ body {
     align-self: flex-start;
     margin-left: 20px;
     flex-shrink: 0;
-    z-index: 10;
 }
 
 .app-logo {
@@ -338,8 +272,6 @@ body {
     margin-bottom: 12px;
     text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     width: 100%;
-    position: relative; 
-    z-index: 10;
 }
 
 .home-subtitle {
@@ -351,8 +283,36 @@ body {
     max-width: 320px;
     margin-bottom: 20px;
     text-shadow: 0 1px 5px rgba(0,0,0,0.3);
-    position: relative; 
-    z-index: 10;
+}
+
+/* Stile per la scritta "Napoli" nella home */
+.city-name {
+    color: rgba(255, 255, 255, 0.3); /* 30% di trasparenza */
+    font-size: 2.5rem; /* Leggermente più grande di Fontane & Beverini */
+    font-weight: 700;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    margin: 5px 0 20px 0; /* Margine ridotto per non spostare troppo gli elementi */
+    text-align: center;
+    letter-spacing: 2px;
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.1));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: waterEffect 3s ease-in-out infinite;
+}
+
+/* Effetto acqua per la scritta Napoli */
+@keyframes waterEffect {
+    0%, 100% {
+        background-position: 0% 50%;
+        opacity: 0.3;
+    }
+    50% {
+        background-position: 100% 50%;
+        opacity: 0.4;
+    }
 }
 
 .home-buttons {
@@ -361,13 +321,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    /* MODIFICA: Usiamo margin-top auto per spingere i pulsanti verso il basso 
-       ma rimuoviamo margin-bottom auto per comprimere lo spazio libero in fondo */
-    margin-top: auto; 
-    margin-bottom: 0; /* Rimosso auto */
-    
-    position: relative; 
-    z-index: 10;
+    margin-top: auto;
+    margin-bottom: auto;
 }
 
 .button-row {
@@ -403,7 +358,6 @@ body {
     overflow: hidden;
     touch-action: manipulation;
     min-height: 85px;
-    z-index: 10;
 }
 
 .home-btn::before {
@@ -534,6 +488,11 @@ body {
         margin-left: 10px;
         max-width: 100%;
     }
+    .city-name {
+        font-size: 2rem;
+        margin: 3px 0 15px 0;
+        letter-spacing: 1px;
+    }
 }
 
 /* Stile per il pulsante admin icona sola */
@@ -603,6 +562,11 @@ body {
         width: 45px;
         height: 45px;
         font-size: 1.3rem;
+    }
+    .city-name {
+        font-size: 3rem;
+        margin: 8px 0 25px 0;
+        letter-spacing: 3px;
     }
 }
 
@@ -2015,8 +1979,6 @@ body {
     #home-screen {
         background-attachment: scroll;
         padding: 50px 20px;
-        /* Rimuovi l'allineamento verticale automatico qui per lasciare spazio ai pulsanti */
-        justify-content: flex-start;
     }
     .logo-container {
         max-width: 600px;
