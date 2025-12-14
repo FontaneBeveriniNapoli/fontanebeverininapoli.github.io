@@ -3790,7 +3790,7 @@ animation-iteration-count: 1 !important;
     font-size: 2.2rem; /* Più grande del titolo (1.8rem) */
     font-weight: 700;
     text-align: center;
-    margin: 20px 0 25px;
+    margin: 10px 0 15px;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     opacity: 0;
     transform: translateY(10px);
