@@ -816,6 +816,19 @@ let isAdminAuthenticated = false;
 let adminAuthTimeout = null;
 
 // ============================================
+// NUOVA FUNZIONE CENTRALE PER RESET SCROLL
+// ============================================
+function resetScroll() {
+    window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+    });
+}
+window.addEventListener('load', resetScroll);
+
+
+// ============================================
 // FUNZIONI ORIGINALI (MODIFICATE CON NUOVE FEATURES)
 // ============================================
 
@@ -1145,7 +1158,7 @@ function showScreen(screenId) {
         }
         
         // CORREZIONE: Forza lo scroll all'inizio della pagina
-        window.scrollTo(0, 0);
+        resetScroll();
         
         initializeScreenContent(screenId);
     }
@@ -1532,34 +1545,6 @@ function showDetail(id, type) {
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
     document.getElementById('fixed-navigate-btn').classList.remove('hidden');
     showScreen(screenId);
-    
-    
-// Funzione per reimpostare lo scroll
-function resetScroll() {
-    window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: 'instant'
-    });
-}
-
-// Reimposta lo scroll dopo il caricamento di ogni pagina
-document.addEventListener('DOMContentLoaded', () => {
-    resetScroll();
-});
-
-// ✅ FORZA SCROLL ALL'INIZIO DOPO IL RENDER
-
-    setTimeout(() => {
-        // Verifica che sia davvero una schermata di dettaglio
-        if (screenHistory[screenHistory.length - 1].includes('detail')) {
-            window.scrollTo({
-                top: 0,
-                left: 0,
-                behavior: 'instant' // Disabilita animazione per scroll immediato
-            });
-        }
-    }, 100); // Ritardo di 100ms per assicurare il completamento del render
 }
 
 // ✅ MODIFICA C: generateDetailHTML con logica condizionale per nascondere la descrizione vuota
