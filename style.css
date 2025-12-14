@@ -3785,3 +3785,21 @@ animation-iteration-count: 1 !important;
         display: none;
 }
 }
+.home-welcome-animated {
+    color: white;
+    font-size: 2.2rem; /* Più grande del titolo (1.8rem) */
+    font-weight: 700;
+    text-align: center;
+    margin: 20px 0 25px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeInUp 0.8s ease forwards;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
