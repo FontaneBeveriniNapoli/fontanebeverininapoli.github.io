@@ -2,38 +2,24 @@
 // SERVICE WORKER FUNCTIONS - VERSIONE CORRETTA
 // ============================================
 
-// Funzione per pre-caricare le immagini critiche
-function preloadImages() {
-    const imagesToPreload = [
-        './images/sfondo-home.jpg',
-        './images/default-beverino.jpg',
-        './images/logo-app.png',
-        './images/logo-comune.png'
-    ];
-    
-    imagesToPreload.forEach(src => {
-        const img = new Image();
-        img.src = src;
-        img.onload = () => console.log(`Preloaded: ${src}`);
-        img.onerror = () => console.warn(`Failed to preload: ${src}`);
-    });
-}
-
 // Registrazione Service Worker - VERSIONE MIGLIORATA
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
+        // Usa percorso corretto
         const swUrl = './sw.js';
         
         return navigator.serviceWorker.register(swUrl)
             .then(function(registration) {
                 console.log('✅ Service Worker registrato con successo:', registration.scope);
                 
+                // Controlla se è la prima registrazione
                 if (!navigator.serviceWorker.controller) {
                     console.log('🔄 Service Worker installato per la prima volta');
                 } else {
                     console.log('📱 Service Worker già attivo');
                 }
                 
+                // Controlla aggiornamenti
                 registration.addEventListener('updatefound', function() {
                     const newWorker = registration.installing;
                     console.log('🔄 Nuova versione Service Worker trovata');
@@ -43,8 +29,10 @@ function registerServiceWorker() {
                         
                         if (newWorker.state === 'installed') {
                             if (navigator.serviceWorker.controller) {
+                                // Nuovo content disponibile
                                 showToast('Nuova versione disponibile! Ricarica la pagina.', 'info', 10000);
                                 
+                                // Aggiungi pulsante per forzare aggiornamento
                                 setTimeout(() => {
                                     if (confirm('È disponibile un aggiornamento. Vuoi ricaricare l\'applicazione?')) {
                                         window.location.reload();
@@ -57,6 +45,7 @@ function registerServiceWorker() {
                     });
                 });
                 
+                // Verifica periodicamente aggiornamenti (ogni ora)
                 setInterval(() => {
                     registration.update();
                 }, 60 * 60 * 1000);
@@ -66,6 +55,7 @@ function registerServiceWorker() {
             .catch(function(error) {
                 console.error('❌ Errore durante la registrazione del Service Worker:', error);
                 
+                // Fallback: mostra messaggio utente friendly
                 if (error.message.includes('404')) {
                     console.warn('⚠️ Service Worker non trovato. Modalità offline non disponibile.');
                 }
@@ -78,6 +68,7 @@ function registerServiceWorker() {
     }
 }
 
+// Controlla stato Service Worker
 function checkServiceWorkerStatus() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistration()
@@ -92,6 +83,7 @@ function checkServiceWorkerStatus() {
     }
 }
 
+// Forza aggiornamento Service Worker
 function forceServiceWorkerUpdate() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistration()
@@ -104,6 +96,7 @@ function forceServiceWorkerUpdate() {
     }
 }
 
+// Pulisci cache Service Worker (per sviluppo)
 function clearServiceWorkerCache() {
     if ('serviceWorker' in navigator) {
         caches.keys().then(function(cacheNames) {
@@ -114,6 +107,7 @@ function clearServiceWorkerCache() {
             showToast('Cache Service Worker pulita', 'info');
         });
         
+        // Deregistra Service Worker
         navigator.serviceWorker.getRegistrations()
             .then(function(registrations) {
                 registrations.forEach(function(registration) {
@@ -124,6 +118,7 @@ function clearServiceWorkerCache() {
     }
 }
 
+// Verifica supporto API
 function checkServiceWorkerSupport() {
     const supports = {
         serviceWorker: 'serviceWorker' in navigator,
@@ -180,6 +175,7 @@ class ValidationError extends AppError {
     }
 }
 
+// Error handler globale
 window.addEventListener('error', function(event) {
     console.error('Errore globale:', event.error);
     logErrorToAnalytics(event.error, 'GLOBAL_ERROR', {
@@ -197,11 +193,14 @@ window.addEventListener('unhandledrejection', function(event) {
     });
 });
 
+// Funzioni di gestione errori
 async function handleError(context, error, userMessage = null) {
     console.error(`[${context}]`, error);
     
+    // Log per analytics
     logErrorToAnalytics(error, context);
     
+    // Gestione specifica per tipo di errore
     if (error instanceof FirebaseError) {
         await handleFirebaseError(context, error);
     } else if (error instanceof NetworkError) {
@@ -212,10 +211,12 @@ async function handleError(context, error, userMessage = null) {
         await handleGenericError(context, error);
     }
     
+    // Mostra messaggio all'utente (ora disattivato in showToast)
     if (userMessage) {
         showToast(userMessage, 'error', 5000);
     }
     
+    // Log attività
     logActivity(`Errore in ${context}: ${error.message}`);
 }
 
@@ -287,6 +288,7 @@ async function handleGenericError(context, error) {
     showToast(userMessage, 'error');
 }
 
+// Funzioni di validazione
 function validateFontanaData(data) {
     const errors = [];
     
@@ -323,6 +325,7 @@ function validateBeverinoData(data) {
     return errors;
 }
 
+// Wrapper per funzioni Firebase
 async function safeFirebaseOperation(operation, context, ...args) {
     try {
         return await operation(...args);
@@ -339,9 +342,11 @@ async function safeFirebaseOperation(operation, context, ...args) {
 // PERFORMANCE OPTIMIZATIONS
 // ============================================
 
+// Cache per immagini
 const imageCache = new Map();
 const MAX_IMAGE_CACHE_SIZE = 50;
 
+// Lazy loading per immagini
 function setupLazyLoading() {
     if (typeof IntersectionObserver === 'undefined') return;
     
@@ -367,6 +372,7 @@ function setupLazyLoading() {
     });
 }
 
+// Caricamento immagini con cache
 function loadImageWithCache(imgElement, src) {
     if (imageCache.has(src)) {
         imgElement.src = imageCache.get(src);
@@ -390,6 +396,7 @@ function loadImageWithCache(imgElement, src) {
     img.src = src;
 }
 
+// Debounce migliorato
 function advancedDebounce(func, wait, immediate = false) {
     let timeout, result;
     const debounced = function(...args) {
@@ -424,6 +431,7 @@ let syncState = {
     retryCount: 0
 };
 
+// Inizializza offline sync
 function initializeOfflineSync() {
     if (!navigator.onLine) {
         enableOfflineMode();
@@ -436,26 +444,31 @@ function initializeOfflineSync() {
     loadSyncState();
 }
 
+// Abilita modalità offline
 function enableOfflineMode() {
     document.getElementById('offline-indicator').style.display = 'block';
     showToast('Modalità offline attiva. Le modifiche saranno sincronizzate dopo.', 'info', 5000);
 }
 
+// Disabilita modalità offline
 function disableOfflineMode() {
     document.getElementById('offline-indicator').style.display = 'none';
     triggerAutoSync();
 }
 
+// Gestisci evento online
 function handleOnline() {
     disableOfflineMode();
     showToast('Connessione ripristinata. Sincronizzazione in corso...', 'success');
     checkForPendingSync();
 }
 
+// Gestisci evento offline
 function handleOffline() {
     enableOfflineMode();
 }
 
+// Aggiungi operazione a coda sync
 async function addToSyncQueue(operation, collection, data, docId = null) {
     const syncItem = {
         operation,
@@ -490,6 +503,7 @@ async function addToSyncQueue(operation, collection, data, docId = null) {
     }
 }
 
+// Salva in coda sync locale
 async function saveToLocalSyncQueue(item) {
     const queue = await getLocalSyncQueue();
     queue.push(item);
@@ -503,17 +517,20 @@ async function saveToLocalSyncQueue(item) {
     saveSyncState();
 }
 
+// Ottieni coda sync locale
 async function getLocalSyncQueue() {
     const queue = localStorage.getItem('localSyncQueue');
     return queue ? JSON.parse(queue) : [];
 }
 
+// Salva sync item in localStorage
 function saveSyncItemToLocalStorage(item) {
     const pendingItems = JSON.parse(localStorage.getItem('pendingSyncItems') || '[]');
     pendingItems.push(item);
     localStorage.setItem('pendingSyncItems', JSON.stringify(pendingItems));
 }
 
+// Trigger sync automatica
 async function triggerAutoSync() {
     if (syncState.isSyncing) return;
     
@@ -568,6 +585,7 @@ async function triggerAutoSync() {
     }
 }
 
+// Sincronizza singolo elemento
 async function syncSingleItem(item) {
     const { doc, setDoc, deleteDoc } = await import(
         "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
@@ -591,12 +609,14 @@ async function syncSingleItem(item) {
     }
 }
 
+// Rimuovi dalla coda locale
 function removeFromLocalSyncQueue(itemId) {
     const queue = JSON.parse(localStorage.getItem('localSyncQueue') || '[]');
     const newQueue = queue.filter(item => item.id !== itemId);
     localStorage.setItem('localSyncQueue', JSON.stringify(newQueue));
 }
 
+// Programma retry
 function scheduleRetry() {
     const backoffDelay = Math.min(300000, Math.pow(2, syncState.retryCount) * 5000);
     
@@ -607,6 +627,7 @@ function scheduleRetry() {
     }, backoffDelay);
 }
 
+// Mostra risultati sync
 function showSyncResults(successCount, failCount) {
     if (successCount > 0 || failCount > 0) {
         const message = `Sincronizzazione: ${successCount} successi, ${failCount} falliti`;
@@ -619,6 +640,7 @@ function showSyncResults(successCount, failCount) {
     }
 }
 
+// Controlla stato sync
 async function checkSyncStatus() {
     if (!navigator.onLine) return;
     
@@ -629,6 +651,7 @@ async function checkSyncStatus() {
     }
 }
 
+// Verifica dati pendenti
 async function checkForPendingSync() {
     const localQueue = await getLocalSyncQueue();
     const pendingStorage = JSON.parse(localStorage.getItem('pendingSyncItems') || '[]');
@@ -645,14 +668,17 @@ async function checkForPendingSync() {
     }
 }
 
+// Aggiorna UI sync
 function updateSyncUI() {
     return;
 }
 
+// Salva stato sync
 function saveSyncState() {
     localStorage.setItem('syncState', JSON.stringify(syncState));
 }
 
+// Carica stato sync
 function loadSyncState() {
     const savedState = localStorage.getItem('syncState');
     if (savedState) {
@@ -661,6 +687,7 @@ function loadSyncState() {
     }
 }
 
+// Funzione per salvataggio dati offline
 function saveOfflineData(context, data) {
     try {
         const offlineData = JSON.parse(localStorage.getItem('offlineData') || '[]');
@@ -708,6 +735,7 @@ function logErrorToAnalytics(error, context, additionalData = {}) {
     
     localStorage.setItem('analytics_errors', JSON.stringify(analyticsLog));
     
+    // Firebase Analytics se disponibile
     if (window.firebaseAnalytics) {
         window.firebaseAnalytics.logEvent('error_occurred', {
             error_context: context,
@@ -755,6 +783,7 @@ let map = null;
 let clusterGroup = null;
 let markers = new Map();
 
+// Variabili per la gestione del doppio tocco/uscita
 let backPressTimer = null;
 const EXIT_TOAST_TIMEOUT = 2000; 
 
@@ -763,28 +792,34 @@ let isAdminAuthenticated = false;
 let adminAuthTimeout = null;
 
 // ============================================
-// NUOVA FUNZIONE CENTRALE PER RESET SCROLL
+// NUOVA FUNZIONE CENTRALE PER RESET SCROLL (AGGIORNATA)
 // ============================================
 function resetScroll() {
+    // 1. Resetta lo scroll della finestra principale
     window.scrollTo({
         top: 0,
         left: 0,
         behavior: 'instant'
     });
 
+    // 2. Resetta lo scroll delle aree di lista (Fontane/Beverini/News list)
     document.querySelectorAll('.content-area').forEach(area => {
         area.scrollTop = 0;
     });
 
+    // 3. Resetta lo scroll delle schede dettaglio (dove c'è l'immagine)
     document.querySelectorAll('.detail-content').forEach(detail => {
         detail.scrollTop = 0;
     });
 }
+// Rimosso: window.addEventListener('load', resetScroll);
+
 
 // ============================================
 // FUNZIONI ORIGINALI (MODIFICATE CON NUOVE FEATURES)
 // ============================================
 
+// Firebase Firestore functions
 async function loadFirebaseData(type) {
     try {
         const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
@@ -874,6 +909,7 @@ async function deleteFirebaseData(type, id) {
     }
 }
 
+// Local Storage functions
 function saveLocalData() {
     try {
         localStorage.setItem('fontaneBeveriniData', JSON.stringify(appData));
@@ -899,6 +935,7 @@ function loadLocalData(type = null) {
     return type ? [] : appData;
 }
 
+// Funzioni principali
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -925,9 +962,15 @@ function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString('it-IT', options);
 }
 
+// ======================================================
+// MODIFICA: Funzione showToast() con output visivo rimosso
+// ======================================================
 function showToast(message, type = 'info', duration = 3000) {
     console.log(`[Toast Disabled] Tipo: ${type}, Messaggio: ${message}`);
 }
+// ======================================================
+// FINE MODIFICA
+// ======================================================
 
 function logActivity(description) {
     const timestamp = new Date().toLocaleString('it-IT');
@@ -971,6 +1014,7 @@ function updateDashboardStats() {
     document.getElementById('total-news').textContent = appData.news.length;
 }
 
+// Admin Authentication
 function openAdminPanel() {
     if (isAdminAuthenticated) {
         showAdminPanel();
@@ -1029,6 +1073,7 @@ function showAdminPanel() {
     loadAdminNews();
     updateDashboardStats();
     
+    // ✅ CARICA ANALYTICS DASHBOARD
     loadAnalyticsDashboard();
     updatePerformanceMetrics();
     
@@ -1054,6 +1099,7 @@ function logoutAdmin() {
     logActivity('Logout amministratore');
 }
 
+// Navigation and Screen Management
 function showScreen(screenId) {
     const currentScreen = screenHistory[screenHistory.length - 1];
     
@@ -1076,6 +1122,7 @@ function showScreen(screenId) {
             screenHistory = screenHistory.slice(-10);
         }
         
+        // ✅ CORREZIONE FONDAMENTALE: Forza lo scroll all'inizio della pagina per tutte le schermate
         resetScroll();
         
         initializeScreenContent(screenId);
@@ -1083,8 +1130,10 @@ function showScreen(screenId) {
     
     updateTabBar(screenId);
     
+    // CORREZIONE: Nascondi sempre il pulsante di navigazione quando si cambia schermata
     document.getElementById('fixed-navigate-btn').classList.add('hidden');
     
+    // Pulisci il backPressTimer se navighiamo in avanti dalla Home
     if (backPressTimer) {
         clearTimeout(backPressTimer);
         backPressTimer = null;
@@ -1094,6 +1143,7 @@ function showScreen(screenId) {
 }
 
 function goBack() {
+    // CORREZIONE: Nascondi subito il pulsante di navigazione all'inizio di goBack
     document.getElementById('fixed-navigate-btn').classList.add('hidden');
     
     if (screenHistory.length > 1) {
@@ -1111,6 +1161,7 @@ function goBack() {
                 targetScreen.classList.add('active');
             }, 10);
             
+            // ✅ CORREZIONE: Forza lo scroll anche quando si torna indietro
             resetScroll();
             
             initializeScreenContent(previousScreen);
@@ -1143,7 +1194,7 @@ function initializeScreenContent(screenId) {
             break;
     }
 }
-
+// Data Loading Functions
 async function loadFontane() {
     const fontaneList = document.getElementById('fontane-list');
     if (!fontaneList) return;
@@ -1260,6 +1311,7 @@ const debouncedFilter = debounce(function(type, query) {
     }
 }, 300);
 
+// Rendering Functions
 function showSkeletonLoader(container, count = 6) {
     container.innerHTML = '';
     for (let i = 0; i < count; i++) {
@@ -1302,13 +1354,6 @@ function showSkeletonLoaderCompact(container, count = 6) {
         container.appendChild(skeletonItem);
     }
 }
-
-// CONTINUA NELLA PARTE 2...
-// ============================================
-// CONTINUAZIONE APP.JS - PARTE 2
-// ============================================
-
-// FUNZIONE CRITICA MODIFICATA: renderGridItems con fix per immagini
 function renderGridItems(container, items, type) {
     if (!items || items.length === 0) {
         container.innerHTML = `
@@ -1332,27 +1377,21 @@ function renderGridItems(container, items, type) {
         };
         
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
-        const fallbackImage = type === 'fontana' ? './images/sfondo-home.jpg' : './images/default-beverino.jpg';
-        const imageSrc = item.immagine && item.immagine.trim() !== '' ? item.immagine : fallbackImage;
         
-        // CODICE MODIFICATO: Immagine con gestione robusta
+        // MODIFICA QUI: Contenitore immagine robusto con fallback visivo
         gridItem.innerHTML = `
             <div class="item-image-container">
-                <img src="${imageSrc}" 
+                <img src="${item.immagine || './images/sfondo-home.jpg'}" 
                      alt="${item.nome}" 
                      class="item-image" 
-                     loading="lazy"
-                     onerror="this.onerror=null; this.src='${fallbackImage}'; this.style.display='block';">
-                ${!hasCustomImage ? '<div class="image-fallback"><i class="fas fa-image"></i></div>' : ''}
+                     onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'image-fallback\\'><i class=\\'fas fa-image\\'></i></div>';">
             </div>
             <div class="item-content">
                 <div class="item-name">${item.nome}</div>
                 <div class="item-address">${item.indirizzo}</div>
                 <div class="item-footer">
                     <span class="item-status status-${item.stato}">${getStatusText(item.stato)}</span>
-                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
-                        ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
-                    </span>
+                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}</span>
                 </div>
             </div>
         `;
@@ -1360,7 +1399,6 @@ function renderGridItems(container, items, type) {
     });
 }
 
-// FUNZIONE CRITICA MODIFICATA: renderCompactItems con fix per immagini
 function renderCompactItems(container, items, type) {
     if (!items || items.length === 0) {
         container.innerHTML = `
@@ -1377,6 +1415,20 @@ function renderCompactItems(container, items, type) {
     items.forEach(item => {
         const compactItem = document.createElement('div');
         compactItem.className = 'compact-item';
+
+        const totalLength = (item.nome || '').length + (item.indirizzo || '').length;
+        let heightClass = '';
+
+        if (totalLength > 100) {
+            heightClass = 'very-long-content';
+        } else if (totalLength > 60) {
+            heightClass = 'long-content';
+        }
+
+        if (heightClass) {
+            compactItem.classList.add(heightClass);
+        }
+
         compactItem.onclick = () => {
             showDetail(item.id, type);
             currentLatLng = { lat: item.latitudine, lng: item.longitudine };
@@ -1384,18 +1436,14 @@ function renderCompactItems(container, items, type) {
         };
 
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
-        const fallbackImage = './images/default-beverino.jpg';
-        const imageSrc = item.immagine && item.immagine.trim() !== '' ? item.immagine : fallbackImage;
         
-        // CODICE MODIFICATO: Struttura immagine compatta con fallback
+        // MODIFICA QUI: Struttura con contenitore immagine sicuro
         compactItem.innerHTML = `
             <div class="compact-item-image-container">
-                <img src="${imageSrc}"
+                <img src="${item.immagine || './images/default-beverino.jpg'}"
                      alt="${item.nome}"
                      class="compact-item-image"
-                     loading="lazy"
-                     onerror="this.onerror=null; this.src='${fallbackImage}'; this.style.display='block';">
-                ${!hasCustomImage ? '<div class="compact-image-fallback"><i class="fas fa-faucet"></i></div>' : ''}
+                     onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'compact-image-fallback\\'><i class=\\'fas fa-faucet\\'></i></div>';">
             </div>
             <div class="compact-item-content">
                 <div class="compact-item-header">
@@ -1446,6 +1494,7 @@ function renderNewsItems(container, news) {
     });
 }
 
+// Detail View
 function showDetail(id, type) {
     let item, screenId, titleElement, contentElement;
     
@@ -1469,6 +1518,7 @@ function showDetail(id, type) {
     titleElement.textContent = item.nome;
     contentElement.innerHTML = generateDetailHTML(item, type);
     
+    // ✅ MODIFICA QUI: Forza lo scroll in alto quando si apre il dettaglio
     contentElement.scrollTop = 0; 
     
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
@@ -1476,6 +1526,7 @@ function showDetail(id, type) {
     showScreen(screenId);
 }
 
+// ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
     let specificFields = '';
     if (type === 'fontana') {
@@ -1485,10 +1536,10 @@ function generateDetailHTML(item, type) {
         `;
     }
     
+    // MODIFICA: Determina l'immagine di fallback condizionale
     const fallbackImage = type === 'fontana' ? './images/sfondo-home.jpg' : './images/default-beverino.jpg';
-    const hasCustomImage = item.immagine && item.immagine.trim() !== '';
-    const imageSrc = hasCustomImage ? item.immagine : fallbackImage;
 
+    // ✅ LOGICA CONDIZIONALE: crea il blocco HTML solo se la descrizione non è vuota.
     const descriptionHTML = (item.descrizione && item.descrizione.trim())
         ? `
             <div class="detail-info">
@@ -1498,10 +1549,10 @@ function generateDetailHTML(item, type) {
                 </div>
             </div>
         ` 
-        : '';
+        : ''; // Se vuota, la riga non appare
 
     return `
-        <img src="${imageSrc}" class="detail-image" alt="${item.nome}" onerror="this.src='${fallbackImage}'">
+        <img src="${item.immagine || fallbackImage}" class="detail-image" alt="${item.nome}" onerror="this.src='${fallbackImage}'">
         <div class="detail-info">
             <div class="info-item">
                 <span class="info-label">${type === 'fontana' ? 'Indirizzo:' : 'Posizione:'}</span>
@@ -1525,6 +1576,7 @@ function generateDetailHTML(item, type) {
     `;
 }
 
+// Navigation
 function navigateTo(lat, lng) {
     currentLatLng = { lat, lng };
     document.getElementById('navigation-modal').style.display = 'flex';
@@ -1558,6 +1610,7 @@ function closeNavigationModal() {
     currentLatLng = null;
 }
 
+// Map Functions
 function initMappa() {
     if (!map) {
         map = L.map('map').setView([40.8518, 14.2681], 13);
@@ -1736,6 +1789,7 @@ function fitMapToMarkers() {
     }
 }
 
+// Share Function
 function shareItem(id, type) {
     let item;
     if (type === 'fontana') {
@@ -1778,6 +1832,7 @@ function shareItem(id, type) {
     }
 }
 
+// Search Functions
 async function searchAddressOnMap(query) {
     try {
         const response = await fetch(
@@ -1911,6 +1966,7 @@ function setupSearchAutocomplete() {
     });
 }
 
+// Location Functions
 function getCurrentLocationCoordinatesOnly(type) {
     showToast('Rilevamento coordinate in corso...', 'info');
 
@@ -2027,6 +2083,7 @@ async function reverseGeocode(lat, lng) {
     return null;
 }
 
+// Admin Panel Functions
 document.querySelectorAll('.admin-tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
@@ -2044,6 +2101,7 @@ function showAdminTab(tabId) {
     document.getElementById(tabId).classList.add('active');
 }
 
+// Fontane Admin
 async function loadAdminFontane() {
     const tbody = document.getElementById('fontane-table-body');
     if (!tbody) return;
@@ -2083,6 +2141,7 @@ function editFontana(id) {
     showAdminTab('fontane-admin');
 }
 
+// MODIFICA: saveFontana con supporto offline
 async function saveFontana(e) {
     e.preventDefault();
     
@@ -2111,6 +2170,7 @@ async function saveFontana(e) {
             last_modified: new Date().toISOString()
         };
         
+        // Validazione
         const validationErrors = validateFontanaData(fontanaData);
         if (validationErrors.length > 0) {
             throw validationErrors[0];
@@ -2120,6 +2180,7 @@ async function saveFontana(e) {
         const operation = id ? 'UPDATE' : 'CREATE';
         
         if (navigator.onLine) {
+            // Online: salva direttamente
             if (id && id.trim() !== '') {
                 savedId = await safeFirebaseOperation(
                     saveFirebaseData,
@@ -2146,6 +2207,7 @@ async function saveFontana(e) {
                 showToast(`Fontana aggiunta con successo (ID: ${savedId})`, 'success');
             }
         } else {
+            // Offline: aggiungi a coda sync
             savedId = id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             
             await addToSyncQueue(
@@ -2193,6 +2255,7 @@ async function deleteFontana(id) {
         if (navigator.onLine) {
             await deleteFirebaseData('fontane', id);
         } else {
+            // Offline: aggiungi a coda sync
             const fontana = appData.fontane.find(f => f.id == id);
             if (fontana) {
                 await addToSyncQueue('DELETE', 'fontane', fontana, id);
@@ -2213,6 +2276,7 @@ async function deleteFontana(id) {
     }
 }
 
+// Beverini Admin
 async function loadAdminBeverini() {
     const tbody = document.getElementById('beverini-table-body');
     if (!tbody) return;
@@ -2234,6 +2298,7 @@ async function loadAdminBeverini() {
     });
 }
 
+// ✅ MODIFICA A: editBeverino con caricamento campo descrizione
 function editBeverino(id) {
     const beverino = appData.beverini.find(b => b.id == id);
     if (!beverino) return;
@@ -2242,7 +2307,10 @@ function editBeverino(id) {
     document.getElementById('beverino-nome').value = beverino.nome || '';
     document.getElementById('beverino-indirizzo').value = beverino.indirizzo || '';
     document.getElementById('beverino-stato').value = beverino.stato || 'funzionante';
-    document.getElementById('beverino-descrizione').value = beverbeverino.descrizione || '';
+    
+    // ✅ CARICA LA DESCRIZIONE
+    document.getElementById('beverino-descrizione').value = beverino.descrizione || ''; 
+    
     document.getElementById('beverino-latitudine').value = beverino.latitudine || '';
     document.getElementById('beverino-longitudine').value = beverino.longitudine || '';
     document.getElementById('beverino-immagine').value = beverino.immagine || '';
@@ -2250,6 +2318,7 @@ function editBeverino(id) {
     showAdminTab('beverini-admin');
 }
 
+// ✅ MODIFICA B: saveBeverino con salvataggio campo descrizione e supporto offline
 async function saveBeverino(e) {
     e.preventDefault();
     
@@ -2260,6 +2329,8 @@ async function saveBeverino(e) {
     const latitudine = parseFloat(document.getElementById('beverino-latitudine').value) || 0;
     const longitudine = parseFloat(document.getElementById('beverino-longitudine').value) || 0;
     const immagine = document.getElementById('beverino-immagine').value.trim();
+    
+    // ✅ LEGGE LA DESCRIZIONE DAL FORM
     const descrizione = document.getElementById('beverino-descrizione').value.trim();
     
     const beverinoData = {
@@ -2269,7 +2340,8 @@ async function saveBeverino(e) {
         latitudine,
         longitudine,
         immagine,
-        descrizione,
+        // ✅ INCLUDE LA DESCRIZIONE NEI DATI
+        descrizione, 
         last_modified: new Date().toISOString()
     };
     
@@ -2374,86 +2446,1083 @@ async function deleteBeverino(id) {
     }
 }
 
-// Le funzioni restanti (news, export, etc.) rimangono invariate dal file originale...
-// ... [Rimangono le stesse funzioni del file originale per news, export, analytics, etc.]
+// News Admin
+async function loadAdminNews() {
+    const tbody = document.getElementById('news-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    appData.news.forEach(news => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${news.id}</td>
+            <td>${news.titolo}</td>
+            <td>${formatDate(news.data)}</td>
+            <td>${news.categoria}</td>
+            <td class="admin-item-actions">
+                <button class="edit-btn" onclick="editNews('${news.id}')">Modifica</button>
+                <button class="delete-btn" onclick="deleteNews('${news.id}')">Elimina</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function editNews(id) {
+    const news = appData.news.find(n => n.id == id);
+    if (!news) return;
+    
+    document.getElementById('news-id').value = news.id;
+    document.getElementById('news-titolo').value = news.titolo || '';
+    document.getElementById('news-contenuto').value = news.contenuto || '';
+    document.getElementById('news-data').value = news.data || '';
+    document.getElementById('news-categoria').value = news.categoria || '';
+    document.getElementById('news-fonte').value = news.fonte || '';
+    
+    showAdminTab('news-admin');
+}
+
+async function saveNews(e) {
+    e.preventDefault();
+    
+    const id = document.getElementById('news-id').value;
+    const titolo = document.getElementById('news-titolo').value;
+    const contenuto = document.getElementById('news-contenuto').value;
+    const data = document.getElementById('news-data').value;
+    const categoria = document.getElementById('news-categoria').value;
+    const fonte = document.getElementById('news-fonte').value;
+    
+    const newsData = {
+        titolo,
+        contenuto,
+        data,
+        categoria,
+        fonte,
+        last_modified: new Date().toISOString()
+    };
+    
+    try {
+        let savedId;
+        if (navigator.onLine) {
+            if (id && id.trim() !== '') {
+                savedId = await safeFirebaseOperation(
+                    saveFirebaseData,
+                    'update_news',
+                    'news',
+                    newsData,
+                    id
+                );
+                const index = appData.news.findIndex(n => n.id == id);
+                if (index !== -1) {
+                    appData.news[index] = { id, ...newsData };
+                }
+                showToast('News modificata con successo', 'success');
+            } else {
+                savedId = await safeFirebaseOperation(
+                    saveFirebaseData,
+                    'create_news',
+                    'news',
+                    newsData
+                );
+                appData.news.push({ id: savedId, ...newsData });
+                showToast(`News aggiunta con successo (ID: ${savedId})`, 'success');
+            }
+        } else {
+            savedId = id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            await addToSyncQueue(
+                id ? 'UPDATE' : 'CREATE',
+                'news',
+                newsData,
+                savedId
+            );
+            
+            if (id) {
+                const index = appData.news.findIndex(n => n.id == id);
+                if (index !== -1) {
+                    appData.news[index] = { id: savedId, ...newsData };
+                }
+            } else {
+                appData.news.push({ id: savedId, ...newsData });
+            }
+            
+            showToast('News salvata localmente. Sarà sincronizzata online dopo.', 'info');
+        }
+        
+        saveLocalData();
+        loadAdminNews();
+        resetNewsForm();
+        
+        loadNews();
+        updateDashboardStats();
+        
+    } catch (error) {
+        await handleError('saveNews', error, 'Errore nel salvataggio della news');
+    }
+}
+
+function resetNewsForm() {
+    document.getElementById('news-form').reset();
+    document.getElementById('news-id').value = '';
+}
+
+async function deleteNews(id) {
+    if (!confirm('Sei sicuro di voler eliminare questa news?')) return;
+    
+    try {
+        if (navigator.onLine) {
+            await deleteFirebaseData('news', id);
+        } else {
+            const news = appData.news.find(n => n.id == id);
+            if (news) {
+                await addToSyncQueue('DELETE', 'news', news, id);
+            }
+        }
+        
+        appData.news = appData.news.filter(n => n.id != id);
+        
+        saveLocalData();
+        loadAdminNews();
+        loadNews();
+        updateDashboardStats();
+        
+        showToast('News eliminata con successo', 'success');
+        logActivity('News eliminata');
+    } catch (error) {
+        showToast('Errore nell\'eliminazione della news', 'error');
+    }
+}
+
+// Import/Export Functions
+function exportDataToExcel(type) {
+    try {
+        let data, filename, sheetName;
+
+        switch(type) {
+            case 'fontane':
+                data = appData.fontane;
+                filename = 'fontane_export.xlsx';
+                sheetName = 'Fontane';
+                break;
+            case 'beverini':
+                data = appData.beverini;
+                filename = 'beverini_export.xlsx';
+                sheetName = 'Beverini';
+                break;
+            case 'news':
+                data = appData.news;
+                filename = 'news_export.xlsx';
+                sheetName = 'News';
+                break;
+        }
+
+        const excelData = data.map(item => {
+            const row = {};
+            Object.keys(item).forEach(key => {
+                if (key !== 'last_modified' && key !== 'id') {
+                    row[key] = item[key];
+                }
+            });
+            return row;
+        });
+
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+        XLSX.writeFile(wb, filename);
+
+        showToast(`Dati ${type} esportati in Excel con successo`, 'success');
+        logActivity(`Dati ${type} esportati in Excel`);
+    } catch (error) {
+        showToast('Errore nell\'esportazione Excel', 'error');
+    }
+}
+
+function exportAllDataToExcel() {
+    try {
+        const wb = XLSX.utils.book_new();
+
+        const fontaneData = appData.fontane.map(item => {
+            const row = {};
+            Object.keys(item).forEach(key => {
+                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
+            });
+            return row;
+        });
+        const fontaneWs = XLSX.utils.json_to_sheet(fontaneData);
+        XLSX.utils.book_append_sheet(wb, fontaneWs, 'Fontane');
+
+        const beveriniData = appData.beverini.map(item => {
+            const row = {};
+            Object.keys(item).forEach(key => {
+                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
+            });
+            return row;
+        });
+        const beveriniWs = XLSX.utils.json_to_sheet(beveriniData);
+        XLSX.utils.book_append_sheet(wb, beveriniWs, 'Beverini');
+
+        const newsData = appData.news.map(item => {
+            const row = {};
+            Object.keys(item).forEach(key => {
+                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
+            });
+            return row;
+        });
+        const newsWs = XLSX.utils.json_to_sheet(newsData);
+        XLSX.utils.book_append_sheet(wb, newsWs, 'News');
+
+        XLSX.writeFile(wb, 'fontane_beverini_complete_export.xlsx');
+
+        showToast('Tutti i dati esportati in Excel con successo', 'success');
+        logActivity('Tutti i dati esportati in Excel');
+    } catch (error) {
+        showToast('Errore nell\'esportazione Excel', 'error');
+    }
+}
+
+function handleFileImport(type, files) {
+    if (files.length === 0) return;
+
+    const file = files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+
+            if (type === 'all') {
+                let importedCount = 0;
+
+                if (workbook.SheetNames.includes('Fontane')) {
+                    const fontaneSheet = workbook.Sheets['Fontane'];
+                    const fontaneData = XLSX.utils.sheet_to_json(fontaneSheet);
+                    importedCount += importFontane(fontaneData);
+                }
+
+                if (workbook.SheetNames.includes('Beverini')) {
+                    const beveriniSheet = workbook.Sheets['Beverini'];
+                    const beveriniData = XLSX.utils.sheet_to_json(beveriniSheet);
+                    importedCount += importBeverini(beveriniData);
+                }
+
+                if (workbook.SheetNames.includes('News')) {
+                    const newsSheet = workbook.Sheets['News'];
+                    const newsData = XLSX.utils.sheet_to_json(newsSheet);
+                    importedCount += importNews(newsData);
+                }
+
+                if (importedCount > 0) {
+                    saveLocalData();
+                    loadAdminFontane();
+                    loadAdminBeverini();
+                    loadAdminNews();
+                    updateDashboardStats();
+                    showToast(`${importedCount} elementi importati con successo`, 'success');
+                    logActivity('Tutti i dati importati da Excel');
+                } else {
+                    showToast('Nessun dato valido trovato nel file', 'warning');
+                }
+            } else {
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                switch (type) {
+                    case 'fontane':
+                        importFontane(jsonData);
+                        break;
+                    case 'beverini':
+                        importBeverini(jsonData);
+                        break;
+                    case 'news':
+                        importNews(jsonData);
+                        break;
+                }
+            }
+
+            document.getElementById(`import-${type}-file`).value = '';
+        } catch (error) {
+            showToast('Errore nell\'importazione Excel', 'error');
+        }
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+function importFontane(data) {
+    const newFontane = data.map((item) => ({
+        nome: item.Nome || item.nome || '',
+        indirizzo: item.Indirizzo || item.indirizzo || '',
+        stato: item.Stato || item.stato || 'funzionante',
+        anno: item.Anno || item.anno || '',
+        descrizione: item.Descrizione || item.descrizione || '',
+        storico: item.Storico || item.storico || '',
+        latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
+        longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
+        immagine: item.Immagine || item.immagine || '',
+        last_modified: new Date().toISOString()
+    }));
+
+    let importedCount = 0;
+    
+    newFontane.forEach(async (fontana) => {
+        try {
+            const id = await saveFirebaseData('fontane', fontana);
+            appData.fontane.push({ id, ...fontana });
+            importedCount++;
+            
+            if (importedCount === newFontane.length) {
+                saveLocalData();
+                loadAdminFontane();
+                showToast(`${importedCount} fontane importate con successo!`, 'success');
+                logActivity(`${importedCount} fontane importate da Excel`);
+            }
+        } catch (error) {
+            console.error('Errore import fontana:', error);
+        }
+    });
+
+    return newFontane.length;
+}
+
+function importBeverini(data) {
+    const newBeverini = data.map((item) => ({
+        nome: item.Nome || item.nome || '',
+        indirizzo: item.Indirizzo || item.indirizzo || '',
+        stato: item.Stato || item.stato || 'funzionante',
+        latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
+        longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
+        immagine: item.Immagine || item.immagine || '',
+        // Assumiamo che la descrizione possa essere importata se presente nel file
+        descrizione: item.Descrizione || item.descrizione || '', 
+        last_modified: new Date().toISOString()
+    }));
+
+    let importedCount = 0;
+    
+    newBeverini.forEach(async (beverino) => {
+        try {
+            const id = await saveFirebaseData('beverini', beverino);
+            appData.beverini.push({ id, ...beverino });
+            importedCount++;
+            
+            if (importedCount === newBeverini.length) {
+                saveLocalData();
+                loadAdminBeverini();
+                showToast(`${importedCount} beverini importati con successo!`, 'success');
+                logActivity(`${importedCount} beverini importati da Excel`);
+            }
+        } catch (error) {
+            console.error('Errore import beverino:', error);
+        }
+    });
+
+    return newBeverini.length;
+}
+
+function importNews(data) {
+    const newNews = data.map((item) => ({
+        titolo: item.Titolo || item.titolo || '',
+        contenuto: item.Contenuto || item.contenuto || '',
+        data: item.Data || item.data || new Date().toISOString().split('T')[0],
+        categoria: item.Categoria || item.categoria || '',
+        fonte: item.Fonte || item.fonte || '',
+        last_modified: new Date().toISOString()
+    }));
+
+    let importedCount = 0;
+    
+    newNews.forEach(async (news) => {
+        try {
+            const id = await saveFirebaseData('news', news);
+            appData.news.push({ id, ...news });
+            importedCount++;
+            
+            if (importedCount === newNews.length) {
+                saveLocalData();
+                loadAdminNews();
+                showToast(`${importedCount} news importate con successo!`, 'success');
+                logActivity(`${importedCount} news importate da Excel`);
+            }
+        } catch (error) {
+            console.error('Errore import news:', error);
+        }
+    });
+
+    return newNews.length;
+}
+
+function downloadTemplate(type) {
+    let columns = [];
+    let filename = '';
+    let sheetName = '';
+
+    switch (type) {
+        case 'fontane':
+            columns = [
+                'Nome', 'Indirizzo', 'Stato', 'Anno', 'Descrizione',
+                'Storico', 'Latitudine', 'Longitudine', 'Immagine'
+            ];
+            filename = 'template_fontane.xlsx';
+            sheetName = 'Fontane';
+            break;
+        case 'beverini':
+            columns = [
+                'Nome', 'Indirizzo', 'Stato', 'Latitudine', 'Longitudine', 'Immagine', 'Descrizione' // Aggiunta Descrizione per coerenza
+            ];
+            filename = 'template_beverini.xlsx';
+            sheetName = 'Beverini';
+            break;
+        case 'news':
+            columns = [
+                'Titolo', 'Contenuto', 'Data', 'Categoria', 'Fonte'
+            ];
+            filename = 'template_news.xlsx';
+            sheetName = 'News';
+            break;
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet([columns]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, filename);
+
+    showToast(`Template ${type} scaricato con successo`, 'success');
+}
+
+// Utility Functions
+function showInfoModal(title, message) {
+    document.getElementById('info-modal-title').textContent = title;
+    document.getElementById('info-modal-message').textContent = message;
+    document.getElementById('info-modal').style.display = 'flex';
+}
+
+function closeInfoModal() {
+    document.getElementById('info-modal').style.display = 'none';
+}
+
+function checkOnlineStatus() {
+    const offlineIndicator = document.getElementById('offline-indicator');
+    if (!navigator.onLine) {
+        offlineIndicator.style.display = 'block';
+    } else {
+        offlineIndicator.style.display = 'none';
+    }
+}
+
+function handleUrlParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const fontanaId = urlParams.get('fontana');
+    const beverinoId = urlParams.get('beverino');
+    if (fontanaId) {
+        showDetail(fontanaId, 'fontana');
+    } else if (beverinoId) {
+        showDetail(beverinoId, 'beverino');
+    }
+}
 
 // ============================================
-// GESTIONE TASTO INDIETRO ANDROID (CORRETTO)
+// ANALYTICS DASHBOARD FUNCTIONS
 // ============================================
 
-function setupBackButtonHandler() {
-    window.history.pushState({ page: 'app_root' }, document.title, window.location.href);
+// Carica dashboard analytics
+function loadAnalyticsDashboard() {
+    if (!window.Analytics) {
+        console.warn('Analytics non inizializzato');
+        return;
+    }
 
-    window.addEventListener('popstate', function(event) {
-        const actionTaken = handleBackNavigation();
+    // Aggiorna statistiche
+    updateAnalyticsStats();
+    
+    // Aggiorna tabelle
+    updateAnalyticsTables();
+    
+    // Aggiorna info sessione
+    updateSessionInfo();
+    
+    // Aggiorna info storage
+    updateStorageInfo();
+    
+    // Aggiorna grafico
+    updateActivityChart();
+}
 
-        if (actionTaken) {
-            window.history.pushState({ page: 'app_active' }, document.title, window.location.href);
+// Aggiorna statistiche
+function updateAnalyticsStats() {
+    try {
+        const today = new Date().toDateString();
+        const allEvents = JSON.parse(localStorage.getItem('analytics_events') || '[]');
+        const allErrors = JSON.parse(localStorage.getItem('analytics_errors') || '[]');
+        
+        // Eventi di oggi
+        const todayEvents = allEvents.filter(event => 
+            new Date(event.timestamp).toDateString() === today
+        );
+        
+        // Sessioni di oggi (eventi di tipo SESSION_START)
+        const todaySessions = todayEvents.filter(event => event.type === 'SESSION_START');
+        
+        // Errori di oggi
+        const todayErrors = allErrors.filter(error => 
+            new Date(error.timestamp).toDateString() === today
+        );
+        
+        // Page views
+        const pageViews = todayEvents.filter(event => event.type === 'PAGE_VIEW').length;
+        
+        // Aggiorna UI
+        document.getElementById('analytics-session-count').textContent = todaySessions.length;
+        document.getElementById('analytics-events-count').textContent = todayEvents.length;
+        document.getElementById('analytics-pageviews-count').textContent = pageViews;
+        document.getElementById('analytics-errors-count').textContent = todayErrors.length;
+        
+    } catch (error) {
+        console.error('Errore aggiornamento stats:', error);
+    }
+}
+
+// Aggiorna tabelle
+function updateAnalyticsTables() {
+    updateErrorsTable();
+    updateEventsTable();
+}
+
+// Aggiorna tabella errori
+function updateErrorsTable() {
+    const errorsTable = document.getElementById('analytics-errors-table');
+    if (!errorsTable) return;
+    
+    const errors = JSON.parse(localStorage.getItem('analytics_errors') || '[]');
+    const recentErrors = errors.slice(0, 10); // Ultimi 10 errori
+    
+    errorsTable.innerHTML = recentErrors.map(error => {
+        const date = new Date(error.timestamp);
+        const timeString = date.toLocaleTimeString('it-IT', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        const dateString = date.toLocaleDateString('it-IT');
+        
+        return `
+            <tr>
+                <td>${dateString} ${timeString}</td>
+                <td>${error.context || 'N/A'}</td>
+                <td title="${error.error?.message || 'N/A'}">
+                    ${(error.error?.message || 'N/A').substring(0, 50)}${(error.error?.message || '').length > 50 ? '...' : ''}
+                </td>
+                <td>
+                    <span class="item-status status-${error.severity || 'medium'}">
+                        ${error.severity || 'medium'}
+                    </span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    if (recentErrors.length === 0) {
+        errorsTable.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 20px; color: var(--light-text);">
+                    Nessun errore registrato
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Aggiorna tabella eventi
+function updateEventsTable() {
+    const eventsTable = document.getElementById('analytics-events-table');
+    if (!eventsTable) return;
+    
+    const events = JSON.parse(localStorage.getItem('analytics_events') || '[]');
+    
+    // Raggruppa eventi per categoria/azione
+    const eventCounts = {};
+    events.forEach(event => {
+        if (event.category && event.action) {
+            const key = `${event.category}.${event.action}`;
+            eventCounts[key] = eventCounts[key] || { count: 0, lastTime: null };
+            eventCounts[key].count++;
+            
+            const eventTime = new Date(event.timestamp);
+            if (!eventCounts[key].lastTime || eventTime > eventCounts[key].lastTime) {
+                eventCounts[key].lastTime = eventTime;
+            }
+        }
+    });
+    
+    // Converti in array e ordina
+    const eventArray = Object.entries(eventCounts)
+        .map(([key, data]) => {
+            const [category, action] = key.split('.');
+            return {
+                category,
+                action,
+                count: data.count,
+                lastTime: data.lastTime
+            };
+        })
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10); // Top 10
+    
+    eventsTable.innerHTML = eventArray.map(event => {
+        const lastTime = event.lastTime ? 
+            event.lastTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 
+            'N/A';
+        
+        return `
+            <tr>
+                <td>${event.category}</td>
+                <td>${event.action}</td>
+                <td>${event.count}</td>
+                <td>${lastTime}</td>
+            </tr>
+        `;
+    }).join('');
+    
+    if (eventArray.length === 0) {
+        eventsTable.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 20px; color: var(--light-text);">
+                    Nessun evento registrato
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Aggiorna info sessione
+function updateSessionInfo() {
+    if (window.Analytics && window.Analytics.session) {
+        document.getElementById('current-session-id').textContent = 
+            window.Analytics.session.id.substring(0, 15) + '...';
+        
+        const statusIndicator = document.getElementById('analytics-status-indicator');
+        const statusText = document.getElementById('analytics-status-text');
+        
+        if (window.Analytics.config.trackingEnabled) {
+            statusIndicator.classList.remove('inactive');
+            statusIndicator.classList.add('active');
+            statusText.textContent = 'Analytics Attivo';
+            statusText.className = 'status-active';
+        } else {
+            statusIndicator.classList.remove('active');
+            statusIndicator.classList.add('inactive');
+            statusText.textContent = 'Analytics Disattivo';
+            statusText.className = 'status-inactive';
+        }
+    }
+}
+
+// Aggiorna info storage
+function updateStorageInfo() {
+    try {
+        // Calcola storage utilizzato
+        let totalSize = 0;
+        const analyticsKeys = [
+            'analytics_events',
+            'analytics_errors',
+            'analytics_pending',
+            'analytics_user_id',
+            'analytics_tracking_enabled'
+        ];
+        
+        analyticsKeys.forEach(key => {
+            const item = localStorage.getItem(key);
+            if (item) {
+                totalSize += new Blob([item]).size;
+            }
+        });
+        
+        // Converti in KB
+        const sizeKB = (totalSize / 1024).toFixed(2);
+        document.getElementById('storage-used').textContent = `${sizeKB} KB`;
+        
+        // Eventi pendenti
+        const pendingEvents = JSON.parse(localStorage.getItem('analytics_pending') || '[]');
+        document.getElementById('pending-events').textContent = pendingEvents.length;
+        
+        // Ultimo sync
+        const lastSync = localStorage.getItem('analytics_last_sync');
+        if (lastSync) {
+            const lastSyncDate = new Date(lastSync);
+            const now = new Date();
+            const diffMinutes = Math.floor((now - lastSyncDate) / (1000 * 60));
+            
+            if (diffMinutes < 1) {
+                document.getElementById('last-sync-time').textContent = 'Poco fa';
+            } else if (diffMinutes < 60) {
+                document.getElementById('last-sync-time').textContent = `${diffMinutes} minuti fa`;
+            } else {
+                document.getElementById('last-sync-time').textContent = 
+                    lastSyncDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+        
+    } catch (error) {
+        console.error('Errore calcolo storage:', error);
+    }
+}
+
+// Aggiorna grafico attività
+function updateActivityChart() {
+    const canvas = document.getElementById('activity-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Dati di esempio per il grafico
+    const labels = [];
+    const data = [];
+    
+    // Genera dati per ultimi 7 giorni
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        labels.push(date.toLocaleDateString('it-IT', { weekday: 'short' }));
+        
+        // Valore casuale per demo
+        data.push(Math.floor(Math.random() * 50) + 20);
+    }
+    
+    // Crea grafico
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Eventi',
+                data: data,
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        stepSize: 10
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
         }
     });
 }
 
+// Aggiorna metriche performance
+function updatePerformanceMetrics() {
+    const metrics = JSON.parse(localStorage.getItem('performance_metrics') || '[]');
+    
+    if (metrics.length > 0) {
+        // Calcola medie
+        const firstLoadMetrics = metrics.filter(m => m.name === 'app_start' || m.name.includes('first'));
+        const dataLoadMetrics = metrics.filter(m => m.name.includes('data_load') || m.name.includes('firebase'));
+        const imageLoadMetrics = metrics.filter(m => m.name.includes('image') || m.name.includes('load'));
+        
+        const avgFirstLoad = firstLoadMetrics.length > 0 ? 
+            firstLoadMetrics.reduce((sum, m) => sum + m.duration, 0) / firstLoadMetrics.length : 0;
+        
+        const avgDataLoad = dataLoadMetrics.length > 0 ? 
+            dataLoadMetrics.reduce((sum, m) => sum + m.duration, 0) / dataLoadMetrics.length : 0;
+        
+        const avgImageLoad = imageLoadMetrics.length > 0 ? 
+            imageLoadMetrics.reduce((sum, m) => sum + m.value || m.duration, 0) / imageLoadMetrics.length : 0;
+        
+        // Aggiorna UI
+        document.getElementById('metric-first-load').textContent = `${Math.round(avgFirstLoad)}ms`;
+        document.getElementById('metric-data-load').textContent = `${Math.round(avgDataLoad)}ms`;
+        document.getElementById('metric-image-load').textContent = `${Math.round(avgImageLoad)}ms`;
+    }
+}
+
+// Funzioni azioni analytics
+function exportAnalyticsData() {
+    if (window.Analytics && window.Analytics.exportAnalyticsData) {
+        window.Analytics.exportAnalyticsData();
+        showToast('Dati analytics esportati', 'success');
+    } else {
+        // Fallback manuale
+        const allData = {
+            events: JSON.parse(localStorage.getItem('analytics_events') || '[]'),
+            errors: JSON.parse(localStorage.getItem('analytics_errors') || '[]'),
+            performance: JSON.parse(localStorage.getItem('performance_metrics') || '[]'),
+            timestamp: new Date().toISOString(),
+            user_id: localStorage.getItem('analytics_user_id')
+        };
+        
+        const dataStr = JSON.stringify(allData, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        
+        const exportFileDefaultName = `analytics_export_${new Date().toISOString().split('T')[0]}.json`;
+        
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+        
+        showToast('Dati analytics esportati', 'success');
+    }
+    
+    // Traccia l'evento
+    if (window.Analytics) {
+        window.Analytics.trackEvent('analytics', 'data_exported');
+    }
+}
+
+function refreshAnalyticsDashboard() {
+    loadAnalyticsDashboard();
+    updatePerformanceMetrics();
+    showToast('Dashboard analytics aggiornata', 'success');
+    
+    if (window.Analytics) {
+        window.Analytics.trackEvent('analytics', 'dashboard_refreshed');
+    }
+}
+
+function toggleAnalyticsTracking() {
+    if (window.Analytics) {
+        const newState = !window.Analytics.config.trackingEnabled;
+        window.Analytics.setTrackingEnabled(newState);
+        
+        showToast(`Analytics ${newState ? 'attivato' : 'disattivato'}`, 'info');
+        updateSessionInfo();
+        
+        window.Analytics.trackEvent('analytics', 'tracking_toggled', null, null, {
+            new_state: newState
+        });
+    }
+}
+
+function resetAnalyticsData() {
+    if (confirm('Sei sicuro di voler resettare tutti i dati analytics? Questa azione non può essere annullata.')) {
+        // Cancella tutti i dati analytics
+        const analyticsKeys = [
+            'analytics_events',
+            'analytics_errors',
+            'analytics_pending',
+            'analytics_last_sync',
+            'performance_metrics'
+        ];
+        
+        analyticsKeys.forEach(key => {
+            localStorage.removeItem(key);
+        });
+        
+        // Resetta user ID
+        localStorage.removeItem('analytics_user_id');
+        
+        // Re-inizializza analytics
+        if (window.Analytics) {
+            window.Analytics.user.id = window.Analytics.getUserId();
+            window.Analytics.session.id = window.Analytics.generateSessionId();
+            window.Analytics.session.startTime = Date.now();
+        }
+        
+        // Aggiorna dashboard
+        loadAnalyticsDashboard();
+        
+        showToast('Dati analytics resettati', 'success');
+        
+        if (window.Analytics) {
+            window.Analytics.trackEvent('analytics', 'data_reset');
+        }
+    }
+}
+
+function clearAnalyticsErrors() {
+    if (confirm('Cancellare tutti gli errori registrati?')) {
+        localStorage.removeItem('analytics_errors');
+        updateErrorsTable();
+        updateAnalyticsStats();
+        showToast('Errori cancellati', 'success');
+        
+        if (window.Analytics) {
+            window.Analytics.trackEvent('analytics', 'errors_cleared');
+        }
+    }
+}
+
+// Funzioni debug
+function testAnalyticsEvent() {
+    if (window.Analytics) {
+        window.Analytics.trackEvent('test', 'manual_event', 'Test manuale', 1, {
+            test_mode: true,
+            timestamp: new Date().toISOString()
+        });
+        showToast('Evento test registrato', 'info');
+    }
+}
+
+function testAnalyticsError() {
+    if (window.Analytics) {
+        const testError = new Error('Errore di test manuale');
+        testError.name = 'TestError';
+        testError.code = 'TEST_001';
+        
+        window.Analytics.trackError(testError, 'test_manual', 'low', {
+            test_mode: true
+        });
+        showToast('Errore test registrato', 'info');
+    }
+}
+
+function testPerformanceMetric() {
+    const loadTime = Math.random() * 1000 + 500; // Valore casuale 500-1500ms
+    logPerformanceMetric('test_manual_load', loadTime);
+    showToast(`Metrica test: ${Math.round(loadTime)}ms`, 'info');
+}
+
+function forceSyncAnalytics() {
+    if (window.Analytics && window.Analytics.flushQueue) {
+        window.Analytics.flushQueue(true);
+        localStorage.setItem('analytics_last_sync', new Date().toISOString());
+        updateStorageInfo();
+        showToast('Sync analytics forzato', 'info');
+    }
+}
+// Seconda parte nel blocco successivo
+// ============================================
+// GESTIONE TASTO INDIETRO ANDROID (CORRETTO)
+// ============================================
+
+// Gestione tasto indietro fisico/software
+function setupBackButtonHandler() {
+    // Unifichiamo la gestione: funziona sia per PWA che per Browser
+    // L'unica differenza è che nella PWA vogliamo "intrappolare" l'utente nell'app
+    // finché non è nella home.
+    
+    // 1. Inseriamo uno stato iniziale fittizio per attivare la history
+    window.history.pushState({ page: 'app_root' }, document.title, window.location.href);
+
+    // 2. Ascoltiamo il cambiamento di stato (tasto indietro premuto)
+    window.addEventListener('popstate', function(event) {
+        // Tentiamo di gestire la navigazione internamente
+        const actionTaken = handleBackNavigation();
+
+        if (actionTaken) {
+            // Se abbiamo gestito l'azione (es. chiuso un modale o cambiato schermata),
+            // dobbiamo RIPRISTINARE lo stato nella history, altrimenti al prossimo
+            // "back" l'app si chiuderà perché abbiamo consumato lo stato precedente.
+            window.history.pushState({ page: 'app_active' }, document.title, window.location.href);
+        } else {
+            // Se siamo nella Home e non ci sono modali aperti (actionTaken = false),
+            // lasciamo che l'evento popstate faccia il suo corso.
+             if (window.matchMedia('(display-mode: standalone)').matches) {
+                // Se volessimo chiedere conferma/evitare l'uscita automatica,
+                // qui bisognerebbe re-iniettare uno stato, ma in questo caso 
+                // vogliamo permettere l'uscita dopo il doppio tocco.
+             }
+        }
+    });
+}
+/**
+ * Gestisce la logica del tasto indietro.
+ * @returns {boolean} true se l'azione è stata gestita internamente (non uscire), false se si deve uscire.
+ */
 function handleBackNavigation() {
     console.log('Tasto indietro premuto - Stato navigazione:', screenHistory);
     
+    // 1. Controllo Modali/Overlay (Priorità massima)
+    
+    // Auth Admin
     const adminAuth = document.getElementById('admin-auth');
     if (adminAuth && adminAuth.style.display === 'flex') {
         closeAdminAuth();
         return true;
     }
 
+    // Pannello Admin
     const adminPanel = document.getElementById('admin-panel');
     if (adminPanel && adminPanel.style.display === 'flex') {
         closeAdminPanel();
         return true;
     }
     
+    // Modale Navigazione
     const navModal = document.getElementById('navigation-modal');
     if (navModal && navModal.style.display === 'flex') {
         closeNavigationModal();
         return true;
     }
     
+    // Modale Info
     const infoModal = document.getElementById('info-modal');
     if (infoModal && infoModal.style.display === 'flex') {
         closeInfoModal();
         return true;
     }
     
+    // Modale Istruzioni Installazione (se presente)
     const installModal = document.querySelector('.install-instructions');
     if (installModal && installModal.style.display === 'flex') {
-        installModal.style.display = 'none';
+        installModal.style.display = 'none'; // Assumendo che ci sia una funzione o stile per chiuderlo
         return true;
     }
     
+    // Risultati ricerca mappa (se visibili)
     const searchResults = document.getElementById('map-search-results');
     if (searchResults && searchResults.style.display === 'block') {
         searchResults.style.display = 'none';
         return true;
     }
 
+    // 2. Controllo Navigazione Schermate
+    
     const currentScreen = screenHistory[screenHistory.length - 1]; 
     
+    // Se non siamo nella home, torna indietro nella cronologia schermate
     if (currentScreen !== 'home-screen') {
         goBack();
         return true;
     } 
+
+    // 3. Siamo nella Home e nessun modale è aperto -> Gestione Uscita (Doppio Tocco)
     
     if (backPressTimer) {
+        // Doppio tocco entro il timeout: Esegui l'uscita
         clearTimeout(backPressTimer);
         backPressTimer = null;
+        // Permetti al popstate handler di uscire (ritorna false)
         showToast('Uscita dall\'applicazione...', 'info', 1000); 
         return false; 
     } else {
+        // Prima pressione: mostra toast di avviso e imposta il timer
         showToast('Premi di nuovo per uscire', 'warning', EXIT_TOAST_TIMEOUT);
         
         backPressTimer = setTimeout(() => {
             backPressTimer = null;
+            // Nascondi il toast se il timer scade.
             const toast = document.getElementById('toast');
             if (toast) toast.classList.remove('show');
         }, EXIT_TOAST_TIMEOUT);
         
-        return true;
+        // Dopo la prima pressione, re-inseriamo lo stato nella history
+        // per intercettare la seconda pressione senza uscire.
+        return true; // Azione gestita, non uscire ancora.
     }
 }
 
@@ -2462,15 +3531,15 @@ function handleBackNavigation() {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    preloadImages(); // PRE-CARICA IMMAGINI CRITICHE
-    
     loadLocalData();
     checkOnlineStatus();
     showScreen('home-screen');
     handleUrlParameters();
     
+    // ✅ Inizializza gestione tasto indietro (Nuova funzione corretta)
     setupBackButtonHandler();
     
+    // ✅ Registra Service Worker (versione corretta)
     if ('serviceWorker' in navigator) {
         setTimeout(() => {
             registerServiceWorker();
@@ -2515,7 +3584,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.addEventListener('error', function(e) {
         if (e.target.tagName === 'IMG') {
-            console.warn('Errore caricamento immagine:', e.target.src);
+            // Logica di fallback generica, lasciamo che i singoli template di rendering
+            // gestiscano il loro specifico fallback tramite onerror se necessario.
+            // L'unico fallback hardcoded qui è stato rimosso in favore dei template.
+            // e.target.src = './images/sfondo-home.jpg';
         }
     }, true);
     
@@ -2531,6 +3603,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Inizializza nuove funzionalità
     initializeOfflineSync();
     setTimeout(() => {
         setupLazyLoading();
@@ -2538,14 +3611,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     logActivity('Applicazione avviata');
 });
-
-// ===== SPLASH SCREEN MANAGEMENT =====
+// ===== SPLASH SCREEN MANAGEMENT (VERSIONE CON PROGRESS BAR) =====
 
 let splashProgressInterval;
 let splashProgress = 0;
-let splashMinTime = 1500;
+let splashMinTime = 1500; // Mostra per almeno 1.5 secondi
 let splashStartTime = Date.now();
 
+// Funzione per nascondere lo splash screen
 function hideSplashScreen() {
     clearInterval(splashProgressInterval);
     
@@ -2553,15 +3626,18 @@ function hideSplashScreen() {
     if (splashScreen) {
         splashScreen.classList.add('hidden');
         
+        // Rimuovi completamente dopo l'animazione
         setTimeout(() => {
             splashScreen.style.display = 'none';
             console.log('✅ Splash screen nascosto');
             
+            // Inizializza l'app dopo che lo splash screen è nascosto
             initializeAppAfterSplash();
         }, 500);
     }
 }
 
+// Funzione per mostrare lo splash screen
 function showSplashScreen() {
     const splashScreen = document.getElementById('splash-screen');
     if (splashScreen) {
@@ -2570,12 +3646,14 @@ function showSplashScreen() {
         splashScreen.style.opacity = '1';
         splashScreen.style.visibility = 'visible';
         
+        // Resetta il progresso
         splashProgress = 0;
         splashStartTime = Date.now();
-        updateSplashProgress(10);
+        updateSplashProgress(10); // Inizia subito con 10%
     }
 }
 
+// Aggiorna la barra di progresso
 function updateSplashProgress(increment) {
     splashProgress += increment;
     if (splashProgress > 100) splashProgress = 100;
@@ -2585,6 +3663,7 @@ function updateSplashProgress(increment) {
         progressBar.style.width = splashProgress + '%';
     }
     
+    // Aggiorna il testo
     const splashText = document.querySelector('.splash-text');
     if (splashText) {
         if (splashProgress < 30) {
@@ -2599,9 +3678,16 @@ function updateSplashProgress(increment) {
     }
 }
 
+// Inizializza l'app dopo lo splash screen
 function initializeAppAfterSplash() {
     console.log('🚀 App inizializzata dopo splash screen');
     
+    // Contenuto corretto (senza setTimeout esterno)
+    if (typeof loadAllData === 'function') {
+        loadAllData();
+    }
+    
+    // Controlla se c'è un parametro admin nell'URL
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('admin') && urlParams.get('admin') === 'true') {
         setTimeout(() => {
@@ -2609,6 +3695,7 @@ function initializeAppAfterSplash() {
         }, 300);
     }
     
+    // Se ci sono altri parametri, gestiscili
     if (urlParams.has('screen')) {
         const screen = urlParams.get('screen');
         setTimeout(() => {
@@ -2616,6 +3703,7 @@ function initializeAppAfterSplash() {
         }, 400);
     }
     
+    // Forza l'aggiornamento dell'ultima schermata attiva nel caso in cui fosse 'home-screen'
     if (window.screenHistory && window.screenHistory[window.screenHistory.length - 1] === 'home-screen') {
         document.getElementById('home-screen').style.display = 'flex';
         setTimeout(() => {
@@ -2624,9 +3712,11 @@ function initializeAppAfterSplash() {
     }
 }
 
+// Gestione del caricamento della pagina
 window.addEventListener('load', function() {
     console.log('📄 Pagina completamente caricata');
     
+    // Inizia la progress bar
     splashProgressInterval = setInterval(() => {
         const elapsed = Date.now() - splashStartTime;
         const progressNeeded = Math.min(90, Math.floor((elapsed / splashMinTime) * 100));
@@ -2635,13 +3725,15 @@ window.addEventListener('load', function() {
             updateSplashProgress(progressNeeded - splashProgress);
         }
         
+        // Se è passato il tempo minimo e abbiamo raggiunto il 90%, completa
         if (elapsed >= splashMinTime && splashProgress >= 90) {
-            updateSplashProgress(10);
+            updateSplashProgress(10); // Completa al 100%
             clearInterval(splashProgressInterval);
             hideSplashScreen();
         }
     }, 100);
     
+    // Fallback: nascondi dopo 5 secondi massimo (Timeout aumentato per stabilità)
     setTimeout(() => {
         if (document.getElementById('splash-screen') && 
             !document.getElementById('splash-screen').classList.contains('hidden')) {
@@ -2651,6 +3743,7 @@ window.addEventListener('load', function() {
     }, 5000);
 });
 
+// Nascondi lo splash screen anche se c'è un errore di caricamento
 window.addEventListener('error', function(e) {
     console.error('❌ Errore durante il caricamento:', e.message);
     
@@ -2665,9 +3758,11 @@ window.addEventListener('error', function(e) {
     }, 1000);
 });
 
+// Gestisci il caso in cui la pagina viene caricata dalla cache
 if (document.readyState === 'complete') {
     console.log('⚡ Pagina già caricata dalla cache');
     
+    // Mostra comunque lo splash screen brevemente per coerenza
     showSplashScreen();
     setTimeout(() => {
         updateSplashProgress(100);
@@ -2675,12 +3770,15 @@ if (document.readyState === 'complete') {
     }, 800);
 }
 
+// Verifica quando la pagina è diventata interattiva
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎯 DOM completamente caricato e parsato');
-    updateSplashProgress(20);
+    updateSplashProgress(20); // Aggiorna progresso
 });
 
+// Monitora il caricamento delle risorse
 window.addEventListener('DOMContentLoaded', function() {
+    // Conta le risorse ancora da caricare
     const resources = document.querySelectorAll('img, script, link[rel="stylesheet"]');
     let loadedResources = 0;
     const totalResources = resources.length;
@@ -2697,17 +3795,23 @@ window.addEventListener('DOMContentLoaded', function() {
             
             resource.addEventListener('error', function() {
                 loadedResources++;
+                // Non bloccare per errori di risorse
             });
         }
     });
     
+    // Se tutte le risorse sono già caricate
     if (loadedResources === totalResources) {
         updateSplashProgress(70);
     }
 });
 
+// ===== GESTIONE BACK BUTTON PER SPLASH =====
+
+// Impedisci il back button quando lo splash screen è visibile
 let splashVisible = true;
 
+// Sovrascrivi la funzione goBack per gestire lo splash screen
 const originalGoBack = window.goBack;
 if (originalGoBack) {
     window.goBack = function() {
@@ -2719,6 +3823,7 @@ if (originalGoBack) {
     };
 }
 
+// Aggiorna lo stato quando lo splash screen è nascosto
 const splashScreen = document.getElementById('splash-screen');
 if (splashScreen) {
     const observer = new MutationObserver(function(mutations) {
@@ -2737,19 +3842,23 @@ if (splashScreen) {
     observer.observe(splashScreen, { attributes: true });
 }
 
+// Pulsante di emergenza per saltare lo splash screen (debug)
 document.addEventListener('keydown', function(e) {
+    // Premendo ESC durante lo splash screen, lo salti
     if (e.key === 'Escape' && splashVisible) {
         console.log('🚨 Splash screen saltato con ESC');
         hideSplashScreen();
     }
 });
 
+// Touch per saltare splash screen (doppio tap)
 let lastTap = 0;
 document.addEventListener('touchend', function(e) {
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTap;
     
     if (tapLength < 500 && tapLength > 0 && splashVisible) {
+        // Doppio tap rilevato
         console.log('👆 Doppio tap per saltare splash screen');
         hideSplashScreen();
         e.preventDefault();
