@@ -1099,30 +1099,6 @@ function logoutAdmin() {
     logActivity('Logout amministratore');
 }
 
-// ============================================
-// FUNZIONE PER GESTIRE SFONDO HOME RESPONSIVO
-// ============================================
-
-function updateHomeBackground() {
-    const homeScreen = document.getElementById('home-screen');
-    if (!homeScreen) return;
-    
-    const isMobile = window.innerWidth <= 768;
-    const bgImage = isMobile ? 
-        './images/sfondo-home-mobile.jpg' : 
-        './images/sfondo-home.jpg';
-    
-    homeScreen.style.backgroundImage = 
-        `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url("${bgImage}")`;
-    
-    // Per mobile, cambia anche l'attachment
-    if (isMobile) {
-        homeScreen.style.backgroundAttachment = 'scroll';
-    } else {
-        homeScreen.style.backgroundAttachment = 'fixed';
-    }
-}
-
 // Navigation and Screen Management
 function showScreen(screenId) {
     const currentScreen = screenHistory[screenHistory.length - 1];
@@ -1148,11 +1124,6 @@ function showScreen(screenId) {
         
         // ✅ CORREZIONE FONDAMENTALE: Forza lo scroll all'inizio della pagina per tutte le schermate
         resetScroll();
-        
-        // ✅ AGGIORNA SFONDO HOME QUANDO SI TORNA ALLA HOME
-        if (screenId === 'home-screen') {
-            updateHomeBackground();
-        }
         
         initializeScreenContent(screenId);
     }
@@ -1192,11 +1163,6 @@ function goBack() {
             
             // ✅ CORREZIONE: Forza lo scroll anche quando si torna indietro
             resetScroll();
-            
-            // ✅ AGGIORNA SFONDO HOME QUANDO SI TORNA ALLA HOME
-            if (previousScreen === 'home-screen') {
-                updateHomeBackground();
-            }
             
             initializeScreenContent(previousScreen);
         }
@@ -2288,7 +2254,7 @@ async function saveFontana(e) {
                     appData.fontane[index] = { id: savedId, ...fontanaData };
                 }
             } else {
-                appData.fontane.push({ id: savedId, ...fontanaData };
+                appData.fontane.push({ id: savedId, ...fontanaData });
             }
             
             showToast('Fontana salvata localmente. Sarà sincronizzata online dopo.', 'info');
@@ -3601,13 +3567,6 @@ document.addEventListener('DOMContentLoaded', function() {
     showScreen('home-screen');
     handleUrlParameters();
     
-    // ✅ AGGIORNA SFONDO HOME INIZIALE
-    updateHomeBackground();
-    
-    // ✅ AGGIUNGI LISTENER PER RESIZE
-    window.addEventListener('resize', updateHomeBackground);
-    window.addEventListener('orientationchange', updateHomeBackground);
-    
     // ✅ Inizializza gestione tasto indietro (Nuova funzione corretta)
     setupBackButtonHandler();
     
@@ -3937,6 +3896,6 @@ document.addEventListener('touchend', function(e) {
     }
     
     lastTap = currentTime;
-)};
+});
 
 console.log('✨ Sistema splash screen inizializzato');
