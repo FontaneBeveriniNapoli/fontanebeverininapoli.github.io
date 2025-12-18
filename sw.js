@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fontane-beverini-v3.8.1'; // VERSIONE AGGIORNATA
+const CACHE_NAME = 'fontane-beverini-v3.8.6'; // VERSIONE AGGIORNATA
 const STATIC_CACHE = 'static-v3';
 const DYNAMIC_CACHE = 'dynamic-v2';
 
@@ -12,7 +12,8 @@ const STATIC_ASSETS = [
   './manifest.json',
   './images/logo-app.png',
   './images/logo-comune.png',
-  './images/sfondo-home.jpg',
+  './images/sfondo-home.jpg',       // Per desktop
+  './images/sfondo-home-mobile.jpg', // AGGIUNTA: Per mobile
   './images/default-beverino.jpg',
   './images/icona-avvio-144.png',
   './images/icona-avvio-192.png',
@@ -189,9 +190,26 @@ self.addEventListener('fetch', event => {
             }
             
             if (event.request.destination === 'image') {
-              if (event.request.url.includes('default-beverino.jpg')) {
+              // Se è l'immagine sfondo-home.jpg per mobile, usa la versione mobile
+              if (event.request.url.includes('sfondo-home.jpg')) {
+                // Controlla se siamo su mobile (semplificato)
+                return caches.match('./images/sfondo-home-mobile.jpg')
+                  .catch(() => caches.match('./images/sfondo-home.jpg'));
+              }
+              
+              // Per fallback fontana
+              if (event.request.url.includes('fontana') || 
+                  event.request.url.includes('fontane')) {
                 return caches.match('./images/sfondo-home.jpg');
               }
+              
+              // Per fallback beverino
+              if (event.request.url.includes('beverino') || 
+                  event.request.url.includes('beverini')) {
+                return caches.match('./images/default-beverino.jpg');
+              }
+              
+              // Fallback generico
               return caches.match('./images/sfondo-home.jpg');
             }
 
