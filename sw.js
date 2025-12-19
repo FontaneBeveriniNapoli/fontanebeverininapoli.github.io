@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fontane-beverini-v3.9.4'; // VERSIONE AGGIORNATA
+const CACHE_NAME = 'fontane-beverini-v3.9.5'; // VERSIONE AGGIORNATA
 const STATIC_CACHE = 'static-v3';
 const DYNAMIC_CACHE = 'dynamic-v2';
 
@@ -12,7 +12,8 @@ const STATIC_ASSETS = [
   './manifest.json',
   './images/logo-app.png',
   './images/logo-comune.png',
-  './images/sfondo-home.jpg',
+  './images/sfondo-home.jpg',         // Immagine Desktop
+  './images/sfondo-home-mobile.jpg',  // NUOVA AGGIUNTA: Immagine Mobile
   './images/default-beverino.jpg',
   './images/icona-avvio-144.png',
   './images/icona-avvio-192.png',
@@ -79,7 +80,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          // Pulisce le vecchie versioni (es. v3.6.1)
+          // Pulisce le vecchie versioni
           if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
             console.log('[Service Worker] Cancellazione vecchia cache:', cacheName);
             return caches.delete(cacheName);

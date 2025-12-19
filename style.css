@@ -198,10 +198,10 @@ body {
     opacity: 1;
 }
 
-/* ✅ CORREZIONE CSS: Altezza Home Screen (Solo Tab Bar + Safe Area) */
+/* ✅ MODIFICA SFONDO: Versione Mobile di default */
 #home-screen {
     background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
-                url('./images/sfondo-home.jpg');
+                url('./images/sfondo-home-mobile.jpg'); /* MODIFICATO: Usa immagine mobile */
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -1964,6 +1964,9 @@ body {
         min-height: 100vh;
     }
     #home-screen {
+        /* ✅ MODIFICA: Ripristina sfondo desktop */
+        background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
+                          url('./images/sfondo-home.jpg');
         background-attachment: scroll;
         padding: 50px 20px;
     }
