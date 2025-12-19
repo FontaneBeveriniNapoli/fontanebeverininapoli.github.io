@@ -762,7 +762,7 @@ function logPerformanceMetric(name, duration) {
 }
 
 // ============================================
-// VARIABILI GLOBALI ORIGINALI
+// VARIABILI GLOBALI E GESTIONE RUOLI
 // ============================================
 
 let appData = {
@@ -790,6 +790,19 @@ const EXIT_TOAST_TIMEOUT = 2000;
 let searchTimeout;
 let isAdminAuthenticated = false;
 let adminAuthTimeout = null;
+
+// ============================================
+// NUOVO: GESTIONE RUOLI AMMINISTRATORE
+// ============================================
+let currentUserRole = 'editor'; // 'admin' (completo) o 'editor' (limitato)
+
+// LISTA EMAIL SUPER AMMINISTRATORI (possono eliminare e esportare)
+// SOSTITUISCI CON LE EMAIL REALI
+const SUPER_ADMINS = [
+    "admin@abc.napoli.it",
+    "responsabile@abc.napoli.it",
+    "tuamail@gmail.com" 
+];
 
 // ============================================
 // NUOVA FUNZIONE CENTRALE PER RESET SCROLL (AGGIORNATA)
@@ -1043,6 +1056,15 @@ async function checkAdminAuth() {
         const userCredential = await window.firebaseSignIn(window.auth, email, password);
         isAdminAuthenticated = true;
         
+        // NUOVO: Controllo ruolo basato sull'email
+        if (SUPER_ADMINS.includes(email.toLowerCase())) {
+            currentUserRole = 'admin';
+            showToast('Benvenuto Amministratore (Accesso Completo)', 'success');
+        } else {
+            currentUserRole = 'editor';
+            showToast('Benvenuto Operatore (Accesso Modifica)', 'info');
+        }
+        
         closeAdminAuth();
         showAdminPanel();
         
@@ -1051,11 +1073,11 @@ async function checkAdminAuth() {
         }
         adminAuthTimeout = setTimeout(() => {
             isAdminAuthenticated = false;
+            currentUserRole = null;
             showToast('Sessione amministratore scaduta', 'info');
         }, 30 * 60 * 1000);
         
-        showToast('Accesso amministratore effettuato', 'success');
-        logActivity('Accesso amministratore effettuato');
+        logActivity(`Accesso effettuato come ${currentUserRole}`);
         
     } catch (error) {
         errorElement.style.display = 'block';
@@ -1068,6 +1090,17 @@ async function checkAdminAuth() {
 function showAdminPanel() {
     document.getElementById('admin-panel').style.display = 'flex';
     
+    // NUOVO: Nascondi sezioni sensibili se non è admin
+    const restrictedSections = document.querySelectorAll('.import-export-section, .backup-section, .analytics-actions-section');
+    
+    restrictedSections.forEach(section => {
+        if (currentUserRole === 'admin') {
+            section.style.display = 'block';
+        } else {
+            section.style.display = 'none';
+        }
+    });
+
     loadAdminFontane();
     loadAdminBeverini();
     loadAdminNews();
@@ -1090,12 +1123,13 @@ function closeAdminPanel() {
 
 function logoutAdmin() {
     isAdminAuthenticated = false;
+    currentUserRole = null; // Reset ruolo
     if (adminAuthTimeout) {
         clearTimeout(adminAuthTimeout);
         adminAuthTimeout = null;
     }
     closeAdminPanel();
-    showToast('Logout amministratore effettuato', 'success');
+    showToast('Logout effettuato', 'success');
     logActivity('Logout amministratore');
 }
 
@@ -2139,6 +2173,11 @@ async function loadAdminFontane() {
     
     tbody.innerHTML = '';
     appData.fontane.forEach(fontana => {
+        // NUOVO: Mostra pulsante elimina solo se admin
+        const deleteButton = currentUserRole === 'admin' 
+            ? `<button class="delete-btn" onclick="deleteFontana('${fontana.id}')">Elimina</button>` 
+            : '';
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${fontana.id}</td>
@@ -2147,7 +2186,7 @@ async function loadAdminFontane() {
             <td><span class="item-status status-${fontana.stato}">${getStatusText(fontana.stato)}</span></td>
             <td class="admin-item-actions">
                 <button class="edit-btn" onclick="editFontana('${fontana.id}')">Modifica</button>
-                <button class="delete-btn" onclick="deleteFontana('${fontana.id}')">Elimina</button>
+                ${deleteButton}
             </td>
         `;
         tbody.appendChild(row);
@@ -2280,6 +2319,12 @@ function resetFontanaForm() {
 }
 
 async function deleteFontana(id) {
+    // NUOVO: Controllo permessi
+    if (currentUserRole !== 'admin') {
+        showToast('Non hai i permessi per eliminare', 'error');
+        return;
+    }
+
     if (!confirm('Sei sicuro di voler eliminare questa fontana?')) return;
     
     try {
@@ -2314,6 +2359,11 @@ async function loadAdminBeverini() {
     
     tbody.innerHTML = '';
     appData.beverini.forEach(beverino => {
+        // NUOVO: Mostra pulsante elimina solo se admin
+        const deleteButton = currentUserRole === 'admin' 
+            ? `<button class="delete-btn" onclick="deleteBeverino('${beverino.id}')">Elimina</button>` 
+            : '';
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${beverino.id}</td>
@@ -2322,7 +2372,7 @@ async function loadAdminBeverini() {
             <td><span class="item-status status-${beverino.stato}">${getStatusText(beverino.stato)}</span></td>
             <td class="admin-item-actions">
                 <button class="edit-btn" onclick="editBeverino('${beverino.id}')">Modifica</button>
-                <button class="delete-btn" onclick="deleteBeverino('${beverino.id}')">Elimina</button>
+                ${deleteButton}
             </td>
         `;
         tbody.appendChild(row);
@@ -2451,6 +2501,12 @@ function resetBeverinoForm() {
 }
 
 async function deleteBeverino(id) {
+    // NUOVO: Controllo permessi
+    if (currentUserRole !== 'admin') {
+        showToast('Non hai i permessi per eliminare', 'error');
+        return;
+    }
+
     if (!confirm('Sei sicuro di voler eliminare questo beverino?')) return;
     
     try {
@@ -2484,6 +2540,11 @@ async function loadAdminNews() {
     
     tbody.innerHTML = '';
     appData.news.forEach(news => {
+        // NUOVO: Mostra pulsante elimina solo se admin
+        const deleteButton = currentUserRole === 'admin' 
+            ? `<button class="delete-btn" onclick="deleteNews('${news.id}')">Elimina</button>` 
+            : '';
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${news.id}</td>
@@ -2492,7 +2553,7 @@ async function loadAdminNews() {
             <td>${news.categoria}</td>
             <td class="admin-item-actions">
                 <button class="edit-btn" onclick="editNews('${news.id}')">Modifica</button>
-                <button class="delete-btn" onclick="deleteNews('${news.id}')">Elimina</button>
+                ${deleteButton}
             </td>
         `;
         tbody.appendChild(row);
@@ -2598,6 +2659,12 @@ function resetNewsForm() {
 }
 
 async function deleteNews(id) {
+    // NUOVO: Controllo permessi
+    if (currentUserRole !== 'admin') {
+        showToast('Non hai i permessi per eliminare', 'error');
+        return;
+    }
+
     if (!confirm('Sei sicuro di voler eliminare questa news?')) return;
     
     try {
@@ -2626,6 +2693,12 @@ async function deleteNews(id) {
 
 // Import/Export Functions
 function exportDataToExcel(type) {
+    // NUOVO: Controllo permessi
+    if (currentUserRole !== 'admin') {
+        showToast('Funzione riservata agli amministratori', 'error');
+        return;
+    }
+
     try {
         let data, filename, sheetName;
 
@@ -2671,6 +2744,12 @@ function exportDataToExcel(type) {
 }
 
 function exportAllDataToExcel() {
+    // NUOVO: Controllo permessi
+    if (currentUserRole !== 'admin') {
+        showToast('Funzione riservata agli amministratori', 'error');
+        return;
+    }
+
     try {
         const wb = XLSX.utils.book_new();
 
@@ -2714,6 +2793,12 @@ function exportAllDataToExcel() {
 }
 
 function handleFileImport(type, files) {
+    // NUOVO: Controllo permessi
+    if (currentUserRole !== 'admin') {
+        showToast('Funzione riservata agli amministratori', 'error');
+        return;
+    }
+
     if (files.length === 0) return;
 
     const file = files[0];
