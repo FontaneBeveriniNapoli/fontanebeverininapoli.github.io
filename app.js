@@ -795,68 +795,8 @@ let adminAuthTimeout = null;
 // NUOVO: GESTIONE RUOLI AMMINISTRATORE
 // ============================================
 let currentUserRole = 'editor'; // 'admin' (completo) o 'editor' (limitato)
-async function checkAdminAuth() {
-    const email = document.getElementById('admin-email').value;
-    const password = document.getElementById('admin-password').value;
-    const errorElement = document.getElementById('auth-error');
 
-    try {
-        // 1. Effettua il login normale
-        const userCredential = await window.firebaseSignIn(window.auth, email, password);
-        isAdminAuthenticated = true;
-        
-        // 2. RECUPERA LA LISTA DEI CAPI DAL DATABASE (Invece che dal codice)
-        let isSuperAdmin = false;
-        
-        try {
-            const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-            // Cerca il documento "ruoli" nella collezione "impostazioni"
-            const docRef = doc(window.db, "impostazioni", "ruoli");
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-                const listaCapi = docSnap.data().super_admins || [];
-                // Controlla se l'email è nella lista
-                if (listaCapi.map(e => e.toLowerCase()).includes(email.toLowerCase())) {
-                    isSuperAdmin = true;
-                }
-            }
-        } catch (dbError) {
-            console.error("Errore lettura ruoli:", dbError);
-        }
-
-        // 3. Assegna il ruolo
-        if (isSuperAdmin) {
-            currentUserRole = 'admin'; 
-            showToast('Benvenuto Amministratore (Accesso Completo)', 'success');
-        } else {
-            currentUserRole = 'editor'; 
-            showToast('Benvenuto Operatore (Accesso Modifica)', 'info');
-        }
-        
-        closeAdminAuth();
-        showAdminPanel();
-        
-        if (adminAuthTimeout) {
-            clearTimeout(adminAuthTimeout);
-        }
-        adminAuthTimeout = setTimeout(() => {
-            isAdminAuthenticated = false;
-            currentUserRole = null;
-            showToast('Sessione amministratore scaduta', 'info');
-            closeAdminPanel();
-        }, 30 * 60 * 1000);
-        
-        logActivity(`Accesso effettuato come ${currentUserRole}`);
-        
-    } catch (error) {
-        errorElement.style.display = 'block';
-        document.getElementById('admin-password').value = '';
-        document.getElementById('admin-password').focus();
-        console.error('Errore autenticazione:', error);
-    }
-}
-
+// (QUI SOTTO NON C'È PIÙ NESSUNA LISTA DI EMAIL - CORRETTO)
 
 // ============================================
 // NUOVA FUNZIONE CENTRALE PER RESET SCROLL (AGGIORNATA)
@@ -1101,21 +1041,45 @@ function closeAdminAuth() {
     document.getElementById('auth-error').style.display = 'none';
 }
 
+// ========================================================
+// NUOVA FUNZIONE DI LOGIN SICURA (SENZA SUPER_ADMINS)
+// ========================================================
 async function checkAdminAuth() {
     const email = document.getElementById('admin-email').value;
     const password = document.getElementById('admin-password').value;
     const errorElement = document.getElementById('auth-error');
 
     try {
+        // 1. Effettua il login normale
         const userCredential = await window.firebaseSignIn(window.auth, email, password);
         isAdminAuthenticated = true;
         
-        // NUOVO: Controllo ruolo basato sull'email
-        if (SUPER_ADMINS.includes(email.toLowerCase())) {
-            currentUserRole = 'admin';
+        // 2. RECUPERA LA LISTA DEI CAPI DAL DATABASE (Invece che dal codice)
+        let isSuperAdmin = false;
+        
+        try {
+            const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            // Cerca il documento "ruoli" nella collezione "impostazioni"
+            const docRef = doc(window.db, "impostazioni", "ruoli");
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                const listaCapi = docSnap.data().super_admins || [];
+                // Controlla se l'email è nella lista
+                if (listaCapi.map(e => e.toLowerCase()).includes(email.toLowerCase())) {
+                    isSuperAdmin = true;
+                }
+            }
+        } catch (dbError) {
+            console.error("Errore lettura ruoli:", dbError);
+        }
+
+        // 3. Assegna il ruolo
+        if (isSuperAdmin) {
+            currentUserRole = 'admin'; 
             showToast('Benvenuto Amministratore (Accesso Completo)', 'success');
         } else {
-            currentUserRole = 'editor';
+            currentUserRole = 'editor'; 
             showToast('Benvenuto Operatore (Accesso Modifica)', 'info');
         }
         
@@ -1129,6 +1093,7 @@ async function checkAdminAuth() {
             isAdminAuthenticated = false;
             currentUserRole = null;
             showToast('Sessione amministratore scaduta', 'info');
+            closeAdminPanel();
         }, 30 * 60 * 1000);
         
         logActivity(`Accesso effettuato come ${currentUserRole}`);
@@ -1183,7 +1148,7 @@ function logoutAdmin() {
         adminAuthTimeout = null;
     }
     closeAdminPanel();
-    showToast('Logout effettuato', 'success');
+    showToast('Logout amministratore effettuato', 'success');
     logActivity('Logout amministratore');
 }
 
@@ -1529,7 +1494,7 @@ function renderCompactItems(container, items, type) {
         compactItem.innerHTML = `
             <div class="compact-item-image-container">
                 <img src="${item.immagine || './images/default-beverino.jpg'}"
-                     alt="${item.nome}"
+                     alt="${item.nome}" 
                      class="compact-item-image"
                      onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'compact-image-fallback\\'><i class=\\'fas fa-faucet\\'></i></div>';">
             </div>
