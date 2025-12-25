@@ -200,31 +200,18 @@ body {
 
 /* ✅ MODIFICA SFONDO: Versione Mobile di default */
 #home-screen {
-    /* --- SFONDO (Resta uguale) --- */
     background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
-                url('./images/sfondo-home-mobile.jpg');
+                url('./images/sfondo-home-mobile.jpg'); /* MODIFICATO: Usa immagine mobile */
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
-
-    /* --- LAYOUT --- */
     display: flex;
     flex-direction: column;
-
-    /* MODIFICA FONDAMENTALE 1: */
-    /* "justify-content: center" metteva tutto al centro. */
-    /* "flex-start" dice di iniziare dall'inizio (dall'alto). */
-    justify-content: flex-start;
-    
+    justify-content: center;
     align-items: center;
-
-    /* MODIFICA FONDAMENTALE 2: */
-    /* Il primo numero (120px) è lo spazio sopra. */
-    /* Aumentandolo, spingi il logo verso il basso per allinearlo visivamente al tasto impostazioni */
-    padding: 120px 20px 30px 20px;
-
-    /* --- ALTRE PROPRIETÀ (Restano uguali) --- */
+    padding: 30px 20px;
     flex: 1;
+    /* CORREZIONE FINALE: 60px Tab Bar + safe area per eliminare spazio bianco */
     min-height: calc(100vh - 60px - env(safe-area-inset-bottom, 0px)); 
 }
 
