@@ -1025,6 +1025,69 @@
             </div>
         </div>
 
+        <div id="credits-screen" class="screen">
+            <div class="app-header" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
+                <button class="back-btn" onclick="showScreen('home-screen')">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="screen-title" style="font-size: 1.4rem;">Info & Credits</div>
+            </div>
+
+            <div class="content-area" style="text-align: center; padding: 30px 20px;">
+                
+                <div style="margin-bottom: 30px;">
+                    <img src="./images/logo-app.png" alt="ABC Napoli" style="width: 80px; height: 80px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 10px;">
+                    <h2 style="font-size: 1.3rem; color: var(--dark-text); margin-bottom: 5px;">ABC Napoli F&B</h2>
+                    <p style="color: var(--light-text); font-size: 0.9rem;">v. 1.0.0</p>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+
+                <div class="credit-section" style="margin-bottom: 25px;">
+                    <h4 style="color: var(--primary-blue); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">SOFTWARE DEVELOPMENT & DESIGN</h4>
+                    <p style="font-size: 0.8rem; color: #6b7280; font-style: italic; margin-bottom: 5px;">(Sviluppo tecnico, programmazione e design etico)</p>
+                    <p style="font-weight: 700; font-size: 1rem; color: #1f2937;">Salvatore De Rosa</p>
+                    <p style="font-size: 0.9rem; color: #4b5563;">Full Stack Developer & Ethical Design Lead</p>
+                </div>
+
+                <div class="credit-section" style="margin-bottom: 25px;">
+                    <h4 style="color: var(--primary-blue); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">DATA MANAGEMENT & OPERATIONS</h4>
+                    <p style="font-size: 0.8rem; color: #6b7280; font-style: italic; margin-bottom: 5px;">(Gestione operativa e verifica dati sul territorio)</p>
+                    <p style="font-weight: 700; font-size: 1rem; color: #1f2937;">Luigi Di Nunzio</p>
+                    <p style="font-size: 0.9rem; color: #4b5563;">Data Analyst & Strategy</p>
+                    <p style="font-size: 0.8rem; color: #6b7280;">(B.A. International Relations)</p>
+                </div>
+
+                <div class="credit-section" style="margin-bottom: 30px;">
+                    <h4 style="color: var(--primary-blue); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">INSTITUTIONAL SUPERVISION</h4>
+                    <p style="font-size: 0.8rem; color: #6b7280; font-style: italic; margin-bottom: 5px;">(Coordinamento dell'iniziativa e supervisione)</p>
+                    <p style="font-weight: 700; font-size: 1rem; color: #1f2937;">Dott. Attilio De Pasquale</p>
+                    <p style="font-size: 0.9rem; color: #4b5563;">Head of Ufficio Supporto Tecnico</p>
+                    <p style="font-size: 0.85rem; color: #4b5563;">(Project Supervisor)</p>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+
+                <div style="font-size: 0.75rem; color: #9ca3af; line-height: 1.5;">
+                    <p style="margin-bottom: 10px;">Applicativo software realizzato <strong>a titolo gratuito</strong> su iniziativa del <strong>gruppo di lavoro</strong> e ceduto all'Azienda Speciale ABC Napoli per esclusive finalità di pubblico servizio.</p>
+                    <p style="font-weight: 600; color: #ef4444; margin-bottom: 15px;">Vietato l'uso commerciale.</p>
+                    
+                    <div style="background: #f3f4f6; padding: 12px; border-radius: 10px; margin-bottom: 15px;">
+                        <p style="font-weight: 600; margin-bottom: 8px; color: #4b5563;">Technologies & Services:</p>
+                        <p>Leaflet Maps, OpenStreetMap Data</p>
+                        <p>Google Firebase, Google Fonts</p>
+                        <p>Dev & Version Control: <strong>GitHub</strong></p>
+                        <p>Image Hosting: <strong>ImgBB</strong></p>
+                    </div>
+                    
+                    <p style="margin-top: 15px; font-weight: 700; color: #1f2937;">Copyright © 2026 ABC Napoli</p>
+                    <p>Tutti i diritti riservati.</p>
+                </div>
+
+                <div style="height: 40px;"></div>
+            </div>
+        </div>
+
         <div class="tab-bar">
             <button class="tab-btn active" data-target="home-screen" onclick="showScreen('home-screen')">
                 <span class="tab-icon"><i class="fas fa-home"></i></span>
@@ -1056,6 +1119,10 @@
             <div class="modal-buttons">
                 <button class="modal-btn primary" onclick="openReportScreen()" style="background: #ef4444;">
                     <i class="fas fa-bullhorn"></i> Invia Segnalazione
+                </button>
+                
+                <button class="modal-btn primary" onclick="openCreditsScreen()" style="background: #3b82f6;">
+                    <i class="fas fa-info-circle"></i> Info & Crediti
                 </button>
                 
                 <button class="modal-btn secondary" onclick="goToAdmin()">

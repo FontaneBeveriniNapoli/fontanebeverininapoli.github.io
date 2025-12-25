@@ -4075,3 +4075,19 @@ function inviaSegnalazione(event) {
     // Opzionale: svuota il campo descrizione dopo l'invio
     // document.getElementById('report-desc').value = ''; 
 }
+// ==========================================
+// FUNZIONE PER SCHERMATA CREDITI
+// ==========================================
+
+function openCreditsScreen() {
+    // 1. Chiude il menu a tendina (se aperto)
+    const menu = document.getElementById('top-menu-modal');
+    if (menu) menu.style.display = 'none';
+    
+    // 2. Mostra la schermata crediti
+    // (Usa la funzione showScreen che hai già nel file)
+    showScreen('credits-screen');
+    
+    // 3. Scrolla in alto per sicurezza
+    window.scrollTo(0, 0);
+}
