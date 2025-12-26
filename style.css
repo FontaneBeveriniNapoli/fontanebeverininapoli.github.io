@@ -201,17 +201,20 @@ body {
 /* ✅ MODIFICA SFONDO: Versione Mobile di default */
 #home-screen {
     background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
-                url('./images/sfondo-home-mobile.jpg'); /* MODIFICATO: Usa immagine mobile */
+                url('./images/sfondo-home-mobile.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    
+    /* MODIFICA EFFETTUATA QUI SOTTO */
+    justify-content: flex-start; 
+    padding: 60px 20px 30px 20px;
+    /* FINE MODIFICA */
+
     align-items: center;
-    padding: 30px 20px;
     flex: 1;
-    /* CORREZIONE FINALE: 60px Tab Bar + safe area per eliminare spazio bianco */
     min-height: calc(100vh - 60px - env(safe-area-inset-bottom, 0px)); 
 }
 
