@@ -215,7 +215,7 @@ body {
     justify-content: flex-start;
 
     /* 2. Questo spinge tutto giù di 100px (il primo numero) */
-    padding: 100px 20px 30px 20px;
+    padding: 60px 20px 30px 20px;
 
     align-items: center;
     flex: 1;
@@ -2686,14 +2686,12 @@ body {
     }
     
     #home-screen {
-        padding: 20px 15px;
-        /* Ricalcola min-height per mobile */
+        justify-content: flex-start !important;
+        padding-top: 60px !important;  /* <-- 60px è più elegante di 100px */
+        padding-bottom: 30px;
+        padding-left: 20px;
+        padding-right: 20px;
         min-height: calc(100vh - 60px - env(safe-area-inset-bottom, 0px));
-    }
-    
-    .content-area {
-        padding: 15px;
-        padding-bottom: 80px; /* Assicuriamo coerenza anche qui */
     }
 }
 
