@@ -865,23 +865,20 @@ async function loadFirebaseData(type) {
             });
         });
         
-        // Assegna i dati scaricati alla variabile globale
         appData[type] = data;
-        // Salva nel telefono per il futuro
         saveLocalData();
         
         showToast(`${data.length} ${type} caricati da Firebase`, 'success');
         
         return data;
     } catch (error) {
-        // === CORREZIONE IMPORTANTE PER L'OFFLINE ===
         console.log(`[Offline] Errore connessione. Caricamento dati locali per ${type}...`);
         
         // 1. Carica i dati dalla memoria del telefono
         const localData = loadLocalData(type);
         
         // 2. FONDAMENTALE: Assegna i dati alla variabile globale appData
-        // Senza questa riga, l'app pensa che la lista sia vuota!
+        // (Senza questa riga, l'app pensa che la lista sia vuota!)
         appData[type] = localData;
         
         // 3. Ritorna i dati locali
@@ -1441,7 +1438,7 @@ function renderGridItems(container, items, type) {
         
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
-        // MODIFICA: Uso onerror per mettere l'immagine di sfondo invece di nasconderla
+        // MODIFICA: Fallback su sfondo-home.jpg
         gridItem.innerHTML = `
             <div class="item-image-container">
                 <img src="${item.immagine || './images/sfondo-home.jpg'}" 
@@ -1481,7 +1478,7 @@ function renderCompactItems(container, items, type) {
     items.forEach(item => {
         const compactItem = document.createElement('div');
         compactItem.className = 'compact-item';
-        // ... (Logica lunghezza testo invariata, ometti se vuoi o copia dal tuo file) ...
+        
         const totalLength = (item.nome || '').length + (item.indirizzo || '').length;
         if (totalLength > 60) compactItem.classList.add('long-content');
 
@@ -1493,7 +1490,7 @@ function renderCompactItems(container, items, type) {
 
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
-        // MODIFICA: Uso onerror per mettere il default beverino
+        // MODIFICA: Fallback su default-beverino.jpg
         compactItem.innerHTML = `
             <div class="compact-item-image-container">
                 <img src="${item.immagine || './images/default-beverino.jpg'}"

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fontane-beverini-v3.7.3'; // VERSIONE AGGIORNATA
+const CACHE_NAME = 'fontane-beverini-v3.7.4'; // VERSIONE AGGIORNATA
 const STATIC_CACHE = 'static-v3';
 const DYNAMIC_CACHE = 'dynamic-v2';
 
@@ -101,24 +101,35 @@ self.addEventListener('activate', event => {
 // Fetch Strategy
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  
   const url = new URL(event.request.url);
   
   // Ignora schemi non supportati
   if (url.protocol.startsWith('chrome') || url.protocol.startsWith('about') || url.protocol.startsWith('data')) return;
 
   // Ignora chiamate API/Firebase/Analytics
-  if (url.href.includes('firebase') || url.href.includes('firestore') || url.href.includes('googleapis')) {
+  if (url.href.includes('firebase') ||
+      url.href.includes('nominatim') ||
+      url.href.includes('gstatic.com') ||
+      url.href.includes('googleapis.com') ||
+      url.href.includes('/analytics') ||
+      url.href.includes('/firestore')) {
     return fetch(event.request);
   }
 
-  // GESTIONE IMMAGINI
+  // 1. GESTIONE IMMAGINI (Logica Cache on Demand)
   if (event.request.destination === 'image') {
     event.respondWith(
       caches.match(event.request).then(cachedResponse => {
-        if (cachedResponse) return cachedResponse;
+        // A. Se l'immagine è già in cache (l'hai vista prima), usala subito
+        if (cachedResponse) {
+          return cachedResponse;
+        }
 
+        // B. Se non è in cache, prova a scaricarla da internet
         return fetch(event.request).then(networkResponse => {
           if (networkResponse && networkResponse.ok) {
+             // C. Se il download riesce, SALVALA in cache per il futuro (così la vedrai anche offline)
              const responseToCache = networkResponse.clone();
              caches.open(DYNAMIC_CACHE).then(cache => {
                cache.put(event.request, responseToCache);
@@ -126,20 +137,26 @@ self.addEventListener('fetch', event => {
           }
           return networkResponse;
         }).catch(() => {
-          // OFFLINE E NON IN CACHE: RITORNA ERRORE (404)
-          // Così app.js gestisce il fallback visivo
-          return new Response(null, { status: 404, statusText: 'Not found' });
+          // D. SE SEI OFFLINE E NON È IN CACHE:
+          // Qui sta il trucco: Restituiamo un ERRORE (404) invece di un'immagine finta.
+          // Questo errore verrà catturato dal codice 'onerror' in app.js che metterà
+          // l'immagine giusta (Fontana o Beverino) a seconda del caso.
+          return new Response(null, { status: 404, statusText: 'Not found in cache' });
         });
       })
     );
     return;
   }
 
-  // ALTRE RISORSE (HTML, CSS, JS) - Cache First Standard
+  // 2. GESTIONE ALTRE RISORSE (HTML, CSS, JS) - Cache First Standard
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
         if (cachedResponse) return cachedResponse;
-        return fetch(event.request).catch(() => {
+        
+        return fetch(event.request).then(response => {
+            return response;
+        }).catch(() => {
+            // Fallback per HTML (se apri l'app offline su una pagina mai vista)
             if (event.request.headers.get('accept').includes('text/html')) {
                 return caches.match('./index.html');
             }
