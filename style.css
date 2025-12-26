@@ -200,18 +200,22 @@ body {
 
 /* ✅ MODIFICA SFONDO: Versione Mobile di default */
 #home-screen {
+    /* Impostazioni Sfondo */
     background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
                 url('./images/sfondo-home-mobile.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
+
+    /* Impostazioni Layout */
     display: flex;
     flex-direction: column;
     
-    /* MODIFICA EFFETTUATA QUI SOTTO */
-    justify-content: flex-start; 
+    /* 1. Questo fa partire tutto dall'alto invece che dal centro */
+    justify-content: flex-start;
+
+    /* 2. Questo spinge tutto giù di 100px (il primo numero) */
     padding: 100px 20px 30px 20px;
-    /* FINE MODIFICA */
 
     align-items: center;
     flex: 1;
