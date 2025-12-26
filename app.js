@@ -869,20 +869,13 @@ async function loadFirebaseData(type) {
         saveLocalData();
         
         showToast(`${data.length} ${type} caricati da Firebase`, 'success');
+        logActivity(`${data.length} ${type} caricati da Firebase`);
         
         return data;
     } catch (error) {
-        console.log(`[Offline] Errore connessione. Caricamento dati locali per ${type}...`);
-        
-        // 1. Carica i dati dalla memoria del telefono
-        const localData = loadLocalData(type);
-        
-        // 2. FONDAMENTALE: Assegna i dati alla variabile globale appData
-        // (Senza questa riga, l'app pensa che la lista sia vuota!)
-        appData[type] = localData;
-        
-        // 3. Ritorna i dati locali
-        return localData;
+        await handleError(`loadFirebaseData_${type}`, error, `Utilizzo dati locali per ${type}`);
+        loadLocalData(type);
+        return appData[type];
     }
 }
 
@@ -1420,7 +1413,7 @@ function renderGridItems(container, items, type) {
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-${type === 'fontana' ? 'monument' : 'faucet'}"></i></div>
                 <div class="empty-state-text">Nessuna ${type} disponibile</div>
-                <div class="empty-state-subtext">Sei offline e non ci sono dati salvati.</div>
+                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
             </div>
         `;
         return;
@@ -1438,23 +1431,20 @@ function renderGridItems(container, items, type) {
         
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
-        // MODIFICA: Fallback su sfondo-home.jpg
+        // MODIFICA QUI: Contenitore immagine robusto con fallback visivo
         gridItem.innerHTML = `
             <div class="item-image-container">
                 <img src="${item.immagine || './images/sfondo-home.jpg'}" 
                      alt="${item.nome}" 
                      class="item-image" 
-                     loading="lazy"
-                     onerror="this.onerror=null; this.src='./images/sfondo-home.jpg';">
+                     onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'image-fallback\\'><i class=\\'fas fa-image\\'></i></div>';">
             </div>
             <div class="item-content">
                 <div class="item-name">${item.nome}</div>
                 <div class="item-address">${item.indirizzo}</div>
                 <div class="item-footer">
                     <span class="item-status status-${item.stato}">${getStatusText(item.stato)}</span>
-                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
-                        ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
-                    </span>
+                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}</span>
                 </div>
             </div>
         `;
@@ -1468,7 +1458,7 @@ function renderCompactItems(container, items, type) {
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-${type === 'beverino' ? 'faucet' : 'monument'}"></i></div>
                 <div class="empty-state-text">Nessun ${type} disponibile</div>
-                 <div class="empty-state-subtext">Sei offline e non ci sono dati salvati.</div>
+                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
             </div>
         `;
         return;
@@ -1478,9 +1468,19 @@ function renderCompactItems(container, items, type) {
     items.forEach(item => {
         const compactItem = document.createElement('div');
         compactItem.className = 'compact-item';
-        
+
         const totalLength = (item.nome || '').length + (item.indirizzo || '').length;
-        if (totalLength > 60) compactItem.classList.add('long-content');
+        let heightClass = '';
+
+        if (totalLength > 100) {
+            heightClass = 'very-long-content';
+        } else if (totalLength > 60) {
+            heightClass = 'long-content';
+        }
+
+        if (heightClass) {
+            compactItem.classList.add(heightClass);
+        }
 
         compactItem.onclick = () => {
             showDetail(item.id, type);
@@ -1490,14 +1490,13 @@ function renderCompactItems(container, items, type) {
 
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
-        // MODIFICA: Fallback su default-beverino.jpg
+        // MODIFICA QUI: Struttura con contenitore immagine sicuro
         compactItem.innerHTML = `
             <div class="compact-item-image-container">
                 <img src="${item.immagine || './images/default-beverino.jpg'}"
                      alt="${item.nome}" 
                      class="compact-item-image"
-                     loading="lazy"
-                     onerror="this.onerror=null; this.src='./images/default-beverino.jpg';">
+                     onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'compact-image-fallback\\'><i class=\\'fas fa-faucet\\'></i></div>';">
             </div>
             <div class="compact-item-content">
                 <div class="compact-item-header">
