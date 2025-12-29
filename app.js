@@ -1961,7 +1961,7 @@ function renderNewsItems(container, news) {
 function showDetail(id, type) {
     let item, screenId, titleElement, contentElement;
     
-    // Normalizziamo il tipo (gestisce sia 'fontana' che 'fontane')
+    // Normalizziamo il tipo
     const isFontana = type === 'fontana' || type === 'fontane';
 
     // 1. Identificazione elemento e schermata
@@ -1982,8 +1982,7 @@ function showDetail(id, type) {
         return;
     }
 
-    // 2. Traduzione Titolo Schermata (Fontana vs Fountain)
-    // Usa le chiavi del dizionario che abbiamo messo all'inizio
+    // 2. Traduzione Titolo
     if (translations && translations[currentLanguage]) {
         titleElement.textContent = isFontana 
             ? translations[currentLanguage]['screen_fountains'] 
@@ -1992,7 +1991,7 @@ function showDetail(id, type) {
         titleElement.textContent = isFontana ? 'Fontana' : 'Beverino';
     }
     
-    // Helper per tradurre lo stato al volo
+    // Helper per tradurre lo stato
     const getStatusLabel = (stato) => {
         const statusKey = {
             'funzionante': 'status_working',
@@ -2002,7 +2001,7 @@ function showDetail(id, type) {
         return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
     };
 
-    // 3. Generazione HTML Dettaglio (Integrata qui per usare le traduzioni)
+    // 3. Generazione HTML Dettaglio
     contentElement.innerHTML = `
         <div class="detail-header-image">
             <img src="${item.immagine || './images/sfondo-home.jpg'}" 
@@ -2062,38 +2061,38 @@ function showDetail(id, type) {
     
     // 5. Mostra la schermata
     showScreen(screenId);
-}
 
     // ============================================================
-    // FIX SCROLL MOBILE (Sequenza Tripla di Reset)
+    // FIX SCROLL MOBILE (ORA È DENTRO LA FUNZIONE!)
     // ============================================================
     
-    // 1. Reset immediato (tenta di bloccare subito)
+    // 1. Reset immediato
     window.scrollTo(0, 0);
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
     if (contentElement) contentElement.scrollTop = 0;
 
-    // 2. Reset rapido (intercetta il cambio di display:flex)
+    // 2. Reset rapido
     setTimeout(() => {
         window.scrollTo(0, 0);
         document.body.scrollTop = 0;
         if (contentElement) contentElement.scrollTop = 0;
     }, 10);
 
-    // 3. Reset ritardato (fondamentale per i telefoni più lenti che ricalcolano il layout)
+    // 3. Reset ritardato
     setTimeout(() => {
         window.scrollTo({
             top: 0,
             left: 0,
-            behavior: 'auto' // 'auto' è più veloce di 'smooth' per i reset
+            behavior: 'auto'
         });
         if (contentElement) {
             contentElement.scrollTop = 0;
             contentElement.scrollTo(0, 0);
         }
-    }, 100); // Ritardo aumentato a 100ms per sicurezza
+    }, 100);
 
+} // <--- QUESTA È LA PARENTESI FINALE CORRETTA!
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
     let specificFields = '';
