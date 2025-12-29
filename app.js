@@ -2767,7 +2767,7 @@ async function saveFontana(e) {
         const longitudine = parseFloat(document.getElementById('fontana-longitudine').value) || 0;
         const immagine = document.getElementById('fontana-immagine').value.trim();
         
-        // RECUPERO CAMPI INGLESI (Nuova parte)
+        // RECUPERO CAMPI INGLESI (Nuova parte fondamentale!)
         const nome_en = document.getElementById('fontana-nome-en') ? document.getElementById('fontana-nome-en').value.trim() : '';
         const descrizione_en = document.getElementById('fontana-descrizione-en') ? document.getElementById('fontana-descrizione-en').value.trim() : '';
         const storico_en = document.getElementById('fontana-storico-en') ? document.getElementById('fontana-storico-en').value.trim() : '';
@@ -2944,7 +2944,7 @@ async function saveBeverino(e) {
     const immagine = document.getElementById('beverino-immagine').value.trim();
     const descrizione = document.getElementById('beverino-descrizione').value.trim();
     
-    // Recupero campi inglesi (Nuova parte)
+    // Recupero campi inglesi
     const nome_en = document.getElementById('beverino-nome-en') ? document.getElementById('beverino-nome-en').value.trim() : '';
     const descrizione_en = document.getElementById('beverino-descrizione-en') ? document.getElementById('beverino-descrizione-en').value.trim() : '';
     
@@ -3082,13 +3082,19 @@ function editNews(id) {
     if (!news) return;
     
     document.getElementById('news-id').value = news.id;
+    
+    // Campi Italiani
     document.getElementById('news-titolo').value = news.titolo || '';
-    document.getElementById('news-titolo-en').value = news.titolo_en || ''; // NUOVO
     document.getElementById('news-contenuto').value = news.contenuto || '';
-    document.getElementById('news-contenuto-en').value = news.contenuto_en || ''; // NUOVO
     document.getElementById('news-data').value = news.data || '';
     document.getElementById('news-categoria').value = news.categoria || '';
     document.getElementById('news-fonte').value = news.fonte || '';
+    
+    // Campi Inglesi (NUOVI)
+    if(document.getElementById('news-titolo-en'))
+        document.getElementById('news-titolo-en').value = news.titolo_en || '';
+    if(document.getElementById('news-contenuto-en'))
+        document.getElementById('news-contenuto-en').value = news.contenuto_en || '';
     
     showAdminTab('news-admin');
 }
@@ -3098,18 +3104,20 @@ async function saveNews(e) {
     
     const id = document.getElementById('news-id').value;
     const titolo = document.getElementById('news-titolo').value;
-    const titolo_en = document.getElementById('news-titolo-en').value; // NUOVO
     const contenuto = document.getElementById('news-contenuto').value;
-    const contenuto_en = document.getElementById('news-contenuto-en').value; // NUOVO
     const data = document.getElementById('news-data').value;
     const categoria = document.getElementById('news-categoria').value;
     const fonte = document.getElementById('news-fonte').value;
     
+    // RECUPERO CAMPI INGLESI
+    const titolo_en = document.getElementById('news-titolo-en') ? document.getElementById('news-titolo-en').value : '';
+    const contenuto_en = document.getElementById('news-contenuto-en') ? document.getElementById('news-contenuto-en').value : '';
+    
     const newsData = {
         titolo,
-        titolo_en, // SALVA
+        titolo_en, // SALVA INGLESE
         contenuto,
-        contenuto_en, // SALVA
+        contenuto_en, // SALVA INGLESE
         data,
         categoria,
         fonte,
@@ -3122,25 +3130,14 @@ async function saveNews(e) {
 
         if (navigator.onLine) {
             if (id && id.trim() !== '') {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'update_news',
-                    'news',
-                    newsData,
-                    id
-                );
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'update_news', 'news', newsData, id);
                 const index = appData.news.findIndex(n => n.id == id);
                 if (index !== -1) {
                     appData.news[index] = { id, ...newsData };
                 }
                 showToast('News modificata con successo', 'success');
             } else {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'create_news',
-                    'news',
-                    newsData
-                );
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'create_news', 'news', newsData);
                 appData.news.push({ id: savedId, ...newsData });
                 showToast(`News aggiunta con successo (ID: ${savedId})`, 'success');
             }
