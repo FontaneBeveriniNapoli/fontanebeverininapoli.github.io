@@ -1167,27 +1167,38 @@ async function loadFirebaseData(type) {
             const docData = doc.data();
             data.push({ 
                 id: doc.id, 
+                // Dati Comuni
                 nome: docData.nome || '',
+                nome_en: docData.nome_en || '', // NUOVO: Carica nome inglese
                 indirizzo: docData.indirizzo || '',
                 stato: docData.stato || 'funzionante',
                 latitudine: docData.latitudine || 0,
                 longitudine: docData.longitudine || 0,
                 immagine: docData.immagine || '',
+                
+                // Dati Fontane
                 anno: docData.anno || '',
                 descrizione: docData.descrizione || '',
+                descrizione_en: docData.descrizione_en || '', // NUOVO: Carica descrizione inglese
                 storico: docData.storico || '',
+                storico_en: docData.storico_en || '', // NUOVO: Carica storico inglese
+                
+                // Dati News
                 titolo: docData.titolo || '',
+                titolo_en: docData.titolo_en || '', // NUOVO
                 contenuto: docData.contenuto || '',
+                contenuto_en: docData.contenuto_en || '', // NUOVO
                 data: docData.data || new Date().toISOString().split('T')[0],
                 categoria: docData.categoria || '',
                 fonte: docData.fonte || '',
+                
                 last_modified: docData.last_modified || new Date().toISOString()
             });
         });
         
-        // >>> NUOVO: CONTROLLO NOTIFICHE PRIMA DI SALVARE <<<
+        // >>> CONTROLLO NOTIFICHE <<<
         checkAndNotifyUpdates(data, type);
-        // >>> FINE NUOVO <<<
+        // >>> FINE CONTROLLO <<<
 
         appData[type] = data;
         saveLocalData();
