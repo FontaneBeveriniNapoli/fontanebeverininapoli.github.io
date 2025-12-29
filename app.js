@@ -2002,6 +2002,11 @@ function showDetail(id, type) {
         titleElement.textContent = isFontana ? 'Fontana' : 'Beverino';
     }
     
+    // ============================================================
+    // MODIFICA SOLO QUI: Logica per scegliere l'immagine giusta
+    // ============================================================
+    const defaultImage = isFontana ? './images/sfondo-home.jpg' : './images/default-beverino.jpg';
+
     // Helper per tradurre lo stato
     const getStatusLabel = (stato) => {
         const statusKey = {
@@ -2012,13 +2017,13 @@ function showDetail(id, type) {
         return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
     };
 
-    // 3. Generazione HTML Dettaglio
+    // 3. Generazione HTML Dettaglio (CON GRAFICA PRESERVATA)
     contentElement.innerHTML = `
         <div class="detail-header-image">
-            <img src="${item.immagine || './images/sfondo-home.jpg'}" 
+            <img src="${item.immagine || defaultImage}" 
                  alt="${getLocalizedText(item, 'nome')}" 
                  class="detail-image"
-                 onerror="this.src='./images/sfondo-home.jpg'">
+                 onerror="this.src='${defaultImage}'">
         </div>
         
         <div class="detail-info">
