@@ -942,6 +942,90 @@ function resetScroll() {
 // ============================================
 
 // Firebase Firestore functions
+// ============================================
+// SISTEMA DI NOTIFICHE E EVIDENZIAZIONE
+// ============================================
+function checkAndNotifyUpdates(newData, type) {
+    const storedData = localStorage.getItem('fontaneBeveriniData');
+    if (!storedData) return; 
+    
+    const parsedData = JSON.parse(storedData);
+    const oldList = parsedData[type] || [];
+    
+    if (oldList.length === 0) return; 
+
+    // Recupera o inizializza la lista delle evidenziazioni
+    let highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
+
+    let newItemsCount = 0;
+    let fixedItemsCount = 0;
+    let lastNewName = "";
+    let lastFixedName = "";
+
+    newData.forEach(newItem => {
+        const existsOld = oldList.find(oldItem => oldItem.id === newItem.id);
+        
+        if (!existsOld) {
+            // È NUOVO
+            newItemsCount++;
+            lastNewName = newItem.titolo || newItem.nome;
+            if (!highlights.new.includes(newItem.id)) {
+                highlights.new.push(newItem.id);
+            }
+        } else {
+            // È RIPARATO? (Solo fontane/beverini)
+            if (type !== 'news') {
+                const wasBroken = ['non-funzionante', 'manutenzione'].includes(existsOld.stato);
+                const isWorking = newItem.stato === 'funzionante';
+                
+                if (wasBroken && isWorking) {
+                    fixedItemsCount++;
+                    lastFixedName = newItem.nome;
+                    if (!highlights.fixed.includes(newItem.id)) {
+                        highlights.fixed.push(newItem.id);
+                    }
+                }
+            }
+        }
+    });
+
+    // Salva le evidenziazioni
+    localStorage.setItem('app_highlights', JSON.stringify(highlights));
+
+    // NOTIFICHE RAGGRUPPATE
+    if (newItemsCount > 0) {
+        let title = type === 'news' ? '📰 Nuova Notizia' : '✨ Nuovo arrivo';
+        let body = newItemsCount === 1 ? `È stato aggiunto: ${lastNewName}` : `Ci sono ${newItemsCount} nuovi elementi!`;
+        sendSystemNotification(title, body);
+    }
+
+    if (fixedItemsCount > 0) {
+        let title = '✅ Riparazione Completata';
+        let body = fixedItemsCount === 1 ? `${lastFixedName} è tornata in funzione!` : `${fixedItemsCount} punti acqua riparati!`;
+        setTimeout(() => sendSystemNotification(title, body), 1000);
+    }
+}
+
+function sendSystemNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(title, {
+                    body: body,
+                    icon: './images/icona-avvio-192.png',
+                    badge: './images/icona-avvio-72.png',
+                    vibrate: [200, 100, 200]
+                });
+            });
+        } else {
+            new Notification(title, { body: body, icon: './images/icona-avvio-192.png' });
+        }
+    } else {
+        // Fallback Toast se notifiche negate
+        showToast(`${title}: ${body}`, 'success', 5000);
+    }
+}
+
 async function loadFirebaseData(type) {
     try {
         const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
@@ -953,7 +1037,6 @@ async function loadFirebaseData(type) {
         };
         
         const collectionName = collectionMap[type];
-        
         const dataRef = collection(window.db, collectionName);
         const snapshot = await safeFirebaseOperation(getDocs, `getDocs_${type}`, dataRef);
         
@@ -980,6 +1063,10 @@ async function loadFirebaseData(type) {
             });
         });
         
+        // >>> NUOVO: CONTROLLO NOTIFICHE PRIMA DI SALVARE <<<
+        checkAndNotifyUpdates(data, type);
+        // >>> FINE NUOVO <<<
+
         appData[type] = data;
         saveLocalData();
         
@@ -2478,7 +2565,7 @@ async function saveFontana(e) {
                     appData.fontane[index] = { id: savedId, ...fontanaData };
                 }
             } else {
-                appData.fontane.push({ id: savedId, ...fontanaData });
+                appData.fontane.push({ id: savedId, ...fontanaData };
             }
             
             showToast('Fontana salvata localmente. Sarà sincronizzata online dopo.', 'info');
@@ -2536,7 +2623,6 @@ async function deleteFontana(id) {
         showToast('Errore nell\'eliminazione della fontana', 'error');
     }
 }
-
 // Beverini Admin
 async function loadAdminBeverini() {
     const tbody = document.getElementById('beverini-table-body');
@@ -3728,7 +3814,7 @@ function forceSyncAnalytics() {
         showToast('Sync analytics forzato', 'info');
     }
 }
-// Seconda parte nel blocco successivo
+
 // ============================================
 // GESTIONE TASTO INDIETRO ANDROID (CORRETTO)
 // ============================================
@@ -3763,6 +3849,7 @@ function setupBackButtonHandler() {
         }
     });
 }
+
 /**
  * Gestisce la logica del tasto indietro.
  * @returns {boolean} true se l'azione è stata gestita internamente (non uscire), false se si deve uscire.
@@ -3851,7 +3938,208 @@ function handleBackNavigation() {
 }
 
 // ============================================
-// Initialize App (MODIFICATO)
+// NUOVE FUNZIONI: ORDINAMENTO E BADGE (AGGIORNATE)
+// ============================================
+
+// Aggiorna getFilteredItems con ordinamento
+function getFilteredItems(type) {
+    const items = appData[type];
+    const filter = currentFilter[type];
+
+    // 1. Filtra normalmente
+    let filteredList = [];
+    if (!items || filter === 'all') {
+        filteredList = items || [];
+    } else {
+        filteredList = items.filter(item => item.stato === filter);
+    }
+
+    // 2. Ordinamento Intelligente (Nuovi/Riparati in cima)
+    const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
+
+    // Se non ci sono novità, ritorna la lista normale (ma ordinata per ID decrescente se vuoi coerenza)
+    if (highlights.new.length === 0 && highlights.fixed.length === 0) {
+        return filteredList;
+    }
+
+    return filteredList.sort((a, b) => {
+        const isANew = highlights.new.includes(a.id);
+        const isBNew = highlights.new.includes(b.id);
+        const isAFixed = highlights.fixed.includes(a.id);
+        const isBFixed = highlights.fixed.includes(b.id);
+
+        // Priorità assoluta ai NUOVI
+        if (isANew && !isBNew) return -1;
+        if (!isANew && isBNew) return 1;
+
+        // Seconda priorità ai RIPARATI
+        if (isAFixed && !isBFixed) return -1;
+        if (!isAFixed && isBFixed) return 1;
+
+        return 0; // Nessuna priorità
+    });
+}
+
+// Aggiorna renderGridItems con badge
+function renderGridItems(container, items, type) {
+    if (!items || items.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-${type === 'fontana' ? 'monument' : 'faucet'}"></i></div>
+                <div class="empty-state-text">Nessuna ${type} disponibile</div>
+                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Recupera highlights
+    const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
+
+    container.innerHTML = '';
+    items.forEach(item => {
+        const gridItem = document.createElement('div');
+        gridItem.className = 'grid-item';
+        gridItem.onclick = () => {
+            showDetail(item.id, type);
+            currentLatLng = { lat: item.latitudine, lng: item.longitudine };
+            document.getElementById('fixed-navigate-btn').classList.remove('hidden');
+        };
+        
+        // Badge Logic
+        let badgeHTML = '';
+        if (highlights.new.includes(item.id)) badgeHTML = '<span class="badge-new">NUOVO</span>';
+        else if (highlights.fixed.includes(item.id)) badgeHTML = '<span class="badge-fixed">RIPARATO</span>';
+
+        const hasCustomImage = item.immagine && item.immagine.trim() !== '';
+        
+        gridItem.innerHTML = `
+            <div class="item-image-container">
+                <img src="${item.immagine || './images/sfondo-home.jpg'}" 
+                     alt="${item.nome}" 
+                     class="item-image" 
+                     onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'image-fallback\\'><i class=\\'fas fa-image\\'></i></div>';">
+            </div>
+            <div class="item-content">
+                <div class="item-name">${item.nome} ${badgeHTML}</div>
+                <div class="item-address">${item.indirizzo}</div>
+                <div class="item-footer">
+                    <span class="item-status status-${item.stato}">${getStatusText(item.stato)}</span>
+                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}</span>
+                </div>
+            </div>
+        `;
+        container.appendChild(gridItem);
+    });
+}
+
+// Aggiorna renderCompactItems con badge
+function renderCompactItems(container, items, type) {
+    if (!items || items.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-faucet"></i></div>
+                <div class="empty-state-text">Nessun ${type} disponibile</div>
+                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Recupera highlights
+    const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
+
+    container.innerHTML = '';
+    items.forEach(item => {
+        const compactItem = document.createElement('div');
+        compactItem.className = 'compact-item';
+
+        // Badge Logic
+        let badgeHTML = '';
+        if (highlights.new.includes(item.id)) badgeHTML = '<span class="badge-new">NUOVO</span>';
+        else if (highlights.fixed.includes(item.id)) badgeHTML = '<span class="badge-fixed">RIPARATO</span>';
+
+        const totalLength = (item.nome || '').length + (item.indirizzo || '').length;
+        if (totalLength > 100) compactItem.classList.add('very-long-content');
+        else if (totalLength > 60) compactItem.classList.add('long-content');
+
+        compactItem.onclick = () => {
+            showDetail(item.id, type);
+            currentLatLng = { lat: item.latitudine, lng: item.longitudine };
+            document.getElementById('fixed-navigate-btn').classList.remove('hidden');
+        };
+
+        const hasCustomImage = item.immagine && item.immagine.trim() !== '';
+        
+        compactItem.innerHTML = `
+            <div class="compact-item-image-container">
+                <img src="${item.immagine || './images/default-beverino.jpg'}"
+                     alt="${item.nome}" 
+                     class="compact-item-image"
+                     onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'compact-image-fallback\\'><i class=\\'fas fa-faucet\\'></i></div>';">
+            </div>
+            <div class="compact-item-content">
+                <div class="compact-item-header">
+                    <div class="compact-item-name">${item.nome} ${badgeHTML}</div>
+                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
+                        ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
+                    </span>
+                </div>
+                <div class="compact-item-address">${item.indirizzo}</div>
+                <div class="compact-item-footer">
+                    <span class="compact-item-status status-${item.stato}">${getStatusText(item.stato)}</span>
+                </div>
+            </div>
+        `;
+        container.appendChild(compactItem);
+    });
+}
+
+// Aggiorna renderNewsItems con badge
+function renderNewsItems(container, news) {
+    if (!news || news.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-newspaper"></i></div>
+                <div class="empty-state-text">Nessuna news disponibile</div>
+                <div class="empty-state-subtext">Torna presto per aggiornamenti</div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Recupera highlights
+    const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
+    
+    container.innerHTML = '';
+    const sortedNews = [...news].sort((a, b) => new Date(b.data) - new Date(a.data));
+    
+    sortedNews.forEach(item => {
+        // Badge Logic
+        let badgeHTML = '';
+        if (highlights.new.includes(item.id)) {
+            badgeHTML = '<span class="badge-new" style="float: right;">NUOVO</span>';
+        }
+
+        const newsCard = document.createElement('div');
+        newsCard.className = 'news-card';
+        newsCard.innerHTML = `
+            <div class="news-header">
+                <div class="news-title">${item.titolo} ${badgeHTML}</div>
+                <div class="news-date">${formatDate(item.data)}</div>
+            </div>
+            <div class="news-content">${item.contenuto}</div>
+            <div class="news-footer">
+                <span class="news-category">${item.categoria}</span>
+                <span class="news-source">Fonte: ${item.fonte}</span>
+            </div>
+        `;
+        container.appendChild(newsCard);
+    });
+}
+
+// ============================================
+// Initialize App (MODIFICATO CON NOTIFICHE)
 // ============================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -3860,10 +4148,25 @@ document.addEventListener('DOMContentLoaded', function() {
     showScreen('home-screen');
     handleUrlParameters();
     
-    // ✅ Inizializza gestione tasto indietro (Nuova funzione corretta)
     setupBackButtonHandler();
     
-    // ✅ Registra Service Worker (versione corretta)
+    // >>> NUOVO: Richiesta Permessi Notifiche <<<
+    if ('Notification' in window && Notification.permission !== 'granted') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') console.log('Notifiche attivate!');
+        });
+    }
+
+    // >>> NUOVO: Pulizia Badge dopo 24 ore <<<
+    const lastHighlightTime = localStorage.getItem('last_highlight_time');
+    const now = Date.now();
+    if (lastHighlightTime && (now - parseInt(lastHighlightTime)) > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem('app_highlights');
+        localStorage.setItem('last_highlight_time', now.toString());
+    }
+    if (!lastHighlightTime) localStorage.setItem('last_highlight_time', now.toString());
+    // >>> FINE NUOVO <<<
+    
     if ('serviceWorker' in navigator) {
         setTimeout(() => {
             registerServiceWorker();
@@ -3876,15 +4179,9 @@ document.addEventListener('DOMContentLoaded', function() {
             await loadFirebaseData('beverini');
             await loadFirebaseData('news');
             
-            if (document.getElementById('fontane-list').innerHTML.includes('Caricamento')) {
-                loadFontane();
-            }
-            if (document.getElementById('beverini-list').innerHTML.includes('Caricamento')) {
-                loadBeverini();
-            }
-            if (document.getElementById('news-list').innerHTML.includes('Caricamento')) {
-                loadNews();
-            }
+            if (document.getElementById('fontane-list').innerHTML.includes('Caricamento')) loadFontane();
+            if (document.getElementById('beverini-list').innerHTML.includes('Caricamento')) loadBeverini();
+            if (document.getElementById('news-list').innerHTML.includes('Caricamento')) loadNews();
             
         } catch (error) {
             showToast('Utilizzo dati locali', 'info');
@@ -3892,15 +4189,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
     
     document.getElementById('admin-password').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            checkAdminAuth();
-        }
+        if (e.key === 'Enter') checkAdminAuth();
     });
     
     document.getElementById('admin-auth').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeAdminAuth();
-        }
+        if (e.target === this) closeAdminAuth();
     });
     
     window.addEventListener('online', checkOnlineStatus);
@@ -3908,10 +4201,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.addEventListener('error', function(e) {
         if (e.target.tagName === 'IMG') {
-            // Logica di fallback generica, lasciamo che i singoli template di rendering
-            // gestiscano il loro specifico fallback tramite onerror se necessario.
-            // L'unico fallback hardcoded qui è stato rimosso in favore dei template.
-            // e.target.src = './images/sfondo-home.jpg';
+            // Fallback gestito nei template
         }
     }, true);
     
@@ -3922,12 +4212,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     document.getElementById('admin-panel').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeAdminPanel();
-        }
+        if (e.target === this) closeAdminPanel();
     });
     
-    // Inizializza nuove funzionalità
     initializeOfflineSync();
     setTimeout(() => {
         setupLazyLoading();
@@ -3935,6 +4222,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     logActivity('Applicazione avviata');
 });
+
 // ===== SPLASH SCREEN MANAGEMENT (VERSIONE CON PROGRESS BAR) =====
 
 let splashProgressInterval;
@@ -4192,6 +4480,7 @@ document.addEventListener('touchend', function(e) {
 });
 
 console.log('✨ Sistema splash screen inizializzato');
+
 // ==========================================
 // NUOVE FUNZIONI: MENU E SEGNALAZIONI EMAIL
 // ==========================================
@@ -4264,6 +4553,7 @@ function inviaSegnalazione(event) {
     // Opzionale: svuota il campo descrizione dopo l'invio
     // document.getElementById('report-desc').value = ''; 
 }
+
 // ==========================================
 // FUNZIONE PER SCHERMATA CREDITI
 // ==========================================
@@ -4280,6 +4570,7 @@ function openCreditsScreen() {
     // 3. Scrolla in alto per sicurezza
     window.scrollTo(0, 0);
 }
+
 // ==========================================
 // GESTIONE ELIMINAZIONE MULTIPLA (BULK DELETE)
 // ==========================================
@@ -4408,3 +4699,5 @@ async function deleteSelectedItems(type) {
         showToast(`Eliminati: ${successCount}. Falliti: ${failCount}.`, 'warning');
     }
 }
+
+console.log('✨ Sistema notifiche, badge e ordinamento inizializzato');

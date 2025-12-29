@@ -3908,3 +3908,40 @@ body {
     from { opacity: 0; transform: scale(0.9); }
     to { opacity: 1; transform: scale(1); }
 }
+/* ============================
+   STILI BADGE NOTIFICHE (NUOVO/RIPARATO)
+   ============================ */
+.badge-new {
+    background-color: #8b5cf6; /* Viola */
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+    vertical-align: middle;
+    animation: pulse-badge 2s infinite;
+    display: inline-block;
+}
+
+.badge-fixed {
+    background-color: #10b981; /* Verde */
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+    vertical-align: middle;
+    display: inline-block;
+}
+
+@keyframes pulse-badge {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
