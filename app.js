@@ -2732,8 +2732,7 @@ function editFontana(id) {
     document.getElementById('fontana-descrizione').value = fontana.descrizione || '';
     document.getElementById('fontana-storico').value = fontana.storico || '';
     
-    // Campi Inglesi (NUOVI)
-    // Nota: usiamo ?. per evitare errori se l'HTML non è ancora aggiornato
+    // Campi Inglesi (NUOVI - Usa ?. per sicurezza)
     if(document.getElementById('fontana-nome-en')) 
         document.getElementById('fontana-nome-en').value = fontana.nome_en || '';
     if(document.getElementById('fontana-descrizione-en')) 
@@ -2768,28 +2767,28 @@ async function saveFontana(e) {
         const longitudine = parseFloat(document.getElementById('fontana-longitudine').value) || 0;
         const immagine = document.getElementById('fontana-immagine').value.trim();
         
-        // Recupero campi inglesi (con controllo sicurezza)
+        // RECUPERO CAMPI INGLESI (Nuova parte)
         const nome_en = document.getElementById('fontana-nome-en') ? document.getElementById('fontana-nome-en').value.trim() : '';
         const descrizione_en = document.getElementById('fontana-descrizione-en') ? document.getElementById('fontana-descrizione-en').value.trim() : '';
         const storico_en = document.getElementById('fontana-storico-en') ? document.getElementById('fontana-storico-en').value.trim() : '';
         
         const fontanaData = {
             nome,
-            nome_en, // SALVA
+            nome_en, // SALVA INGLESE
             indirizzo,
             stato,
             anno,
             descrizione,
-            descrizione_en, // SALVA
+            descrizione_en, // SALVA INGLESE
             storico,
-            storico_en, // SALVA
+            storico_en, // SALVA INGLESE
             latitudine,
             longitudine,
             immagine,
             last_modified: new Date().toISOString()
         };
         
-        // --- BLOCCO VALIDAZIONE E SALVATAGGIO (identico a prima) ---
+        // Validazione
         const validationErrors = validateFontanaData(fontanaData);
         if (validationErrors.length > 0) throw validationErrors[0];
         
@@ -2919,7 +2918,7 @@ function editBeverino(id) {
     document.getElementById('beverino-stato').value = beverino.stato || 'funzionante';
     document.getElementById('beverino-descrizione').value = beverino.descrizione || ''; 
     
-    // Campi Inglesi
+    // Campi Inglesi (NUOVI)
     if(document.getElementById('beverino-nome-en'))
         document.getElementById('beverino-nome-en').value = beverino.nome_en || '';
     if(document.getElementById('beverino-descrizione-en'))
@@ -2945,24 +2944,23 @@ async function saveBeverino(e) {
     const immagine = document.getElementById('beverino-immagine').value.trim();
     const descrizione = document.getElementById('beverino-descrizione').value.trim();
     
-    // Recupero campi inglesi
+    // Recupero campi inglesi (Nuova parte)
     const nome_en = document.getElementById('beverino-nome-en') ? document.getElementById('beverino-nome-en').value.trim() : '';
     const descrizione_en = document.getElementById('beverino-descrizione-en') ? document.getElementById('beverino-descrizione-en').value.trim() : '';
     
     const beverinoData = {
         nome,
-        nome_en, // SALVA
+        nome_en, // SALVA INGLESE
         indirizzo,
         stato,
         latitudine,
         longitudine,
         immagine,
         descrizione, 
-        descrizione_en, // SALVA
+        descrizione_en, // SALVA INGLESE
         last_modified: new Date().toISOString()
     };
     
-    // --- BLOCCO VALIDAZIONE E SALVATAGGIO (identico a prima) ---
     try {
         const validationErrors = validateBeverinoData(beverinoData);
         if (validationErrors.length > 0) throw validationErrors[0];
