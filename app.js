@@ -2002,6 +2002,7 @@ function showDetail(id, type) {
     };
 
     // 3. Generazione HTML Dettaglio
+    // NOTA: Ho corretto le classi dei pulsanti qui sotto (detail-action-btn)
     contentElement.innerHTML = `
         <div class="detail-header-image">
             <img src="${item.immagine || './images/sfondo-home.jpg'}" 
@@ -2041,12 +2042,12 @@ function showDetail(id, type) {
                 <p>${getLocalizedText(item, 'storico')}</p>
             </div>` : ''}
 
-            <div class="action-buttons">
-                <button class="action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
+            <div class="detail-actions">
+                <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
                     <i class="fas fa-location-arrow"></i> 
                     ${translations[currentLanguage]['navigate_btn']}
                 </button>
-                <button class="action-btn secondary" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\'")}')">
+                <button class="detail-action-btn secondary" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\'")}')">
                     <i class="fas fa-bullhorn"></i> 
                     ${translations[currentLanguage]['report_btn']}
                 </button>
@@ -2063,23 +2064,20 @@ function showDetail(id, type) {
     showScreen(screenId);
 
     // ============================================================
-    // FIX SCROLL MOBILE (ORA È DENTRO LA FUNZIONE!)
+    // FIX SCROLL MOBILE
     // ============================================================
     
-    // 1. Reset immediato
     window.scrollTo(0, 0);
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
     if (contentElement) contentElement.scrollTop = 0;
 
-    // 2. Reset rapido
     setTimeout(() => {
         window.scrollTo(0, 0);
         document.body.scrollTop = 0;
         if (contentElement) contentElement.scrollTop = 0;
     }, 10);
 
-    // 3. Reset ritardato
     setTimeout(() => {
         window.scrollTo({
             top: 0,
@@ -2091,8 +2089,7 @@ function showDetail(id, type) {
             contentElement.scrollTo(0, 0);
         }
     }, 100);
-
-} // <--- QUESTA È LA PARENTESI FINALE CORRETTA!
+}
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
     let specificFields = '';
