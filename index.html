@@ -496,9 +496,19 @@
                         <input type="text" id="news-titolo" required>
                     </div>
                     <div class="form-group">
+                        <label for="news-titolo-en">Titolo (Inglese):</label>
+                        <input type="text" id="news-titolo-en">
+                    </div>
+
+                    <div class="form-group">
                         <label for="news-contenuto">Contenuto:</label>
                         <textarea id="news-contenuto" rows="4" required></textarea>
                     </div>
+                    <div class="form-group">
+                        <label for="news-contenuto-en">Contenuto (Inglese):</label>
+                        <textarea id="news-contenuto-en" rows="4"></textarea>
+                    </div>
+
                     <div class="form-group">
                         <label for="news-data">Data:</label>
                         <input type="date" id="news-data" required>
@@ -809,8 +819,8 @@
                 <div class="app-logo logo-with-image"></div>
                 <div class="comune-logo"></div>
             </div>
-            <h1 class="home-title">Fontane & Beverini</h1>
-            <p class="home-subtitle">
+            <h1 class="home-title" data-i18n="home_title">Fontane & Beverini</h1>
+            <p class="home-subtitle" data-i18n="home_subtitle">
                 L'acqua pubblica a portata di app.
                 Fontane, e beverini della città di Napoli, sempre nel palmo della tua mano.
             </p>
@@ -819,21 +829,21 @@
                 <div class="button-row">
                     <button class="home-btn fontane-btn" onclick="showScreen('fontane-screen')">
                         <span class="btn-icon"><i class="fas fa-monument"></i></span>
-                        <span class="btn-text">Fontane</span>
+                        <span class="btn-text" data-i18n="tab_fountains">Fontane</span>
                     </button>
                     <button class="home-btn beverini-btn" onclick="showScreen('beverini-screen')">
                         <span class="btn-icon"><i class="fas fa-faucet"></i></span>
-                        <span class="btn-text">Beverini</span>
+                        <span class="btn-text" data-i18n="tab_drinkers">Beverini</span>
                     </button>
                 </div>
                 <div class="button-row">
                     <button class="home-btn mappa-btn" onclick="showScreen('mappa-screen')">
                         <span class="btn-icon"><i class="fas fa-map-marked-alt"></i></span>
-                        <span class="btn-text">Mappa</span>
+                        <span class="btn-text" data-i18n="tab_map">Mappa</span>
                     </button>
                     <button class="home-btn news-btn" onclick="showScreen('news-screen')">
                         <span class="btn-icon"><i class="fas fa-newspaper"></i></span>
-                        <span class="btn-text">News</span>
+                        <span class="btn-text" data-i18n="tab_news">News</span>
                     </button>
                 </div>
             </div>
@@ -842,8 +852,8 @@
         <div class="screen list-screen" id="fontane-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title">Fontane</h1>
-                <p class="screen-subtitle">Scopri le fontane della città</p>
+                <h1 class="screen-title" data-i18n="screen_fountains">Fontane</h1>
+                <p class="screen-subtitle" data-i18n="subtitle_fountains">Scopri le fontane della città</p>
             </header>
             <div class="search-container">
                 <input type="text" class="search-input" placeholder="🔍 Cerca fontane..." onkeyup="debouncedFilter('fontane', this.value)">
@@ -878,8 +888,8 @@
         <div class="screen list-screen" id="beverini-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title">Beverini</h1>
-                <p class="screen-subtitle">Trova i beverini pubblici</p>
+                <h1 class="screen-title" data-i18n="screen_drinkers">Beverini</h1>
+                <p class="screen-subtitle" data-i18n="subtitle_drinkers">Trova i beverini pubblici</p>
             </header>
             <div class="search-container">
                 <input type="text" class="search-input" placeholder="🔍 Cerca beverini..." onkeyup="debouncedFilter('beverini', this.value)">
@@ -914,7 +924,7 @@
         <div class="screen list-screen" id="news-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title">News</h1>
+                <h1 class="screen-title" data-i18n="tab_news">News</h1>
                 <p class="screen-subtitle">Ultime notizie sulle fontane</p>
             </header>
             <div class="content-area">
@@ -960,7 +970,7 @@
         <div class="screen" id="mappa-screen">
             <header class="app-header" style="position: absolute; top: 0; left: 0; right: 0; z-index: 1000; padding: 15px 20px;">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title" style="font-size: 1.4rem;">Mappa</h1>
+                <h1 class="screen-title" style="font-size: 1.4rem;" data-i18n="screen_map">Mappa</h1>
             </header>
             <div class="map-search-container">
                 <div class="map-search-box">
@@ -1106,23 +1116,23 @@
         <div class="tab-bar">
             <button class="tab-btn active" data-target="home-screen" onclick="showScreen('home-screen')">
                 <span class="tab-icon"><i class="fas fa-home"></i></span>
-                <span>Home</span>
+                <span data-i18n="tab_home">Home</span>
             </button>
             <button class="tab-btn" data-target="fontane-screen" onclick="showScreen('fontane-screen')">
                 <span class="tab-icon"><i class="fas fa-monument"></i></span>
-                <span>Fontane</span>
+                <span data-i18n="tab_fountains">Fontane</span>
             </button>
             <button class="tab-btn" data-target="beverini-screen" onclick="showScreen('beverini-screen')">
                 <span class="tab-icon"><i class="fas fa-faucet"></i></span>
-                <span>Beverini</span>
+                <span data-i18n="tab_drinkers">Beverini</span>
             </button>
             <button class="tab-btn" data-target="mappa-screen" onclick="showScreen('mappa-screen')">
                 <span class="tab-icon"><i class="fas fa-map-marked-alt"></i></span>
-                <span>Mappa</span>
+                <span data-i18n="tab_map">Mappa</span>
             </button>
             <button class="tab-btn" data-target="news-screen" onclick="showScreen('news-screen')">
                 <span class="tab-icon"><i class="fas fa-newspaper"></i></span>
-                <span>News</span>
+                <span data-i18n="tab_news">News</span>
             </button>
         </div>
     </div>
@@ -1132,16 +1142,21 @@
             <h3 class="modal-title" style="margin-bottom: 20px; font-size:1.2rem;">Menu</h3>
             
             <div class="modal-buttons">
+                <button class="modal-btn lang-switch" onclick="toggleLanguage()">
+                    <span id="lang-flag">🇬🇧</span> 
+                    <span id="lang-label">Switch to English</span>
+                </button>
+
                 <button class="modal-btn primary" onclick="openReportScreen()" style="background: #ef4444;">
-                    <i class="fas fa-bullhorn"></i> Invia Segnalazione
+                    <i class="fas fa-bullhorn"></i> <span data-i18n="report_btn">Invia Segnalazione</span>
                 </button>
                 
                 <button class="modal-btn primary" onclick="openCreditsScreen()" style="background: #3b82f6;">
-                    <i class="fas fa-info-circle"></i> Info & Crediti
+                    <i class="fas fa-info-circle"></i> <span data-i18n="info_btn">Info & Crediti</span>
                 </button>
                 
                 <button class="modal-btn secondary" onclick="goToAdmin()">
-                    <i class="fas fa-user-shield"></i> Area Riservata
+                    <i class="fas fa-user-shield"></i> <span data-i18n="admin_btn">Area Riservata</span>
                 </button>
                 
                 <button class="modal-btn" onclick="toggleMenuModal()" style="border: 1px solid #ddd; background:white; margin-top:10px;">
