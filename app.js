@@ -1766,43 +1766,79 @@ function showSkeletonLoaderCompact(container, count = 6) {
     }
 }
 function renderGridItems(container, items, type) {
+    // 1. GESTIONE STATO VUOTO (Tuo codice originale mantenuto)
     if (!items || items.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-${type === 'fontana' ? 'monument' : 'faucet'}"></i></div>
-                <div class="empty-state-text">Nessuna ${type} disponibile</div>
-                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
+                <div class="empty-state-text">Nessun elemento trovato</div>
+                <div class="empty-state-subtext">Prova a cambiare i filtri di ricerca</div>
             </div>
         `;
         return;
     }
     
+    // 2. RECUPERA HIGHLIGHTS (Badge Nuovo/Riparato)
+    const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
+
+    // 3. HELPER PER TRADURRE LO STATO (Funzionante -> Working)
+    const getStatusLabel = (stato) => {
+        const statusKey = {
+            'funzionante': 'status_working',
+            'non-funzionante': 'status_broken',
+            'manutenzione': 'status_maintenance'
+        }[stato] || 'status_working';
+        
+        // Se esiste la traduzione usa quella, altrimenti usa lo stato originale
+        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
+    };
+
     container.innerHTML = '';
+    
     items.forEach(item => {
         const gridItem = document.createElement('div');
         gridItem.className = 'grid-item';
+        
+        // GESTORE CLICK (Mantiene la tua logica di navigazione)
         gridItem.onclick = () => {
+            // Nota: passo item.id come nel tuo codice originale
             showDetail(item.id, type);
-            currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-            document.getElementById('fixed-navigate-btn').classList.remove('hidden');
+            
+            // Gestione tasto navigazione rapida
+            if(typeof currentLatLng !== 'undefined') {
+                currentLatLng = { lat: item.latitudine, lng: item.longitudine };
+                const navBtn = document.getElementById('fixed-navigate-btn');
+                if(navBtn) navBtn.classList.remove('hidden');
+            }
         };
         
+        // LOGICA BADGE (Mantenuta)
+        let badgeHTML = '';
+        if (highlights.new.includes(item.id)) badgeHTML = '<span class="badge-new">NUOVO</span>';
+        else if (highlights.fixed.includes(item.id)) badgeHTML = '<span class="badge-fixed">RIPARATO</span>';
+
+        // LOGICA IMMAGINE CUSTOM (Mantenuta)
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
-        // MODIFICA QUI: Contenitore immagine robusto con fallback visivo
+        // RENDER HTML (Aggiornato con getLocalizedText e getStatusLabel)
         gridItem.innerHTML = `
             <div class="item-image-container">
                 <img src="${item.immagine || './images/sfondo-home.jpg'}" 
-                     alt="${item.nome}" 
+                     alt="${getLocalizedText(item, 'nome')}" 
                      class="item-image" 
                      onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'image-fallback\\'><i class=\\'fas fa-image\\'></i></div>';">
             </div>
             <div class="item-content">
-                <div class="item-name">${item.nome}</div>
+                <div class="item-name">${getLocalizedText(item, 'nome')} ${badgeHTML}</div>
+                
                 <div class="item-address">${item.indirizzo}</div>
+                
                 <div class="item-footer">
-                    <span class="item-status status-${item.stato}">${getStatusText(item.stato)}</span>
-                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}</span>
+                    <span class="item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
+                    
+                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
+                        ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
+                    </span>
                 </div>
             </div>
         `;
@@ -2057,7 +2093,6 @@ function showDetail(id, type) {
             contentElement.scrollTo(0, 0);
         }
     }, 100); // Ritardo aumentato a 100ms per sicurezza
-}
 
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
@@ -4306,8 +4341,8 @@ function renderCompactItems(container, items, type) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-faucet"></i></div>
-                <div class="empty-state-text">Nessun ${type} disponibile</div>
-                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
+                <div class="empty-state-text">Nessun elemento trovato</div>
+                <div class="empty-state-subtext">Prova a cambiare i filtri di ricerca</div>
             </div>
         `;
         return;
@@ -4315,6 +4350,16 @@ function renderCompactItems(container, items, type) {
     
     // Recupera highlights
     const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
+
+    // Helper per tradurre lo stato (come abbiamo fatto per le fontane)
+    const getStatusLabel = (stato) => {
+        const statusKey = {
+            'funzionante': 'status_working',
+            'non-funzionante': 'status_broken',
+            'manutenzione': 'status_maintenance'
+        }[stato] || 'status_working';
+        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
+    };
 
     container.innerHTML = '';
     items.forEach(item => {
@@ -4338,23 +4383,24 @@ function renderCompactItems(container, items, type) {
 
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
+        // USA getLocalizedText QUI
         compactItem.innerHTML = `
             <div class="compact-item-image-container">
                 <img src="${item.immagine || './images/default-beverino.jpg'}"
-                     alt="${item.nome}" 
+                     alt="${getLocalizedText(item, 'nome')}" 
                      class="compact-item-image"
                      onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'compact-image-fallback\\'><i class=\\'fas fa-faucet\\'></i></div>';">
             </div>
             <div class="compact-item-content">
                 <div class="compact-item-header">
-                    <div class="compact-item-name">${item.nome} ${badgeHTML}</div>
+                    <div class="compact-item-name">${getLocalizedText(item, 'nome')} ${badgeHTML}</div>
                     <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
                         ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
                     </span>
                 </div>
                 <div class="compact-item-address">${item.indirizzo}</div>
                 <div class="compact-item-footer">
-                    <span class="compact-item-status status-${item.stato}">${getStatusText(item.stato)}</span>
+                    <span class="compact-item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
                 </div>
             </div>
         `;
@@ -4392,10 +4438,10 @@ function renderNewsItems(container, news) {
         newsCard.className = 'news-card';
         newsCard.innerHTML = `
             <div class="news-header">
-                <div class="news-title">${item.titolo} ${badgeHTML}</div>
+                <div class="news-title">${getLocalizedText(item, 'titolo')} ${badgeHTML}</div>
                 <div class="news-date">${formatDate(item.data)}</div>
             </div>
-            <div class="news-content">${item.contenuto}</div>
+            <div class="news-content">${getLocalizedText(item, 'contenuto')}</div>
             <div class="news-footer">
                 <span class="news-category">${item.categoria}</span>
                 <span class="news-source">Fonte: ${item.fonte}</span>
