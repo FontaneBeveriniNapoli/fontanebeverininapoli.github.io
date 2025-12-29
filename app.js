@@ -3206,7 +3206,7 @@ async function deleteNews(id) {
 
 // Import/Export Functions
 function exportDataToExcel(type) {
-    // NUOVO: Controllo permessi
+    // Controllo permessi
     if (currentUserRole !== 'admin') {
         showToast('Funzione riservata agli amministratori', 'error');
         return;
@@ -3214,34 +3214,67 @@ function exportDataToExcel(type) {
 
     try {
         let data, filename, sheetName;
+        let excelData = [];
 
         switch(type) {
             case 'fontane':
                 data = appData.fontane;
                 filename = 'fontane_export.xlsx';
                 sheetName = 'Fontane';
+                // Mappatura Esplicita per Fontane
+                excelData = data.map(item => ({
+                    'ID': item.id,
+                    'Nome': item.nome || '',
+                    'Nome_EN': item.nome_en || '', // NUOVO
+                    'Indirizzo': item.indirizzo || '',
+                    'Stato': item.stato || '',
+                    'Anno': item.anno || '',
+                    'Descrizione': item.descrizione || '',
+                    'Descrizione_EN': item.descrizione_en || '', // NUOVO
+                    'Storico': item.storico || '',
+                    'Storico_EN': item.storico_en || '', // NUOVO
+                    'Latitudine': item.latitudine || 0,
+                    'Longitudine': item.longitudine || 0,
+                    'Immagine': item.immagine || ''
+                }));
                 break;
+
             case 'beverini':
                 data = appData.beverini;
                 filename = 'beverini_export.xlsx';
                 sheetName = 'Beverini';
+                // Mappatura Esplicita per Beverini
+                excelData = data.map(item => ({
+                    'ID': item.id,
+                    'Nome': item.nome || '',
+                    'Nome_EN': item.nome_en || '', // NUOVO
+                    'Indirizzo': item.indirizzo || '',
+                    'Stato': item.stato || '',
+                    'Descrizione': item.descrizione || '',
+                    'Descrizione_EN': item.descrizione_en || '', // NUOVO
+                    'Latitudine': item.latitudine || 0,
+                    'Longitudine': item.longitudine || 0,
+                    'Immagine': item.immagine || ''
+                }));
                 break;
+
             case 'news':
                 data = appData.news;
                 filename = 'news_export.xlsx';
                 sheetName = 'News';
+                // Mappatura Esplicita per News
+                excelData = data.map(item => ({
+                    'ID': item.id,
+                    'Titolo': item.titolo || '',
+                    'Titolo_EN': item.titolo_en || '', // NUOVO
+                    'Data': item.data || '',
+                    'Contenuto': item.contenuto || '',
+                    'Contenuto_EN': item.contenuto_en || '', // NUOVO
+                    'Categoria': item.categoria || '',
+                    'Fonte': item.fonte || ''
+                }));
                 break;
         }
-
-        const excelData = data.map(item => {
-            const row = {};
-            Object.keys(item).forEach(key => {
-                if (key !== 'last_modified' && key !== 'id') {
-                    row[key] = item[key];
-                }
-            });
-            return row;
-        });
 
         const ws = XLSX.utils.json_to_sheet(excelData);
         const wb = XLSX.utils.book_new();
@@ -3252,55 +3285,7 @@ function exportDataToExcel(type) {
         showToast(`Dati ${type} esportati in Excel con successo`, 'success');
         logActivity(`Dati ${type} esportati in Excel`);
     } catch (error) {
-        showToast('Errore nell\'esportazione Excel', 'error');
-    }
-}
-
-function exportAllDataToExcel() {
-    // NUOVO: Controllo permessi
-    if (currentUserRole !== 'admin') {
-        showToast('Funzione riservata agli amministratori', 'error');
-        return;
-    }
-
-    try {
-        const wb = XLSX.utils.book_new();
-
-        const fontaneData = appData.fontane.map(item => {
-            const row = {};
-            Object.keys(item).forEach(key => {
-                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
-            });
-            return row;
-        });
-        const fontaneWs = XLSX.utils.json_to_sheet(fontaneData);
-        XLSX.utils.book_append_sheet(wb, fontaneWs, 'Fontane');
-
-        const beveriniData = appData.beverini.map(item => {
-            const row = {};
-            Object.keys(item).forEach(key => {
-                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
-            });
-            return row;
-        });
-        const beveriniWs = XLSX.utils.json_to_sheet(beveriniData);
-        XLSX.utils.book_append_sheet(wb, beveriniWs, 'Beverini');
-
-        const newsData = appData.news.map(item => {
-            const row = {};
-            Object.keys(item).forEach(key => {
-                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
-            });
-            return row;
-        });
-        const newsWs = XLSX.utils.json_to_sheet(newsData);
-        XLSX.utils.book_append_sheet(wb, newsWs, 'News');
-
-        XLSX.writeFile(wb, 'fontane_beverini_complete_export.xlsx');
-
-        showToast('Tutti i dati esportati in Excel con successo', 'success');
-        logActivity('Tutti i dati esportati in Excel');
-    } catch (error) {
+        console.error(error);
         showToast('Errore nell\'esportazione Excel', 'error');
     }
 }
@@ -3383,14 +3368,14 @@ function handleFileImport(type, files) {
 function importFontane(data) {
     const newFontane = data.map((item) => ({
         nome: item.Nome || item.nome || '',
-        nome_en: item.Nome_EN || item.nome_en || '', // NUOVO: Legge il nome inglese
+        nome_en: item.Nome_EN || item.nome_en || '', // LEGGE EXCEL INGLESE
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
         anno: item.Anno || item.anno || '',
         descrizione: item.Descrizione || item.descrizione || '',
-        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // NUOVO: Legge la descrizione inglese
+        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // LEGGE EXCEL INGLESE
         storico: item.Storico || item.storico || '',
-        storico_en: item.Storico_EN || item.storico_en || '', // NUOVO: Legge lo storico inglese
+        storico_en: item.Storico_EN || item.storico_en || '', // LEGGE EXCEL INGLESE
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
@@ -3409,7 +3394,6 @@ function importFontane(data) {
                 saveLocalData();
                 loadAdminFontane();
                 showToast(`${importedCount} fontane importate con successo!`, 'success');
-                logActivity(`${importedCount} fontane importate da Excel`);
             }
         } catch (error) {
             console.error('Errore import fontana:', error);
@@ -3422,11 +3406,11 @@ function importFontane(data) {
 function importBeverini(data) {
     const newBeverini = data.map((item) => ({
         nome: item.Nome || item.nome || '',
-        nome_en: item.Nome_EN || item.nome_en || '', // NUOVO: Nome Inglese
+        nome_en: item.Nome_EN || item.nome_en || '', // LEGGE EXCEL INGLESE
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
         descrizione: item.Descrizione || item.descrizione || '',
-        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // NUOVO: Descrizione Inglese
+        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // LEGGE EXCEL INGLESE
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
@@ -3445,7 +3429,6 @@ function importBeverini(data) {
                 saveLocalData();
                 loadAdminBeverini();
                 showToast(`${importedCount} beverini importati con successo!`, 'success');
-                logActivity(`${importedCount} beverini importati da Excel`);
             }
         } catch (error) {
             console.error('Errore import beverino:', error);
@@ -3458,9 +3441,9 @@ function importBeverini(data) {
 function importNews(data) {
     const newNews = data.map((item) => ({
         titolo: item.Titolo || item.titolo || '',
-        titolo_en: item.Titolo_EN || item.titolo_en || '', // NUOVO
+        titolo_en: item.Titolo_EN || item.titolo_en || '', // LEGGE EXCEL INGLESE
         contenuto: item.Contenuto || item.contenuto || '',
-        contenuto_en: item.Contenuto_EN || item.contenuto_en || '', // NUOVO
+        contenuto_en: item.Contenuto_EN || item.contenuto_en || '', // LEGGE EXCEL INGLESE
         data: item.Data || item.data || new Date().toISOString().split('T')[0],
         categoria: item.Categoria || item.categoria || '',
         fonte: item.Fonte || item.fonte || '',
@@ -3479,7 +3462,6 @@ function importNews(data) {
                 saveLocalData();
                 loadAdminNews();
                 showToast(`${importedCount} news importate con successo!`, 'success');
-                logActivity(`${importedCount} news importate da Excel`);
             }
         } catch (error) {
             console.error('Errore import news:', error);
@@ -3488,7 +3470,6 @@ function importNews(data) {
 
     return newNews.length;
 }
-
 function downloadTemplate(type) {
     let columns = [];
     let filename = '';
