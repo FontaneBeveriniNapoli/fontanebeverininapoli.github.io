@@ -2002,7 +2002,6 @@ function showDetail(id, type) {
     };
 
     // 3. Generazione HTML Dettaglio
-    // NOTA: Ho corretto le classi dei pulsanti qui sotto (detail-action-btn)
     contentElement.innerHTML = `
         <div class="detail-header-image">
             <img src="${item.immagine || './images/sfondo-home.jpg'}" 
@@ -2021,8 +2020,10 @@ function showDetail(id, type) {
             
             <div class="info-row">
                 <span class="info-label"><i class="fas fa-info-circle"></i></span>
-                <span class="info-value status-${item.stato}">
-                    ${getStatusLabel(item.stato)}
+                <span class="info-value">
+                    <span class="item-status status-${item.stato}">
+                        ${getStatusLabel(item.stato)}
+                    </span>
                 </span>
             </div>
 
