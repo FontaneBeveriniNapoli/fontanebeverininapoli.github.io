@@ -2565,7 +2565,7 @@ async function saveFontana(e) {
                     appData.fontane[index] = { id: savedId, ...fontanaData };
                 }
             } else {
-                appData.fontane.push({ id: savedId, ...fontanaData };
+                appData.fontane.push({ id: savedId, ...fontanaData });
             }
             
             showToast('Fontana salvata localmente. Sarà sincronizzata online dopo.', 'info');
