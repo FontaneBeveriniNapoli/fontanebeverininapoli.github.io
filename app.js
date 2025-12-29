@@ -2018,10 +2018,10 @@ function showDetail(id, type) {
                 <span class="info-value">${item.indirizzo}</span>
             </div>
             
-            <div class="info-row">
+            <div class="info-row" style="align-items: center;">
                 <span class="info-label"><i class="fas fa-info-circle"></i></span>
                 <span class="info-value">
-                    <span class="item-status status-${item.stato}">
+                    <span class="item-status status-${item.stato}" style="display: inline-block; margin: 0;">
                         ${getStatusLabel(item.stato)}
                     </span>
                 </span>
@@ -2048,7 +2048,7 @@ function showDetail(id, type) {
                     <i class="fas fa-location-arrow"></i> 
                     ${translations[currentLanguage]['navigate_btn']}
                 </button>
-                <button class="detail-action-btn secondary" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\'")}')">
+                <button class="detail-action-btn" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\'")}')" style="background: #ef4444; color: white;">
                     <i class="fas fa-bullhorn"></i> 
                     ${translations[currentLanguage]['report_btn']}
                 </button>
