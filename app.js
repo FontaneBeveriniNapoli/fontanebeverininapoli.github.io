@@ -1,126 +1,4 @@
 // ==========================================
-// SISTEMA MULTILINGUA - AGGIUNTA INIZIALE
-// ==========================================
-
-let currentLanguage = localStorage.getItem('app_language') || 'it';
-
-const translations = {
-    'it': {
-        'home_title': 'Fontane & Beverini',
-        'home_subtitle': 'L\'acqua pubblica a portata di app. Fontane e beverini della città di Napoli, sempre nel palmo della tua mano.',
-        'tab_home': 'Home',
-        'tab_fountains': 'Fontane',
-        'tab_drinkers': 'Beverini',
-        'tab_map': 'Mappa',
-        'tab_news': 'News',
-        'screen_fountains': 'Fontane',
-        'screen_drinkers': 'Beverini',
-        'screen_map': 'Mappa',
-        'subtitle_fountains': 'Scopri le fontane della città',
-        'subtitle_drinkers': 'Trova i beverini pubblici',
-        'report_btn': 'Invia Segnalazione',
-        'info_btn': 'Info & Crediti',
-        'admin_btn': 'Area Riservata',
-        'status_working': 'Funzionante',
-        'status_broken': 'Non Funzionante',
-        'status_maintenance': 'In Manutenzione',
-        'navigate_btn': 'Naviga Verso',
-        'details_btn': 'Dettagli',
-        'search_placeholder': '🔍 Cerca...',
-        'switch_lang_label': 'Switch to English'
-    },
-    'en': {
-        'home_title': 'Fountains & Dispensers',
-        'home_subtitle': 'Public water at your fingertips. Fountains and water dispensers in Naples, always in the palm of your hand.',
-        'tab_home': 'Home',
-        'tab_fountains': 'Fountains',
-        'tab_drinkers': 'Dispensers',
-        'tab_map': 'Map',
-        'tab_news': 'News',
-        'screen_fountains': 'Fountains',
-        'screen_drinkers': 'Water Dispensers',
-        'screen_map': 'Map',
-        'subtitle_fountains': 'Discover the city fountains',
-        'subtitle_drinkers': 'Find public water dispensers',
-        'report_btn': 'Send Report',
-        'info_btn': 'Info & Credits',
-        'admin_btn': 'Restricted Area',
-        'status_working': 'Working',
-        'status_broken': 'Not Working',
-        'status_maintenance': 'Maintenance',
-        'navigate_btn': 'Navigate To',
-        'details_btn': 'Details',
-        'search_placeholder': '🔍 Search...',
-        'switch_lang_label': 'Passa a Italiano'
-    }
-};
-
-// Funzione principale cambio lingua
-function toggleLanguage() {
-    currentLanguage = currentLanguage === 'it' ? 'en' : 'it';
-    localStorage.setItem('app_language', currentLanguage);
-    
-    // Aggiorna interfaccia statica
-    applyTranslations();
-    updateLangButton();
-    
-    // Ricarica le liste (per tradurre i dati dinamici)
-    if (typeof loadFontane === 'function') loadFontane();
-    if (typeof loadBeverini === 'function') loadBeverini();
-    if (typeof loadNews === 'function') loadNews();
-    
-    // Chiudi il menu dopo un po'
-    setTimeout(() => {
-        const modal = document.getElementById('top-menu-modal');
-        if(modal) modal.style.display = 'none';
-    }, 300);
-}
-
-// Applica le traduzioni ai testi statici (data-i18n)
-function applyTranslations() {
-    document.querySelectorAll('[data-i18n]').forEach(element => {
-        const key = element.getAttribute('data-i18n');
-        if (translations[currentLanguage][key]) {
-            element.textContent = translations[currentLanguage][key];
-        }
-    });
-    
-    // Aggiorna placeholder ricerca
-    const searchInputs = document.querySelectorAll('.search-input');
-    searchInputs.forEach(input => {
-        input.placeholder = translations[currentLanguage]['search_placeholder'];
-    });
-}
-
-// Aggiorna icona e testo del pulsante nel menu
-function updateLangButton() {
-    const flag = document.getElementById('lang-flag');
-    const label = document.getElementById('lang-label');
-    if (flag && label) {
-        if (currentLanguage === 'it') {
-            flag.textContent = '🇬🇧';
-            label.textContent = 'Switch to English';
-        } else {
-            flag.textContent = '🇮🇹';
-            label.textContent = 'Passa a Italiano';
-        }
-    }
-}
-
-// Helper per recuperare testo dinamico (se manca inglese, usa italiano)
-function getLocalizedText(item, field) {
-    if (currentLanguage === 'en') {
-        return item[field + '_en'] || item[field] || '';
-    }
-    return item[field] || '';
-}
-
-// Avvio automatico delle traduzioni
-document.addEventListener('DOMContentLoaded', () => {
-    applyTranslations();
-    updateLangButton();
-});
-// ==========================================
 // SISTEMA CONTROLLO REMOTO (MANUTENZIONE & PRIVACY)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1766,79 +1644,43 @@ function showSkeletonLoaderCompact(container, count = 6) {
     }
 }
 function renderGridItems(container, items, type) {
-    // 1. GESTIONE STATO VUOTO (Tuo codice originale mantenuto)
     if (!items || items.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-${type === 'fontana' ? 'monument' : 'faucet'}"></i></div>
-                <div class="empty-state-text">Nessun elemento trovato</div>
-                <div class="empty-state-subtext">Prova a cambiare i filtri di ricerca</div>
+                <div class="empty-state-text">Nessuna ${type} disponibile</div>
+                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
             </div>
         `;
         return;
     }
     
-    // 2. RECUPERA HIGHLIGHTS (Badge Nuovo/Riparato)
-    const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
-
-    // 3. HELPER PER TRADURRE LO STATO (Funzionante -> Working)
-    const getStatusLabel = (stato) => {
-        const statusKey = {
-            'funzionante': 'status_working',
-            'non-funzionante': 'status_broken',
-            'manutenzione': 'status_maintenance'
-        }[stato] || 'status_working';
-        
-        // Se esiste la traduzione usa quella, altrimenti usa lo stato originale
-        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
-    };
-
     container.innerHTML = '';
-    
     items.forEach(item => {
         const gridItem = document.createElement('div');
         gridItem.className = 'grid-item';
-        
-        // GESTORE CLICK (Mantiene la tua logica di navigazione)
         gridItem.onclick = () => {
-            // Nota: passo item.id come nel tuo codice originale
             showDetail(item.id, type);
-            
-            // Gestione tasto navigazione rapida
-            if(typeof currentLatLng !== 'undefined') {
-                currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-                const navBtn = document.getElementById('fixed-navigate-btn');
-                if(navBtn) navBtn.classList.remove('hidden');
-            }
+            currentLatLng = { lat: item.latitudine, lng: item.longitudine };
+            document.getElementById('fixed-navigate-btn').classList.remove('hidden');
         };
         
-        // LOGICA BADGE (Mantenuta)
-        let badgeHTML = '';
-        if (highlights.new.includes(item.id)) badgeHTML = '<span class="badge-new">NUOVO</span>';
-        else if (highlights.fixed.includes(item.id)) badgeHTML = '<span class="badge-fixed">RIPARATO</span>';
-
-        // LOGICA IMMAGINE CUSTOM (Mantenuta)
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
-        // RENDER HTML (Aggiornato con getLocalizedText e getStatusLabel)
+        // MODIFICA QUI: Contenitore immagine robusto con fallback visivo
         gridItem.innerHTML = `
             <div class="item-image-container">
                 <img src="${item.immagine || './images/sfondo-home.jpg'}" 
-                     alt="${getLocalizedText(item, 'nome')}" 
+                     alt="${item.nome}" 
                      class="item-image" 
                      onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'image-fallback\\'><i class=\\'fas fa-image\\'></i></div>';">
             </div>
             <div class="item-content">
-                <div class="item-name">${getLocalizedText(item, 'nome')} ${badgeHTML}</div>
-                
+                <div class="item-name">${item.nome}</div>
                 <div class="item-address">${item.indirizzo}</div>
-                
                 <div class="item-footer">
-                    <span class="item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
-                    
-                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
-                        ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
-                    </span>
+                    <span class="item-status status-${item.stato}">${getStatusText(item.stato)}</span>
+                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}</span>
                 </div>
             </div>
         `;
@@ -1850,68 +1692,58 @@ function renderCompactItems(container, items, type) {
     if (!items || items.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-faucet"></i></div>
-                <div class="empty-state-text">Nessun elemento trovato</div>
-                <div class="empty-state-subtext">Prova a cambiare i filtri di ricerca</div>
+                <div class="empty-state-icon"><i class="fas fa-${type === 'beverino' ? 'faucet' : 'monument'}"></i></div>
+                <div class="empty-state-text">Nessun ${type} disponibile</div>
+                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
             </div>
         `;
         return;
     }
     
-    // Recupera highlights
-    const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
-
-    // Helper per tradurre lo stato (come abbiamo fatto per le fontane)
-    const getStatusLabel = (stato) => {
-        const statusKey = {
-            'funzionante': 'status_working',
-            'non-funzionante': 'status_broken',
-            'manutenzione': 'status_maintenance'
-        }[stato] || 'status_working';
-        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
-    };
-
     container.innerHTML = '';
     items.forEach(item => {
         const compactItem = document.createElement('div');
         compactItem.className = 'compact-item';
 
-        // Badge Logic
-        let badgeHTML = '';
-        if (highlights.new.includes(item.id)) badgeHTML = '<span class="badge-new">NUOVO</span>';
-        else if (highlights.fixed.includes(item.id)) badgeHTML = '<span class="badge-fixed">RIPARATO</span>';
-
         const totalLength = (item.nome || '').length + (item.indirizzo || '').length;
-        if (totalLength > 100) compactItem.classList.add('very-long-content');
-        else if (totalLength > 60) compactItem.classList.add('long-content');
+        let heightClass = '';
+
+        if (totalLength > 100) {
+            heightClass = 'very-long-content';
+        } else if (totalLength > 60) {
+            heightClass = 'long-content';
+        }
+
+        if (heightClass) {
+            compactItem.classList.add(heightClass);
+        }
 
         compactItem.onclick = () => {
             showDetail(item.id, type);
             currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-            const navBtn = document.getElementById('fixed-navigate-btn');
-            if(navBtn) navBtn.classList.remove('hidden');
+            document.getElementById('fixed-navigate-btn').classList.remove('hidden');
         };
 
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
-        // USA getLocalizedText QUI
+        // MODIFICA QUI: Struttura con contenitore immagine sicuro
         compactItem.innerHTML = `
             <div class="compact-item-image-container">
                 <img src="${item.immagine || './images/default-beverino.jpg'}"
-                     alt="${getLocalizedText(item, 'nome')}" 
+                     alt="${item.nome}" 
                      class="compact-item-image"
                      onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'compact-image-fallback\\'><i class=\\'fas fa-faucet\\'></i></div>';">
             </div>
             <div class="compact-item-content">
                 <div class="compact-item-header">
-                    <div class="compact-item-name">${getLocalizedText(item, 'nome')} ${badgeHTML}</div>
+                    <div class="compact-item-name">${item.nome}</div>
                     <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
                         ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
                     </span>
                 </div>
                 <div class="compact-item-address">${item.indirizzo}</div>
                 <div class="compact-item-footer">
-                    <span class="compact-item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
+                    <span class="compact-item-status status-${item.stato}">${getStatusText(item.stato)}</span>
                 </div>
             </div>
         `;
@@ -1921,33 +1753,27 @@ function renderCompactItems(container, items, type) {
 
 function renderNewsItems(container, news) {
     if (!news || news.length === 0) {
-        container.innerHTML = '<div class="no-results">Nessuna news disponibile</div>';
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-newspaper"></i></div>
+                <div class="empty-state-text">Nessuna news disponibile</div>
+                <div class="empty-state-subtext">Torna presto per aggiornamenti</div>
+            </div>
+        `;
         return;
     }
     
-    // Recupera highlights (per badge NUOVO)
-    const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
-    
     container.innerHTML = '';
-    // Ordina per data decrescente
     const sortedNews = [...news].sort((a, b) => new Date(b.data) - new Date(a.data));
-    
     sortedNews.forEach(item => {
-        let badgeHTML = '';
-        if (highlights.new.includes(item.id)) {
-            badgeHTML = '<span class="badge-new" style="float: right;">NUOVO</span>';
-        }
-
         const newsCard = document.createElement('div');
         newsCard.className = 'news-card';
-        
-        // QUI AVVIENE LA MAGIA per le News:
         newsCard.innerHTML = `
             <div class="news-header">
-                <div class="news-title">${getLocalizedText(item, 'titolo')} ${badgeHTML}</div>
+                <div class="news-title">${item.titolo}</div>
                 <div class="news-date">${formatDate(item.data)}</div>
             </div>
-            <div class="news-content">${getLocalizedText(item, 'contenuto')}</div>
+            <div class="news-content">${item.contenuto}</div>
             <div class="news-footer">
                 <span class="news-category">${item.categoria}</span>
                 <span class="news-source">Fonte: ${item.fonte}</span>
@@ -1961,11 +1787,8 @@ function renderNewsItems(container, news) {
 function showDetail(id, type) {
     let item, screenId, titleElement, contentElement;
     
-    // Normalizziamo il tipo
-    const isFontana = type === 'fontana' || type === 'fontane';
-
-    // 1. Identificazione elemento e schermata
-    if (isFontana) {
+    // Identificazione elemento e schermata
+    if (type === 'fontana') {
         item = appData.fontane.find(f => f.id == id);
         screenId = 'fontana-detail-screen';
         titleElement = document.getElementById('fontana-detail-title');
@@ -1981,127 +1804,48 @@ function showDetail(id, type) {
         showToast('Elemento non trovato', 'error');
         return;
     }
-
-    // 2. Traduzione Titolo
-    if (translations && translations[currentLanguage]) {
-        titleElement.textContent = isFontana 
-            ? translations[currentLanguage]['screen_fountains'] 
-            : translations[currentLanguage]['screen_drinkers'];
-    } else {
-        titleElement.textContent = isFontana ? 'Fontana' : 'Beverino';
-    }
     
-    // Helper per tradurre lo stato
-    const getStatusLabel = (stato) => {
-        const statusKey = {
-            'funzionante': 'status_working',
-            'non-funzionante': 'status_broken',
-            'manutenzione': 'status_maintenance'
-        }[stato] || 'status_working';
-        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
-    };
-
-    // 3. Generazione HTML Dettaglio
-    contentElement.innerHTML = `
-        <div class="detail-header-image">
-            <img src="${item.immagine || './images/sfondo-home.jpg'}" 
-                 alt="${getLocalizedText(item, 'nome')}" 
-                 class="detail-image"
-                 onerror="this.src='./images/sfondo-home.jpg'">
-        </div>
-        
-        <div class="detail-info">
-            <h2 class="detail-name">${getLocalizedText(item, 'nome')}</h2>
-            
-            <div class="info-row">
-                <span class="info-label"><i class="fas fa-map-marker-alt"></i></span>
-                <span class="info-value">${item.indirizzo}</span>
-            </div>
-            
-            <div class="info-row" style="display: flex; align-items: center; justify-content: flex-start; gap: 4px;">
-                
-                <span class="info-label" style="width: auto !important; min-width: auto !important; flex: 0 0 auto; margin: 0 !important; padding: 0 !important;">
-                    <i class="fas fa-info-circle"></i>
-                </span>
-
-                <span class="info-value" style="flex: 1; margin: 0 !important; padding: 0 !important; display: flex; align-items: center;">
-                    <span class="item-status status-${item.stato}" style="
-                        display: inline-block;
-                        width: fit-content;
-                        padding: 4px 12px;
-                        border-radius: 50px;
-                        margin: 0;
-                        white-space: nowrap;
-                    ">
-                        ${getStatusLabel(item.stato)}
-                    </span>
-                </span>
-            </div>
-
-            ${item.anno ? `
-            <div class="info-row">
-                <span class="info-label"><i class="fas fa-calendar-alt"></i></span>
-                <span class="info-value">Anno: ${item.anno}</span>
-            </div>` : ''}
-
-            <div class="detail-description">
-                ${getLocalizedText(item, 'descrizione') || ''}
-            </div>
-
-            ${getLocalizedText(item, 'storico') ? `
-            <div class="detail-history">
-                <h3><i class="fas fa-history"></i> ${currentLanguage === 'en' ? 'History' : 'Storia'}</h3>
-                <p>${getLocalizedText(item, 'storico')}</p>
-            </div>` : ''}
-
-            <div class="detail-actions">
-                <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
-                    <i class="fas fa-location-arrow"></i> 
-                    ${translations[currentLanguage]['navigate_btn']}
-                </button>
-                <button class="detail-action-btn" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\'")}')" style="background: #ef4444; color: white;">
-                    <i class="fas fa-bullhorn"></i> 
-                    ${translations[currentLanguage]['report_btn']}
-                </button>
-            </div>
-        </div>
-    `;
+    // Aggiornamento contenuti
+    titleElement.textContent = item.nome;
+    contentElement.innerHTML = generateDetailHTML(item, type);
     
-    // 4. Aggiornamento Navigazione
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-    const navBtn = document.getElementById('fixed-navigate-btn');
-    if(navBtn) navBtn.classList.remove('hidden');
+    document.getElementById('fixed-navigate-btn').classList.remove('hidden');
     
-    // 5. Mostra la schermata
+    // Mostra la schermata
     showScreen(screenId);
 
     // ============================================================
-    // FIX SCROLL MOBILE
+    // FIX SCROLL MOBILE (Sequenza Tripla di Reset)
     // ============================================================
     
+    // 1. Reset immediato (tenta di bloccare subito)
     window.scrollTo(0, 0);
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
     if (contentElement) contentElement.scrollTop = 0;
 
+    // 2. Reset rapido (intercetta il cambio di display:flex)
     setTimeout(() => {
         window.scrollTo(0, 0);
         document.body.scrollTop = 0;
         if (contentElement) contentElement.scrollTop = 0;
     }, 10);
 
+    // 3. Reset ritardato (fondamentale per i telefoni più lenti che ricalcolano il layout)
     setTimeout(() => {
         window.scrollTo({
             top: 0,
             left: 0,
-            behavior: 'auto'
+            behavior: 'auto' // 'auto' è più veloce di 'smooth' per i reset
         });
         if (contentElement) {
             contentElement.scrollTop = 0;
             contentElement.scrollTo(0, 0);
         }
-    }, 100);
+    }, 100); // Ritardo aumentato a 100ms per sicurezza
 }
+
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
     let specificFields = '';
@@ -3116,9 +2860,7 @@ function editNews(id) {
     
     document.getElementById('news-id').value = news.id;
     document.getElementById('news-titolo').value = news.titolo || '';
-    document.getElementById('news-titolo-en').value = news.titolo_en || ''; // NUOVO
     document.getElementById('news-contenuto').value = news.contenuto || '';
-    document.getElementById('news-contenuto-en').value = news.contenuto_en || ''; // NUOVO
     document.getElementById('news-data').value = news.data || '';
     document.getElementById('news-categoria').value = news.categoria || '';
     document.getElementById('news-fonte').value = news.fonte || '';
@@ -3131,18 +2873,14 @@ async function saveNews(e) {
     
     const id = document.getElementById('news-id').value;
     const titolo = document.getElementById('news-titolo').value;
-    const titolo_en = document.getElementById('news-titolo-en').value; // NUOVO
     const contenuto = document.getElementById('news-contenuto').value;
-    const contenuto_en = document.getElementById('news-contenuto-en').value; // NUOVO
     const data = document.getElementById('news-data').value;
     const categoria = document.getElementById('news-categoria').value;
     const fonte = document.getElementById('news-fonte').value;
     
     const newsData = {
         titolo,
-        titolo_en, // SALVA
         contenuto,
-        contenuto_en, // SALVA
         data,
         categoria,
         fonte,
@@ -3151,8 +2889,6 @@ async function saveNews(e) {
     
     try {
         let savedId;
-        const operation = id ? 'UPDATE' : 'CREATE';
-
         if (navigator.onLine) {
             if (id && id.trim() !== '') {
                 savedId = await safeFirebaseOperation(
@@ -3178,22 +2914,31 @@ async function saveNews(e) {
                 showToast(`News aggiunta con successo (ID: ${savedId})`, 'success');
             }
         } else {
-            // Offline logic
             savedId = id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            await addToSyncQueue(operation, 'news', newsData, savedId);
+            
+            await addToSyncQueue(
+                id ? 'UPDATE' : 'CREATE',
+                'news',
+                newsData,
+                savedId
+            );
             
             if (id) {
                 const index = appData.news.findIndex(n => n.id == id);
-                if (index !== -1) appData.news[index] = { id: savedId, ...newsData };
+                if (index !== -1) {
+                    appData.news[index] = { id: savedId, ...newsData };
+                }
             } else {
                 appData.news.push({ id: savedId, ...newsData });
             }
-            showToast('News salvata localmente.', 'info');
+            
+            showToast('News salvata localmente. Sarà sincronizzata online dopo.', 'info');
         }
         
         saveLocalData();
         loadAdminNews();
         resetNewsForm();
+        
         loadNews();
         updateDashboardStats();
         
@@ -3419,14 +3164,11 @@ function handleFileImport(type, files) {
 function importFontane(data) {
     const newFontane = data.map((item) => ({
         nome: item.Nome || item.nome || '',
-        nome_en: item.Nome_EN || item.nome_en || '', // NUOVO: Legge il nome inglese
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
         anno: item.Anno || item.anno || '',
         descrizione: item.Descrizione || item.descrizione || '',
-        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // NUOVO: Legge la descrizione inglese
         storico: item.Storico || item.storico || '',
-        storico_en: item.Storico_EN || item.storico_en || '', // NUOVO: Legge lo storico inglese
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
@@ -3458,14 +3200,13 @@ function importFontane(data) {
 function importBeverini(data) {
     const newBeverini = data.map((item) => ({
         nome: item.Nome || item.nome || '',
-        nome_en: item.Nome_EN || item.nome_en || '', // NUOVO: Nome Inglese
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
-        descrizione: item.Descrizione || item.descrizione || '',
-        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // NUOVO: Descrizione Inglese
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
+        // Assumiamo che la descrizione possa essere importata se presente nel file
+        descrizione: item.Descrizione || item.descrizione || '', 
         last_modified: new Date().toISOString()
     }));
 
@@ -3494,9 +3235,7 @@ function importBeverini(data) {
 function importNews(data) {
     const newNews = data.map((item) => ({
         titolo: item.Titolo || item.titolo || '',
-        titolo_en: item.Titolo_EN || item.titolo_en || '', // NUOVO
         contenuto: item.Contenuto || item.contenuto || '',
-        contenuto_en: item.Contenuto_EN || item.contenuto_en || '', // NUOVO
         data: item.Data || item.data || new Date().toISOString().split('T')[0],
         categoria: item.Categoria || item.categoria || '',
         fonte: item.Fonte || item.fonte || '',
@@ -3532,45 +3271,25 @@ function downloadTemplate(type) {
 
     switch (type) {
         case 'fontane':
-            // ABBIAMO AGGIUNTO LE COLONNE _EN
             columns = [
-                'Nome', 'Nome_EN', 
-                'Indirizzo', 
-                'Stato', 
-                'Anno', 
-                'Descrizione', 'Descrizione_EN',
-                'Storico', 'Storico_EN',
-                'Latitudine', 'Longitudine', 
-                'Immagine'
+                'Nome', 'Indirizzo', 'Stato', 'Anno', 'Descrizione',
+                'Storico', 'Latitudine', 'Longitudine', 'Immagine'
             ];
-            filename = 'template_fontane_multilingua.xlsx';
+            filename = 'template_fontane.xlsx';
             sheetName = 'Fontane';
             break;
-            
         case 'beverini':
-            // ABBIAMO AGGIUNTO LE COLONNE _EN
             columns = [
-                'Nome', 'Nome_EN',
-                'Indirizzo', 
-                'Stato', 
-                'Latitudine', 'Longitudine', 
-                'Immagine', 
-                'Descrizione', 'Descrizione_EN'
+                'Nome', 'Indirizzo', 'Stato', 'Latitudine', 'Longitudine', 'Immagine', 'Descrizione' // Aggiunta Descrizione per coerenza
             ];
-            filename = 'template_beverini_multilingua.xlsx';
+            filename = 'template_beverini.xlsx';
             sheetName = 'Beverini';
             break;
-            
         case 'news':
-            // ABBIAMO AGGIUNTO LE COLONNE _EN
             columns = [
-                'Titolo', 'Titolo_EN',
-                'Contenuto', 'Contenuto_EN',
-                'Data', 
-                'Categoria', 
-                'Fonte'
+                'Titolo', 'Contenuto', 'Data', 'Categoria', 'Fonte'
             ];
-            filename = 'template_news_multilingua.xlsx';
+            filename = 'template_news.xlsx';
             sheetName = 'News';
             break;
     }
@@ -3580,7 +3299,7 @@ function downloadTemplate(type) {
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
     XLSX.writeFile(wb, filename);
 
-    showToast(`Template ${type} (multilingua) scaricato con successo`, 'success');
+    showToast(`Template ${type} scaricato con successo`, 'success');
 }
 
 // Utility Functions
@@ -4263,79 +3982,50 @@ function getFilteredItems(type) {
 
 // Aggiorna renderGridItems con badge
 function renderGridItems(container, items, type) {
-    // 1. GESTIONE STATO VUOTO (Tuo codice originale mantenuto)
     if (!items || items.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-${type === 'fontana' ? 'monument' : 'faucet'}"></i></div>
-                <div class="empty-state-text">Nessun elemento trovato</div>
-                <div class="empty-state-subtext">Prova a cambiare i filtri di ricerca</div>
+                <div class="empty-state-text">Nessuna ${type} disponibile</div>
+                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
             </div>
         `;
         return;
     }
     
-    // 2. RECUPERA HIGHLIGHTS (Badge Nuovo/Riparato)
+    // Recupera highlights
     const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
 
-    // 3. HELPER PER TRADURRE LO STATO (Funzionante -> Working)
-    const getStatusLabel = (stato) => {
-        const statusKey = {
-            'funzionante': 'status_working',
-            'non-funzionante': 'status_broken',
-            'manutenzione': 'status_maintenance'
-        }[stato] || 'status_working';
-        
-        // Se esiste la traduzione usa quella, altrimenti usa lo stato originale
-        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
-    };
-
     container.innerHTML = '';
-    
     items.forEach(item => {
         const gridItem = document.createElement('div');
         gridItem.className = 'grid-item';
-        
-        // GESTORE CLICK (Mantiene la tua logica di navigazione)
         gridItem.onclick = () => {
-            // Nota: passo item.id come nel tuo codice originale
             showDetail(item.id, type);
-            
-            // Gestione tasto navigazione rapida
-            if(typeof currentLatLng !== 'undefined') {
-                currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-                const navBtn = document.getElementById('fixed-navigate-btn');
-                if(navBtn) navBtn.classList.remove('hidden');
-            }
+            currentLatLng = { lat: item.latitudine, lng: item.longitudine };
+            document.getElementById('fixed-navigate-btn').classList.remove('hidden');
         };
         
-        // LOGICA BADGE (Mantenuta)
+        // Badge Logic
         let badgeHTML = '';
         if (highlights.new.includes(item.id)) badgeHTML = '<span class="badge-new">NUOVO</span>';
         else if (highlights.fixed.includes(item.id)) badgeHTML = '<span class="badge-fixed">RIPARATO</span>';
 
-        // LOGICA IMMAGINE CUSTOM (Mantenuta)
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
-        // RENDER HTML (Aggiornato con getLocalizedText e getStatusLabel)
         gridItem.innerHTML = `
             <div class="item-image-container">
                 <img src="${item.immagine || './images/sfondo-home.jpg'}" 
-                     alt="${getLocalizedText(item, 'nome')}" 
+                     alt="${item.nome}" 
                      class="item-image" 
                      onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'image-fallback\\'><i class=\\'fas fa-image\\'></i></div>';">
             </div>
             <div class="item-content">
-                <div class="item-name">${getLocalizedText(item, 'nome')} ${badgeHTML}</div>
-                
+                <div class="item-name">${item.nome} ${badgeHTML}</div>
                 <div class="item-address">${item.indirizzo}</div>
-                
                 <div class="item-footer">
-                    <span class="item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
-                    
-                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
-                        ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
-                    </span>
+                    <span class="item-status status-${item.stato}">${getStatusText(item.stato)}</span>
+                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}</span>
                 </div>
             </div>
         `;
@@ -4349,8 +4039,8 @@ function renderCompactItems(container, items, type) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-faucet"></i></div>
-                <div class="empty-state-text">Nessun elemento trovato</div>
-                <div class="empty-state-subtext">Prova a cambiare i filtri di ricerca</div>
+                <div class="empty-state-text">Nessun ${type} disponibile</div>
+                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
             </div>
         `;
         return;
@@ -4358,16 +4048,6 @@ function renderCompactItems(container, items, type) {
     
     // Recupera highlights
     const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
-
-    // Helper per tradurre lo stato (come abbiamo fatto per le fontane)
-    const getStatusLabel = (stato) => {
-        const statusKey = {
-            'funzionante': 'status_working',
-            'non-funzionante': 'status_broken',
-            'manutenzione': 'status_maintenance'
-        }[stato] || 'status_working';
-        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
-    };
 
     container.innerHTML = '';
     items.forEach(item => {
@@ -4391,24 +4071,23 @@ function renderCompactItems(container, items, type) {
 
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
-        // USA getLocalizedText QUI
         compactItem.innerHTML = `
             <div class="compact-item-image-container">
                 <img src="${item.immagine || './images/default-beverino.jpg'}"
-                     alt="${getLocalizedText(item, 'nome')}" 
+                     alt="${item.nome}" 
                      class="compact-item-image"
                      onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'compact-image-fallback\\'><i class=\\'fas fa-faucet\\'></i></div>';">
             </div>
             <div class="compact-item-content">
                 <div class="compact-item-header">
-                    <div class="compact-item-name">${getLocalizedText(item, 'nome')} ${badgeHTML}</div>
+                    <div class="compact-item-name">${item.nome} ${badgeHTML}</div>
                     <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
                         ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
                     </span>
                 </div>
                 <div class="compact-item-address">${item.indirizzo}</div>
                 <div class="compact-item-footer">
-                    <span class="compact-item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
+                    <span class="compact-item-status status-${item.stato}">${getStatusText(item.stato)}</span>
                 </div>
             </div>
         `;
@@ -4446,10 +4125,10 @@ function renderNewsItems(container, news) {
         newsCard.className = 'news-card';
         newsCard.innerHTML = `
             <div class="news-header">
-                <div class="news-title">${getLocalizedText(item, 'titolo')} ${badgeHTML}</div>
+                <div class="news-title">${item.titolo} ${badgeHTML}</div>
                 <div class="news-date">${formatDate(item.data)}</div>
             </div>
-            <div class="news-content">${getLocalizedText(item, 'contenuto')}</div>
+            <div class="news-content">${item.contenuto}</div>
             <div class="news-footer">
                 <span class="news-category">${item.categoria}</span>
                 <span class="news-source">Fonte: ${item.fonte}</span>
