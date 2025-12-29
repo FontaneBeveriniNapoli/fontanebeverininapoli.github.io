@@ -2726,12 +2726,25 @@ function editFontana(id) {
     if (!fontana) return;
     
     document.getElementById('fontana-id').value = fontana.id;
+    
+    // Campi Italiani
     document.getElementById('fontana-nome').value = fontana.nome || '';
+    document.getElementById('fontana-descrizione').value = fontana.descrizione || '';
+    document.getElementById('fontana-storico').value = fontana.storico || '';
+    
+    // Campi Inglesi (NUOVI)
+    // Nota: usiamo ?. per evitare errori se l'HTML non è ancora aggiornato
+    if(document.getElementById('fontana-nome-en')) 
+        document.getElementById('fontana-nome-en').value = fontana.nome_en || '';
+    if(document.getElementById('fontana-descrizione-en')) 
+        document.getElementById('fontana-descrizione-en').value = fontana.descrizione_en || '';
+    if(document.getElementById('fontana-storico-en')) 
+        document.getElementById('fontana-storico-en').value = fontana.storico_en || '';
+
+    // Altri dati
     document.getElementById('fontana-indirizzo').value = fontana.indirizzo || '';
     document.getElementById('fontana-stato').value = fontana.stato || 'funzionante';
     document.getElementById('fontana-anno').value = fontana.anno || '';
-    document.getElementById('fontana-descrizione').value = fontana.descrizione || '';
-    document.getElementById('fontana-storico').value = fontana.storico || '';
     document.getElementById('fontana-latitudine').value = fontana.latitudine || '';
     document.getElementById('fontana-longitudine').value = fontana.longitudine || '';
     document.getElementById('fontana-immagine').value = fontana.immagine || '';
@@ -2755,86 +2768,62 @@ async function saveFontana(e) {
         const longitudine = parseFloat(document.getElementById('fontana-longitudine').value) || 0;
         const immagine = document.getElementById('fontana-immagine').value.trim();
         
+        // Recupero campi inglesi (con controllo sicurezza)
+        const nome_en = document.getElementById('fontana-nome-en') ? document.getElementById('fontana-nome-en').value.trim() : '';
+        const descrizione_en = document.getElementById('fontana-descrizione-en') ? document.getElementById('fontana-descrizione-en').value.trim() : '';
+        const storico_en = document.getElementById('fontana-storico-en') ? document.getElementById('fontana-storico-en').value.trim() : '';
+        
         const fontanaData = {
             nome,
+            nome_en, // SALVA
             indirizzo,
             stato,
             anno,
             descrizione,
+            descrizione_en, // SALVA
             storico,
+            storico_en, // SALVA
             latitudine,
             longitudine,
             immagine,
             last_modified: new Date().toISOString()
         };
         
-        // Validazione
+        // --- BLOCCO VALIDAZIONE E SALVATAGGIO (identico a prima) ---
         const validationErrors = validateFontanaData(fontanaData);
-        if (validationErrors.length > 0) {
-            throw validationErrors[0];
-        }
+        if (validationErrors.length > 0) throw validationErrors[0];
         
         let savedId;
         const operation = id ? 'UPDATE' : 'CREATE';
         
         if (navigator.onLine) {
-            // Online: salva direttamente
             if (id && id.trim() !== '') {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'update_fontana',
-                    'fontane',
-                    fontanaData,
-                    id
-                );
-                
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'update_fontana', 'fontane', fontanaData, id);
                 const index = appData.fontane.findIndex(f => f.id == id);
-                if (index !== -1) {
-                    appData.fontane[index] = { id, ...fontanaData };
-                }
+                if (index !== -1) appData.fontane[index] = { id, ...fontanaData };
                 showToast('Fontana modificata con successo', 'success');
             } else {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'create_fontana',
-                    'fontane',
-                    fontanaData
-                );
-                
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'create_fontana', 'fontane', fontanaData);
                 appData.fontane.push({ id: savedId, ...fontanaData });
                 showToast(`Fontana aggiunta con successo (ID: ${savedId})`, 'success');
             }
         } else {
-            // Offline: aggiungi a coda sync
             savedId = id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            
-            await addToSyncQueue(
-                operation,
-                'fontane',
-                fontanaData,
-                savedId
-            );
-            
+            await addToSyncQueue(operation, 'fontane', fontanaData, savedId);
             if (operation === 'UPDATE') {
                 const index = appData.fontane.findIndex(f => f.id == id);
-                if (index !== -1) {
-                    appData.fontane[index] = { id: savedId, ...fontanaData };
-                }
+                if (index !== -1) appData.fontane[index] = { id: savedId, ...fontanaData };
             } else {
                 appData.fontane.push({ id: savedId, ...fontanaData });
             }
-            
-            showToast('Fontana salvata localmente. Sarà sincronizzata online dopo.', 'info');
+            showToast('Fontana salvata localmente.', 'info');
         }
         
         saveLocalData();
         loadAdminFontane();
         resetFontanaForm();
-        
         loadFontane();
         updateDashboardStats();
-        
-        console.log('Fontana salvata, ID:', savedId);
         
     } catch (error) {
         await handleError('saveFontana', error, 'Errore nel salvataggio della fontana');
@@ -2928,9 +2917,13 @@ function editBeverino(id) {
     document.getElementById('beverino-nome').value = beverino.nome || '';
     document.getElementById('beverino-indirizzo').value = beverino.indirizzo || '';
     document.getElementById('beverino-stato').value = beverino.stato || 'funzionante';
-    
-    // ✅ CARICA LA DESCRIZIONE
     document.getElementById('beverino-descrizione').value = beverino.descrizione || ''; 
+    
+    // Campi Inglesi
+    if(document.getElementById('beverino-nome-en'))
+        document.getElementById('beverino-nome-en').value = beverino.nome_en || '';
+    if(document.getElementById('beverino-descrizione-en'))
+        document.getElementById('beverino-descrizione-en').value = beverino.descrizione_en || '';
     
     document.getElementById('beverino-latitudine').value = beverino.latitudine || '';
     document.getElementById('beverino-longitudine').value = beverino.longitudine || '';
@@ -2950,83 +2943,59 @@ async function saveBeverino(e) {
     const latitudine = parseFloat(document.getElementById('beverino-latitudine').value) || 0;
     const longitudine = parseFloat(document.getElementById('beverino-longitudine').value) || 0;
     const immagine = document.getElementById('beverino-immagine').value.trim();
-    
-    // ✅ LEGGE LA DESCRIZIONE DAL FORM
     const descrizione = document.getElementById('beverino-descrizione').value.trim();
+    
+    // Recupero campi inglesi
+    const nome_en = document.getElementById('beverino-nome-en') ? document.getElementById('beverino-nome-en').value.trim() : '';
+    const descrizione_en = document.getElementById('beverino-descrizione-en') ? document.getElementById('beverino-descrizione-en').value.trim() : '';
     
     const beverinoData = {
         nome,
+        nome_en, // SALVA
         indirizzo,
         stato,
         latitudine,
         longitudine,
         immagine,
-        // ✅ INCLUDE LA DESCRIZIONE NEI DATI
         descrizione, 
+        descrizione_en, // SALVA
         last_modified: new Date().toISOString()
     };
     
+    // --- BLOCCO VALIDAZIONE E SALVATAGGIO (identico a prima) ---
     try {
         const validationErrors = validateBeverinoData(beverinoData);
-        if (validationErrors.length > 0) {
-            throw validationErrors[0];
-        }
+        if (validationErrors.length > 0) throw validationErrors[0];
         
         let savedId;
         const operation = id ? 'UPDATE' : 'CREATE';
         
         if (navigator.onLine) {
             if (id && id.trim() !== '') {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'update_beverino',
-                    'beverini',
-                    beverinoData,
-                    id
-                );
-                
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'update_beverino', 'beverini', beverinoData, id);
                 const index = appData.beverini.findIndex(b => b.id == id);
-                if (index !== -1) {
-                    appData.beverini[index] = { id, ...beverinoData };
-                }
+                if (index !== -1) appData.beverini[index] = { id, ...beverinoData };
                 showToast('Beverino modificato con successo', 'success');
             } else {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'create_beverino',
-                    'beverini',
-                    beverinoData
-                );
-                
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'create_beverino', 'beverini', beverinoData);
                 appData.beverini.push({ id: savedId, ...beverinoData });
                 showToast(`Beverino aggiunto con successo (ID: ${savedId})`, 'success');
             }
         } else {
             savedId = id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            
-            await addToSyncQueue(
-                operation,
-                'beverini',
-                beverinoData,
-                savedId
-            );
-            
+            await addToSyncQueue(operation, 'beverini', beverinoData, savedId);
             if (operation === 'UPDATE') {
                 const index = appData.beverini.findIndex(b => b.id == id);
-                if (index !== -1) {
-                    appData.beverini[index] = { id: savedId, ...beverinoData };
-                }
+                if (index !== -1) appData.beverini[index] = { id: savedId, ...beverinoData };
             } else {
                 appData.beverini.push({ id: savedId, ...beverinoData });
             }
-            
-            showToast('Beverino salvato localmente. Sarà sincronizzato online dopo.', 'info');
+            showToast('Beverino salvato localmente.', 'info');
         }
         
         saveLocalData();
         loadAdminBeverini();
         resetBeverinoForm();
-        
         loadBeverini();
         updateDashboardStats();
         

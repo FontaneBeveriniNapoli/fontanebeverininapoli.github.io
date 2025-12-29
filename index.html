@@ -279,8 +279,12 @@
                 <form id="fontana-form" onsubmit="saveFontana(event)">
                     <input type="hidden" id="fontana-id">
                     <div class="form-group">
-                        <label for="fontana-nome">Nome:</label>
+                        <label for="fontana-nome">Nome</label>
                         <input type="text" id="fontana-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fontana-nome-en" style="color: #3b82f6; font-style: italic;">Nome (Inglese)</label>
+                        <input type="text" id="fontana-nome-en" placeholder="Name in English" style="background: #f0f9ff; border-color: #bae6fd;">
                     </div>
                     <div class="form-group">
                         <label for="fontana-indirizzo">Indirizzo:</label>
@@ -305,12 +309,20 @@
                         <input type="text" id="fontana-anno">
                     </div>
                     <div class="form-group">
-                        <label for="fontana-descrizione">Descrizione:</label>
+                        <label for="fontana-descrizione">Descrizione</label>
                         <textarea id="fontana-descrizione" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fontana-descrizione-en" style="color: #3b82f6; font-style: italic;">Descrizione (Inglese)</label>
+                        <textarea id="fontana-descrizione-en" rows="3" placeholder="Description in English" style="background: #f0f9ff; border-color: #bae6fd;"></textarea>
                     </div>
                     <div class="form-group">
                         <label for="fontana-storico">Storico:</label>
                         <textarea id="fontana-storico" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fontana-storico-en" style="color: #3b82f6; font-style: italic;">Storico (Inglese)</label>
+                        <textarea id="fontana-storico-en" rows="3" placeholder="History in English" style="background: #f0f9ff; border-color: #bae6fd;"></textarea>
                     </div>
                     <div class="form-group">
                         <label for="fontana-latitudine">Coordinate:</label>
@@ -393,6 +405,10 @@
                         <input type="text" id="beverino-nome" required>
                     </div>
                     <div class="form-group">
+                        <label for="beverino-nome-en" style="color: #3b82f6; font-style: italic;">Nome (Inglese)</label>
+                        <input type="text" id="beverino-nome-en" placeholder="Name in English" style="background: #f0f9ff; border-color: #bae6fd;">
+                    </div>
+                    <div class="form-group">
                         <label for="beverino-indirizzo">Indirizzo:</label>
                         <div style="display: flex; gap: 10px; margin-bottom: 8px;">
                             <input type="text" id="beverino-indirizzo" required style="flex: 1;">
@@ -414,6 +430,10 @@
                     <div class="form-group">
                         <label for="beverino-descrizione">Descrizione:</label>
                         <textarea id="beverino-descrizione" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="beverino-descrizione-en" style="color: #3b82f6; font-style: italic;">Descrizione (Inglese)</label>
+                        <textarea id="beverino-descrizione-en" rows="3" placeholder="Description in English" style="background: #f0f9ff; border-color: #bae6fd;"></textarea>
                     </div>
                     <div class="form-group">
                         <label for="beverino-latitudine">Coordinate:</label>
