@@ -2018,10 +2018,17 @@ function showDetail(id, type) {
                 <span class="info-value">${item.indirizzo}</span>
             </div>
             
-            <div class="info-row" style="align-items: center;">
+            <div class="info-row" style="display: flex; align-items: center;">
                 <span class="info-label"><i class="fas fa-info-circle"></i></span>
-                <span class="info-value">
-                    <span class="item-status status-${item.stato}" style="display: inline-block; margin: 0;">
+                <span class="info-value" style="display: flex; align-items: center;">
+                    <span class="item-status status-${item.stato}" style="
+                        display: inline-block;
+                        width: fit-content;
+                        padding: 4px 12px;
+                        border-radius: 50px;
+                        margin: 0;
+                        white-space: nowrap;
+                    ">
                         ${getStatusLabel(item.stato)}
                     </span>
                 </span>
