@@ -1995,7 +1995,7 @@ function renderNewsItems(container, news) {
 
 // Detail View
 function showDetail(id, type) {
-    // 1. MEMORIA PER CAMBIO LINGUA (Nuovo!)
+    // 1. MEMORIA PER CAMBIO LINGUA
     currentDetailId = id;
     currentDetailType = type;
 
@@ -2022,7 +2022,7 @@ function showDetail(id, type) {
         return;
     }
 
-    // 3. Traduzione Titolo (USA window.translations)
+    // 3. Traduzione Titolo
     if (window.translations && window.translations[currentLanguage]) {
         titleElement.textContent = isFontana 
             ? window.translations[currentLanguage]['screen_fountains'] 
@@ -2052,7 +2052,7 @@ function showDetail(id, type) {
                  class="detail-image"
                  onerror="this.src='${defaultImage}'">
         </div>
-        
+    
         <div class="detail-info">
             <h2 class="detail-name">${getLocalizedText(item, 'nome')}</h2>
             
@@ -2072,8 +2072,7 @@ function showDetail(id, type) {
                         padding: 4px 12px;
                         border-radius: 50px;
                         margin: 0;
-                        white-space: nowrap;
-                    ">
+                        white-space: nowrap;">
                         ${getStatusLabel(item.stato)}
                     </span>
                 </span>
@@ -2100,7 +2099,7 @@ function showDetail(id, type) {
                     <i class="fas fa-location-arrow"></i> 
                     ${window.translations[currentLanguage]['navigate_btn']}
                 </button>
-                <button class="detail-action-btn" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\'")}')" style="background: #ef4444; color: white;">
+                <button class="detail-action-btn" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\\\'")}')" style="background: #ef4444; color: white;">
                     <i class="fas fa-bullhorn"></i> 
                     ${window.translations[currentLanguage]['report_btn']}
                 </button>
@@ -2108,14 +2107,16 @@ function showDetail(id, type) {
         </div>
     `;
     
-    // Aggiornamento Navigazione e Scroll
+    // 6. COORDINATE E CAMBIO SCHERMATA
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-        
-    showScreen(screenId);
+    showScreen(screenId); // showScreen nasconde già il pulsante fisso 
     
-    // Reset Scroll
-    window.scrollTo(0, 0);
-    if (contentElement) contentElement.scrollTop = 0;
+    // 7. CORREZIONE VISUALIZZAZIONE (Reset Scroll)
+    // Usiamo un timeout per assicurarci che la schermata sia attiva prima di scrollare
+    setTimeout(() => {
+        window.scrollTo(0, 0);
+        if (contentElement) contentElement.scrollTop = 0;
+    }, 50);
 }
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
