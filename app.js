@@ -2116,7 +2116,7 @@ function showDetail(id, type) {
     setTimeout(() => {
         window.scrollTo(0, 0);
         if (contentElement) contentElement.scrollTop = 0;
-    }, 50);
+    }, 100);
 }
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
