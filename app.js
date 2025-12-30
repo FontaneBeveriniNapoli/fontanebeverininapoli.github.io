@@ -2000,11 +2000,8 @@ function showDetail(id, type) {
     currentDetailType = type;
 
     let item, screenId, titleElement, contentElement;
-    
-    // Normalizziamo il tipo
     const isFontana = type === 'fontana' || type === 'fontane';
 
-    // 2. Identificazione elemento e schermata
     if (isFontana) {
         item = appData.fontane.find(f => f.id == id);
         screenId = 'fontana-detail-screen';
@@ -2027,98 +2024,51 @@ function showDetail(id, type) {
         titleElement.textContent = isFontana 
             ? window.translations[currentLanguage]['screen_fountains'] 
             : window.translations[currentLanguage]['screen_drinkers'];
-    } else {
-        titleElement.textContent = isFontana ? 'Fontana' : 'Beverino';
     }
-    
-    // 4. LOGICA IMMAGINE
+
     const defaultImage = isFontana ? './images/sfondo-home.jpg' : './images/default-beverino.jpg';
-
-    const getStatusLabel = (stato) => {
-        const statusKey = {
-            'funzionante': 'status_working',
-            'non-funzionante': 'status_broken',
-            'manutenzione': 'status_maintenance'
-        }[stato] || 'status_working';
-        return (window.translations && window.translations[currentLanguage]) ? window.translations[currentLanguage][statusKey] : stato;
-    };
-
-    // 5. HTML
+    
+    // 5. HTML (Assicurati che l'id del contenitore sia corretto)
     contentElement.innerHTML = `
         <div class="detail-header-image">
-            <img src="${item.immagine || defaultImage}" 
-                 alt="${getLocalizedText(item, 'nome')}" 
-                 class="detail-image"
-                 onerror="this.src='${defaultImage}'">
+            <img src="${item.immagine || defaultImage}" class="detail-image" onerror="this.src='${defaultImage}'">
         </div>
-    
         <div class="detail-info">
             <h2 class="detail-name">${getLocalizedText(item, 'nome')}</h2>
-            
             <div class="info-row">
                 <span class="info-label"><i class="fas fa-map-marker-alt"></i></span>
                 <span class="info-value">${item.indirizzo}</span>
             </div>
-            
-            <div class="info-row" style="display: flex; align-items: center; justify-content: flex-start; gap: 4px;">
-                <span class="info-label" style="width: auto !important; min-width: auto !important; flex: 0 0 auto; margin: 0 !important; padding: 0 !important;">
-                    <i class="fas fa-info-circle"></i>
-                </span>
-                <span class="info-value" style="flex: 1; margin: 0 !important; padding: 0 !important; display: flex; align-items: center;">
-                    <span class="item-status status-${item.stato}" style="
-                        display: inline-block;
-                        width: fit-content;
-                        padding: 4px 12px;
-                        border-radius: 50px;
-                        margin: 0;
-                        white-space: nowrap;">
-                        ${getStatusLabel(item.stato)}
-                    </span>
-                </span>
-            </div>
-
-            ${item.anno ? `
             <div class="info-row">
-                <span class="info-label"><i class="fas fa-calendar-alt"></i></span>
-                <span class="info-value">Anno: ${item.anno}</span>
-            </div>` : ''}
-
-            <div class="detail-description">
-                ${getLocalizedText(item, 'descrizione') || ''}
+                 <span class="item-status status-${item.stato}">${currentLanguage === 'it' ? item.stato : (item.stato === 'funzionante' ? 'Working' : 'Broken')}</span>
             </div>
-
-            ${getLocalizedText(item, 'storico') ? `
-            <div class="detail-history">
-                <h3><i class="fas fa-history"></i> ${currentLanguage === 'en' ? 'History' : 'Storia'}</h3>
-                <p>${getLocalizedText(item, 'storico')}</p>
-            </div>` : ''}
-
+            <div class="detail-description">${getLocalizedText(item, 'descrizione') || ''}</div>
+            ${getLocalizedText(item, 'storico') ? `<div class="detail-history"><h3>Storia</h3><p>${getLocalizedText(item, 'storico')}</p></div>` : ''}
             <div class="detail-actions">
                 <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
-                    <i class="fas fa-location-arrow"></i> 
-                    ${window.translations[currentLanguage]['navigate_btn']}
-                </button>
-                <button class="detail-action-btn" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\\\'")}')" style="background: #ef4444; color: white;">
-                    <i class="fas fa-bullhorn"></i> 
-                    ${window.translations[currentLanguage]['report_btn']}
+                    <i class="fas fa-location-arrow"></i> ${window.translations[currentLanguage]['navigate_btn']}
                 </button>
             </div>
         </div>
     `;
     
-    // 6. COORDINATE E CAMBIO SCHERMATA
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-    showScreen(screenId); // showScreen nasconde già il pulsante fisso 
     
-    // 7. RESET DELLO SCROLL (CORREZIONE)
-    // Usiamo un timeout per assicurarci che la schermata sia caricata prima di scrollare
+    // CAMBIO SCHERMATA
+    showScreen(screenId);
+    
+    // --- RESET SCROLL AGGRESSIVO ---
     setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'instant' });
+        // 1. Reset finestra principale
+        window.scrollTo(0, 0);
+        
+        // 2. Reset del contenitore interno generato (contentElement)
         if (contentElement) contentElement.scrollTop = 0;
         
-        // Se hai un contenitore principale per lo scroll delle schede:
-        const detailContainer = document.querySelector('.detail-content');
-        if (detailContainer) detailContainer.scrollTop = 0;
+        // 3. Reset di TUTTI i possibili contenitori di scroll definiti nel CSS
+        document.querySelectorAll('.detail-content, .content-area, .screen').forEach(el => {
+            el.scrollTop = 0;
+        });
     }, 100); 
 }
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
