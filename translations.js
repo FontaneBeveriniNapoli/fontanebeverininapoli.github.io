@@ -32,7 +32,7 @@ window.translations = {
         'legend_item_drinker': 'Beverini',
         'legend_item_position': 'La tua posizione',
 
-        // FILTRI (In alto nelle liste)
+        // FILTRI
         'filter_all': 'Tutti',
         'filter_working': 'Funzionanti',
         'filter_broken': 'Non Funzionanti',
@@ -46,30 +46,30 @@ window.translations = {
         'details_btn': 'Dettagli',
         'switch_lang_label': 'Switch to English',
         
-        // STATI (Etichette colorate)
+        // STATI
         'status_working': 'Funzionante',
         'status_broken': 'Non Funzionante',
         'status_maintenance': 'In Manutenzione'
     },
     'en': {
-        // HOME & NAVIGATION
-        'home_title': 'Fountains & Water Points',
+        // HOME & NAVIGATION (Usiamo "Taps" che è corto e preciso)
+        'home_title': 'Fountains & Taps',
         'home_subtitle': 'Public water at your fingertips. Discover Naples\' monuments and drinking spots, right from your phone.',
         'tab_home': 'Home',
         'tab_fountains': 'Fountains',
-        'tab_drinkers': 'Water Points',
+        'tab_drinkers': 'Taps',
         'tab_map': 'Map',
         'tab_news': 'News',
 
         // SCREEN TITLES
         'screen_fountains': 'Fountains',
-        'screen_drinkers': 'Water Points',
+        'screen_drinkers': 'Taps',
         'screen_map': 'Map',
         'screen_news': 'News',
 
         // SUBTITLES
         'subtitle_fountains': 'Discover the city fountains',
-        'subtitle_drinkers': 'Find public water Points',
+        'subtitle_drinkers': 'Find public water taps',
         'subtitle_news': 'Latest news about fountains',
 
         // MAP & SEARCH
@@ -77,7 +77,7 @@ window.translations = {
         'map_search_placeholder': '🔍 Search address, place...',
         'legend_title': 'Legend',
         'legend_item_fountain': 'Fountain',
-        'legend_item_drinker': 'Water Points',
+        'legend_item_drinker': 'Tap',
         'legend_item_position': 'Your position',
 
         // FILTERS
