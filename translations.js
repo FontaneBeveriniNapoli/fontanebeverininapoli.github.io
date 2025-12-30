@@ -54,7 +54,7 @@ window.translations = {
     'en': {
         // HOME & NAVIGATION
         'home_title': 'Fountains & Water Points',
-        'home_subtitle': 'Public water at your fingertips. Discover Naples' monuments and drinking spots, right from your phone.',
+        'home_subtitle': 'Public water at your fingertips. Discover Naples\' monuments and drinking spots, right from your phone.',
         'tab_home': 'Home',
         'tab_fountains': 'Fountains',
         'tab_drinkers': 'Water Points',
