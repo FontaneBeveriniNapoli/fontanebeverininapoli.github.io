@@ -2034,7 +2034,6 @@ function showDetail(id, type) {
     // 4. LOGICA IMMAGINE
     const defaultImage = isFontana ? './images/sfondo-home.jpg' : './images/default-beverino.jpg';
 
-    // Helper per tradurre lo stato
     const getStatusLabel = (stato) => {
         const statusKey = {
             'funzionante': 'status_working',
@@ -2109,14 +2108,18 @@ function showDetail(id, type) {
     
     // 6. COORDINATE E CAMBIO SCHERMATA
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-    showScreen(screenId); // showScreen nasconde già il pulsante fisso 
+    showScreen(screenId);
     
-    // 7. CORREZIONE VISUALIZZAZIONE (Reset Scroll)
-    // Usiamo un timeout per assicurarci che la schermata sia attiva prima di scrollare
+    // 7. RESET DELLO SCROLL (CORREZIONE)
+    // Usiamo un timeout per assicurarci che la schermata sia caricata prima di scrollare
     setTimeout(() => {
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, behavior: 'instant' });
         if (contentElement) contentElement.scrollTop = 0;
-    }, 100);
+        
+        // Se hai un contenitore principale per lo scroll delle schede:
+        const detailContainer = document.querySelector('.detail-content');
+        if (detailContainer) detailContainer.scrollTop = 0;
+    }, 100); // Impostato a 100ms come nel vecchio codice per stabilità
 }
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
