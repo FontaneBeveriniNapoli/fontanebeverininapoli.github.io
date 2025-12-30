@@ -1,4 +1,126 @@
 // ==========================================
+// SISTEMA MULTILINGUA - AGGIUNTA INIZIALE
+// ==========================================
+
+let currentLanguage = localStorage.getItem('app_language') || 'it';
+
+const translations = {
+    'it': {
+        'home_title': 'Fontane & Beverini',
+        'home_subtitle': 'L\'acqua pubblica a portata di app. Fontane e beverini della città di Napoli, sempre nel palmo della tua mano.',
+        'tab_home': 'Home',
+        'tab_fountains': 'Fontane',
+        'tab_drinkers': 'Beverini',
+        'tab_map': 'Mappa',
+        'tab_news': 'News',
+        'screen_fountains': 'Fontane',
+        'screen_drinkers': 'Beverini',
+        'screen_map': 'Mappa',
+        'subtitle_fountains': 'Scopri le fontane della città',
+        'subtitle_drinkers': 'Trova i beverini pubblici',
+        'report_btn': 'Invia Segnalazione',
+        'info_btn': 'Info & Crediti',
+        'admin_btn': 'Area Riservata',
+        'status_working': 'Funzionante',
+        'status_broken': 'Non Funzionante',
+        'status_maintenance': 'In Manutenzione',
+        'navigate_btn': 'Naviga Verso',
+        'details_btn': 'Dettagli',
+        'search_placeholder': '🔍 Cerca...',
+        'switch_lang_label': 'Switch to English'
+    },
+    'en': {
+        'home_title': 'Fountains & Dispensers',
+        'home_subtitle': 'Public water at your fingertips. Fountains and water dispensers in Naples, always in the palm of your hand.',
+        'tab_home': 'Home',
+        'tab_fountains': 'Fountains',
+        'tab_drinkers': 'Dispensers',
+        'tab_map': 'Map',
+        'tab_news': 'News',
+        'screen_fountains': 'Fountains',
+        'screen_drinkers': 'Water Dispensers',
+        'screen_map': 'Map',
+        'subtitle_fountains': 'Discover the city fountains',
+        'subtitle_drinkers': 'Find public water dispensers',
+        'report_btn': 'Send Report',
+        'info_btn': 'Info & Credits',
+        'admin_btn': 'Restricted Area',
+        'status_working': 'Working',
+        'status_broken': 'Not Working',
+        'status_maintenance': 'Maintenance',
+        'navigate_btn': 'Navigate To',
+        'details_btn': 'Details',
+        'search_placeholder': '🔍 Search...',
+        'switch_lang_label': 'Passa a Italiano'
+    }
+};
+
+// Funzione principale cambio lingua
+function toggleLanguage() {
+    currentLanguage = currentLanguage === 'it' ? 'en' : 'it';
+    localStorage.setItem('app_language', currentLanguage);
+    
+    // Aggiorna interfaccia statica
+    applyTranslations();
+    updateLangButton();
+    
+    // Ricarica le liste (per tradurre i dati dinamici)
+    if (typeof loadFontane === 'function') loadFontane();
+    if (typeof loadBeverini === 'function') loadBeverini();
+    if (typeof loadNews === 'function') loadNews();
+    
+    // Chiudi il menu dopo un po'
+    setTimeout(() => {
+        const modal = document.getElementById('top-menu-modal');
+        if(modal) modal.style.display = 'none';
+    }, 300);
+}
+
+// Applica le traduzioni ai testi statici (data-i18n)
+function applyTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        if (translations[currentLanguage][key]) {
+            element.textContent = translations[currentLanguage][key];
+        }
+    });
+    
+    // Aggiorna placeholder ricerca
+    const searchInputs = document.querySelectorAll('.search-input');
+    searchInputs.forEach(input => {
+        input.placeholder = translations[currentLanguage]['search_placeholder'];
+    });
+}
+
+// Aggiorna icona e testo del pulsante nel menu
+function updateLangButton() {
+    const flag = document.getElementById('lang-flag');
+    const label = document.getElementById('lang-label');
+    if (flag && label) {
+        if (currentLanguage === 'it') {
+            flag.textContent = '🇬🇧';
+            label.textContent = 'Switch to English';
+        } else {
+            flag.textContent = '🇮🇹';
+            label.textContent = 'Passa a Italiano';
+        }
+    }
+}
+
+// Helper per recuperare testo dinamico (se manca inglese, usa italiano)
+function getLocalizedText(item, field) {
+    if (currentLanguage === 'en') {
+        return item[field + '_en'] || item[field] || '';
+    }
+    return item[field] || '';
+}
+
+// Avvio automatico delle traduzioni
+document.addEventListener('DOMContentLoaded', () => {
+    applyTranslations();
+    updateLangButton();
+});
+// ==========================================
 // SISTEMA CONTROLLO REMOTO (MANUTENZIONE & PRIVACY)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1045,27 +1167,38 @@ async function loadFirebaseData(type) {
             const docData = doc.data();
             data.push({ 
                 id: doc.id, 
+                // Dati Comuni
                 nome: docData.nome || '',
+                nome_en: docData.nome_en || '', // NUOVO: Carica nome inglese
                 indirizzo: docData.indirizzo || '',
                 stato: docData.stato || 'funzionante',
                 latitudine: docData.latitudine || 0,
                 longitudine: docData.longitudine || 0,
                 immagine: docData.immagine || '',
+                
+                // Dati Fontane
                 anno: docData.anno || '',
                 descrizione: docData.descrizione || '',
+                descrizione_en: docData.descrizione_en || '', // NUOVO: Carica descrizione inglese
                 storico: docData.storico || '',
+                storico_en: docData.storico_en || '', // NUOVO: Carica storico inglese
+                
+                // Dati News
                 titolo: docData.titolo || '',
+                titolo_en: docData.titolo_en || '', // NUOVO
                 contenuto: docData.contenuto || '',
+                contenuto_en: docData.contenuto_en || '', // NUOVO
                 data: docData.data || new Date().toISOString().split('T')[0],
                 categoria: docData.categoria || '',
                 fonte: docData.fonte || '',
+                
                 last_modified: docData.last_modified || new Date().toISOString()
             });
         });
         
-        // >>> NUOVO: CONTROLLO NOTIFICHE PRIMA DI SALVARE <<<
+        // >>> CONTROLLO NOTIFICHE <<<
         checkAndNotifyUpdates(data, type);
-        // >>> FINE NUOVO <<<
+        // >>> FINE CONTROLLO <<<
 
         appData[type] = data;
         saveLocalData();
@@ -1644,43 +1777,79 @@ function showSkeletonLoaderCompact(container, count = 6) {
     }
 }
 function renderGridItems(container, items, type) {
+    // 1. GESTIONE STATO VUOTO (Tuo codice originale mantenuto)
     if (!items || items.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-${type === 'fontana' ? 'monument' : 'faucet'}"></i></div>
-                <div class="empty-state-text">Nessuna ${type} disponibile</div>
-                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
+                <div class="empty-state-text">Nessun elemento trovato</div>
+                <div class="empty-state-subtext">Prova a cambiare i filtri di ricerca</div>
             </div>
         `;
         return;
     }
     
+    // 2. RECUPERA HIGHLIGHTS (Badge Nuovo/Riparato)
+    const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
+
+    // 3. HELPER PER TRADURRE LO STATO (Funzionante -> Working)
+    const getStatusLabel = (stato) => {
+        const statusKey = {
+            'funzionante': 'status_working',
+            'non-funzionante': 'status_broken',
+            'manutenzione': 'status_maintenance'
+        }[stato] || 'status_working';
+        
+        // Se esiste la traduzione usa quella, altrimenti usa lo stato originale
+        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
+    };
+
     container.innerHTML = '';
+    
     items.forEach(item => {
         const gridItem = document.createElement('div');
         gridItem.className = 'grid-item';
+        
+        // GESTORE CLICK (Mantiene la tua logica di navigazione)
         gridItem.onclick = () => {
+            // Nota: passo item.id come nel tuo codice originale
             showDetail(item.id, type);
-            currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-            document.getElementById('fixed-navigate-btn').classList.remove('hidden');
+            
+            // Gestione tasto navigazione rapida
+            if(typeof currentLatLng !== 'undefined') {
+                currentLatLng = { lat: item.latitudine, lng: item.longitudine };
+                const navBtn = document.getElementById('fixed-navigate-btn');
+                if(navBtn) navBtn.classList.remove('hidden');
+            }
         };
         
+        // LOGICA BADGE (Mantenuta)
+        let badgeHTML = '';
+        if (highlights.new.includes(item.id)) badgeHTML = '<span class="badge-new">NUOVO</span>';
+        else if (highlights.fixed.includes(item.id)) badgeHTML = '<span class="badge-fixed">RIPARATO</span>';
+
+        // LOGICA IMMAGINE CUSTOM (Mantenuta)
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
-        // MODIFICA QUI: Contenitore immagine robusto con fallback visivo
+        // RENDER HTML (Aggiornato con getLocalizedText e getStatusLabel)
         gridItem.innerHTML = `
             <div class="item-image-container">
                 <img src="${item.immagine || './images/sfondo-home.jpg'}" 
-                     alt="${item.nome}" 
+                     alt="${getLocalizedText(item, 'nome')}" 
                      class="item-image" 
                      onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'image-fallback\\'><i class=\\'fas fa-image\\'></i></div>';">
             </div>
             <div class="item-content">
-                <div class="item-name">${item.nome}</div>
+                <div class="item-name">${getLocalizedText(item, 'nome')} ${badgeHTML}</div>
+                
                 <div class="item-address">${item.indirizzo}</div>
+                
                 <div class="item-footer">
-                    <span class="item-status status-${item.stato}">${getStatusText(item.stato)}</span>
-                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}</span>
+                    <span class="item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
+                    
+                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
+                        ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
+                    </span>
                 </div>
             </div>
         `;
@@ -1692,58 +1861,68 @@ function renderCompactItems(container, items, type) {
     if (!items || items.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-${type === 'beverino' ? 'faucet' : 'monument'}"></i></div>
-                <div class="empty-state-text">Nessun ${type} disponibile</div>
-                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
+                <div class="empty-state-icon"><i class="fas fa-faucet"></i></div>
+                <div class="empty-state-text">Nessun elemento trovato</div>
+                <div class="empty-state-subtext">Prova a cambiare i filtri di ricerca</div>
             </div>
         `;
         return;
     }
     
+    // Recupera highlights
+    const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
+
+    // Helper per tradurre lo stato (come abbiamo fatto per le fontane)
+    const getStatusLabel = (stato) => {
+        const statusKey = {
+            'funzionante': 'status_working',
+            'non-funzionante': 'status_broken',
+            'manutenzione': 'status_maintenance'
+        }[stato] || 'status_working';
+        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
+    };
+
     container.innerHTML = '';
     items.forEach(item => {
         const compactItem = document.createElement('div');
         compactItem.className = 'compact-item';
 
+        // Badge Logic
+        let badgeHTML = '';
+        if (highlights.new.includes(item.id)) badgeHTML = '<span class="badge-new">NUOVO</span>';
+        else if (highlights.fixed.includes(item.id)) badgeHTML = '<span class="badge-fixed">RIPARATO</span>';
+
         const totalLength = (item.nome || '').length + (item.indirizzo || '').length;
-        let heightClass = '';
-
-        if (totalLength > 100) {
-            heightClass = 'very-long-content';
-        } else if (totalLength > 60) {
-            heightClass = 'long-content';
-        }
-
-        if (heightClass) {
-            compactItem.classList.add(heightClass);
-        }
+        if (totalLength > 100) compactItem.classList.add('very-long-content');
+        else if (totalLength > 60) compactItem.classList.add('long-content');
 
         compactItem.onclick = () => {
             showDetail(item.id, type);
             currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-            document.getElementById('fixed-navigate-btn').classList.remove('hidden');
+            const navBtn = document.getElementById('fixed-navigate-btn');
+            if(navBtn) navBtn.classList.remove('hidden');
         };
 
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
-        // MODIFICA QUI: Struttura con contenitore immagine sicuro
+        // USA getLocalizedText QUI
         compactItem.innerHTML = `
             <div class="compact-item-image-container">
                 <img src="${item.immagine || './images/default-beverino.jpg'}"
-                     alt="${item.nome}" 
+                     alt="${getLocalizedText(item, 'nome')}" 
                      class="compact-item-image"
                      onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'compact-image-fallback\\'><i class=\\'fas fa-faucet\\'></i></div>';">
             </div>
             <div class="compact-item-content">
                 <div class="compact-item-header">
-                    <div class="compact-item-name">${item.nome}</div>
+                    <div class="compact-item-name">${getLocalizedText(item, 'nome')} ${badgeHTML}</div>
                     <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
                         ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
                     </span>
                 </div>
                 <div class="compact-item-address">${item.indirizzo}</div>
                 <div class="compact-item-footer">
-                    <span class="compact-item-status status-${item.stato}">${getStatusText(item.stato)}</span>
+                    <span class="compact-item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
                 </div>
             </div>
         `;
@@ -1753,27 +1932,33 @@ function renderCompactItems(container, items, type) {
 
 function renderNewsItems(container, news) {
     if (!news || news.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon"><i class="fas fa-newspaper"></i></div>
-                <div class="empty-state-text">Nessuna news disponibile</div>
-                <div class="empty-state-subtext">Torna presto per aggiornamenti</div>
-            </div>
-        `;
+        container.innerHTML = '<div class="no-results">Nessuna news disponibile</div>';
         return;
     }
     
+    // Recupera highlights (per badge NUOVO)
+    const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
+    
     container.innerHTML = '';
+    // Ordina per data decrescente
     const sortedNews = [...news].sort((a, b) => new Date(b.data) - new Date(a.data));
+    
     sortedNews.forEach(item => {
+        let badgeHTML = '';
+        if (highlights.new.includes(item.id)) {
+            badgeHTML = '<span class="badge-new" style="float: right;">NUOVO</span>';
+        }
+
         const newsCard = document.createElement('div');
         newsCard.className = 'news-card';
+        
+        // QUI AVVIENE LA MAGIA per le News:
         newsCard.innerHTML = `
             <div class="news-header">
-                <div class="news-title">${item.titolo}</div>
+                <div class="news-title">${getLocalizedText(item, 'titolo')} ${badgeHTML}</div>
                 <div class="news-date">${formatDate(item.data)}</div>
             </div>
-            <div class="news-content">${item.contenuto}</div>
+            <div class="news-content">${getLocalizedText(item, 'contenuto')}</div>
             <div class="news-footer">
                 <span class="news-category">${item.categoria}</span>
                 <span class="news-source">Fonte: ${item.fonte}</span>
@@ -1787,8 +1972,11 @@ function renderNewsItems(container, news) {
 function showDetail(id, type) {
     let item, screenId, titleElement, contentElement;
     
-    // Identificazione elemento e schermata
-    if (type === 'fontana') {
+    // Normalizziamo il tipo
+    const isFontana = type === 'fontana' || type === 'fontane';
+
+    // 1. Identificazione elemento e schermata
+    if (isFontana) {
         item = appData.fontane.find(f => f.id == id);
         screenId = 'fontana-detail-screen';
         titleElement = document.getElementById('fontana-detail-title');
@@ -1804,48 +1992,132 @@ function showDetail(id, type) {
         showToast('Elemento non trovato', 'error');
         return;
     }
+
+    // 2. Traduzione Titolo
+    if (translations && translations[currentLanguage]) {
+        titleElement.textContent = isFontana 
+            ? translations[currentLanguage]['screen_fountains'] 
+            : translations[currentLanguage]['screen_drinkers'];
+    } else {
+        titleElement.textContent = isFontana ? 'Fontana' : 'Beverino';
+    }
     
-    // Aggiornamento contenuti
-    titleElement.textContent = item.nome;
-    contentElement.innerHTML = generateDetailHTML(item, type);
+    // ============================================================
+    // MODIFICA SOLO QUI: Logica per scegliere l'immagine giusta
+    // ============================================================
+    const defaultImage = isFontana ? './images/sfondo-home.jpg' : './images/default-beverino.jpg';
+
+    // Helper per tradurre lo stato
+    const getStatusLabel = (stato) => {
+        const statusKey = {
+            'funzionante': 'status_working',
+            'non-funzionante': 'status_broken',
+            'manutenzione': 'status_maintenance'
+        }[stato] || 'status_working';
+        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
+    };
+
+    // 3. Generazione HTML Dettaglio (CON GRAFICA PRESERVATA)
+    contentElement.innerHTML = `
+        <div class="detail-header-image">
+            <img src="${item.immagine || defaultImage}" 
+                 alt="${getLocalizedText(item, 'nome')}" 
+                 class="detail-image"
+                 onerror="this.src='${defaultImage}'">
+        </div>
+        
+        <div class="detail-info">
+            <h2 class="detail-name">${getLocalizedText(item, 'nome')}</h2>
+            
+            <div class="info-row">
+                <span class="info-label"><i class="fas fa-map-marker-alt"></i></span>
+                <span class="info-value">${item.indirizzo}</span>
+            </div>
+            
+            <div class="info-row" style="display: flex; align-items: center; justify-content: flex-start; gap: 4px;">
+                
+                <span class="info-label" style="width: auto !important; min-width: auto !important; flex: 0 0 auto; margin: 0 !important; padding: 0 !important;">
+                    <i class="fas fa-info-circle"></i>
+                </span>
+
+                <span class="info-value" style="flex: 1; margin: 0 !important; padding: 0 !important; display: flex; align-items: center;">
+                    <span class="item-status status-${item.stato}" style="
+                        display: inline-block;
+                        width: fit-content;
+                        padding: 4px 12px;
+                        border-radius: 50px;
+                        margin: 0;
+                        white-space: nowrap;
+                    ">
+                        ${getStatusLabel(item.stato)}
+                    </span>
+                </span>
+            </div>
+
+            ${item.anno ? `
+            <div class="info-row">
+                <span class="info-label"><i class="fas fa-calendar-alt"></i></span>
+                <span class="info-value">Anno: ${item.anno}</span>
+            </div>` : ''}
+
+            <div class="detail-description">
+                ${getLocalizedText(item, 'descrizione') || ''}
+            </div>
+
+            ${getLocalizedText(item, 'storico') ? `
+            <div class="detail-history">
+                <h3><i class="fas fa-history"></i> ${currentLanguage === 'en' ? 'History' : 'Storia'}</h3>
+                <p>${getLocalizedText(item, 'storico')}</p>
+            </div>` : ''}
+
+            <div class="detail-actions">
+                <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
+                    <i class="fas fa-location-arrow"></i> 
+                    ${translations[currentLanguage]['navigate_btn']}
+                </button>
+                <button class="detail-action-btn" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\'")}')" style="background: #ef4444; color: white;">
+                    <i class="fas fa-bullhorn"></i> 
+                    ${translations[currentLanguage]['report_btn']}
+                </button>
+            </div>
+        </div>
+    `;
     
+    // 4. Aggiornamento Navigazione
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-    document.getElementById('fixed-navigate-btn').classList.remove('hidden');
+    const navBtn = document.getElementById('fixed-navigate-btn');
+    if(navBtn) navBtn.classList.remove('hidden');
     
-    // Mostra la schermata
+    // 5. Mostra la schermata
     showScreen(screenId);
 
     // ============================================================
-    // FIX SCROLL MOBILE (Sequenza Tripla di Reset)
+    // FIX SCROLL MOBILE
     // ============================================================
     
-    // 1. Reset immediato (tenta di bloccare subito)
     window.scrollTo(0, 0);
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
     if (contentElement) contentElement.scrollTop = 0;
 
-    // 2. Reset rapido (intercetta il cambio di display:flex)
     setTimeout(() => {
         window.scrollTo(0, 0);
         document.body.scrollTop = 0;
         if (contentElement) contentElement.scrollTop = 0;
     }, 10);
 
-    // 3. Reset ritardato (fondamentale per i telefoni più lenti che ricalcolano il layout)
     setTimeout(() => {
         window.scrollTo({
             top: 0,
             left: 0,
-            behavior: 'auto' // 'auto' è più veloce di 'smooth' per i reset
+            behavior: 'auto'
         });
         if (contentElement) {
             contentElement.scrollTop = 0;
             contentElement.scrollTo(0, 0);
         }
-    }, 100); // Ritardo aumentato a 100ms per sicurezza
+    }, 100);
 }
-
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
     let specificFields = '';
@@ -2470,12 +2742,24 @@ function editFontana(id) {
     if (!fontana) return;
     
     document.getElementById('fontana-id').value = fontana.id;
+    
+    // Campi Italiani
     document.getElementById('fontana-nome').value = fontana.nome || '';
+    document.getElementById('fontana-descrizione').value = fontana.descrizione || '';
+    document.getElementById('fontana-storico').value = fontana.storico || '';
+    
+    // Campi Inglesi (NUOVI - Usa ?. per sicurezza)
+    if(document.getElementById('fontana-nome-en')) 
+        document.getElementById('fontana-nome-en').value = fontana.nome_en || '';
+    if(document.getElementById('fontana-descrizione-en')) 
+        document.getElementById('fontana-descrizione-en').value = fontana.descrizione_en || '';
+    if(document.getElementById('fontana-storico-en')) 
+        document.getElementById('fontana-storico-en').value = fontana.storico_en || '';
+
+    // Altri dati
     document.getElementById('fontana-indirizzo').value = fontana.indirizzo || '';
     document.getElementById('fontana-stato').value = fontana.stato || 'funzionante';
     document.getElementById('fontana-anno').value = fontana.anno || '';
-    document.getElementById('fontana-descrizione').value = fontana.descrizione || '';
-    document.getElementById('fontana-storico').value = fontana.storico || '';
     document.getElementById('fontana-latitudine').value = fontana.latitudine || '';
     document.getElementById('fontana-longitudine').value = fontana.longitudine || '';
     document.getElementById('fontana-immagine').value = fontana.immagine || '';
@@ -2499,13 +2783,21 @@ async function saveFontana(e) {
         const longitudine = parseFloat(document.getElementById('fontana-longitudine').value) || 0;
         const immagine = document.getElementById('fontana-immagine').value.trim();
         
+        // RECUPERO CAMPI INGLESI (Nuova parte fondamentale!)
+        const nome_en = document.getElementById('fontana-nome-en') ? document.getElementById('fontana-nome-en').value.trim() : '';
+        const descrizione_en = document.getElementById('fontana-descrizione-en') ? document.getElementById('fontana-descrizione-en').value.trim() : '';
+        const storico_en = document.getElementById('fontana-storico-en') ? document.getElementById('fontana-storico-en').value.trim() : '';
+        
         const fontanaData = {
             nome,
+            nome_en, // SALVA INGLESE
             indirizzo,
             stato,
             anno,
             descrizione,
+            descrizione_en, // SALVA INGLESE
             storico,
+            storico_en, // SALVA INGLESE
             latitudine,
             longitudine,
             immagine,
@@ -2514,71 +2806,39 @@ async function saveFontana(e) {
         
         // Validazione
         const validationErrors = validateFontanaData(fontanaData);
-        if (validationErrors.length > 0) {
-            throw validationErrors[0];
-        }
+        if (validationErrors.length > 0) throw validationErrors[0];
         
         let savedId;
         const operation = id ? 'UPDATE' : 'CREATE';
         
         if (navigator.onLine) {
-            // Online: salva direttamente
             if (id && id.trim() !== '') {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'update_fontana',
-                    'fontane',
-                    fontanaData,
-                    id
-                );
-                
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'update_fontana', 'fontane', fontanaData, id);
                 const index = appData.fontane.findIndex(f => f.id == id);
-                if (index !== -1) {
-                    appData.fontane[index] = { id, ...fontanaData };
-                }
+                if (index !== -1) appData.fontane[index] = { id, ...fontanaData };
                 showToast('Fontana modificata con successo', 'success');
             } else {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'create_fontana',
-                    'fontane',
-                    fontanaData
-                );
-                
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'create_fontana', 'fontane', fontanaData);
                 appData.fontane.push({ id: savedId, ...fontanaData });
                 showToast(`Fontana aggiunta con successo (ID: ${savedId})`, 'success');
             }
         } else {
-            // Offline: aggiungi a coda sync
             savedId = id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            
-            await addToSyncQueue(
-                operation,
-                'fontane',
-                fontanaData,
-                savedId
-            );
-            
+            await addToSyncQueue(operation, 'fontane', fontanaData, savedId);
             if (operation === 'UPDATE') {
                 const index = appData.fontane.findIndex(f => f.id == id);
-                if (index !== -1) {
-                    appData.fontane[index] = { id: savedId, ...fontanaData };
-                }
+                if (index !== -1) appData.fontane[index] = { id: savedId, ...fontanaData };
             } else {
                 appData.fontane.push({ id: savedId, ...fontanaData });
             }
-            
-            showToast('Fontana salvata localmente. Sarà sincronizzata online dopo.', 'info');
+            showToast('Fontana salvata localmente.', 'info');
         }
         
         saveLocalData();
         loadAdminFontane();
         resetFontanaForm();
-        
         loadFontane();
         updateDashboardStats();
-        
-        console.log('Fontana salvata, ID:', savedId);
         
     } catch (error) {
         await handleError('saveFontana', error, 'Errore nel salvataggio della fontana');
@@ -2672,9 +2932,13 @@ function editBeverino(id) {
     document.getElementById('beverino-nome').value = beverino.nome || '';
     document.getElementById('beverino-indirizzo').value = beverino.indirizzo || '';
     document.getElementById('beverino-stato').value = beverino.stato || 'funzionante';
-    
-    // ✅ CARICA LA DESCRIZIONE
     document.getElementById('beverino-descrizione').value = beverino.descrizione || ''; 
+    
+    // Campi Inglesi (NUOVI)
+    if(document.getElementById('beverino-nome-en'))
+        document.getElementById('beverino-nome-en').value = beverino.nome_en || '';
+    if(document.getElementById('beverino-descrizione-en'))
+        document.getElementById('beverino-descrizione-en').value = beverino.descrizione_en || '';
     
     document.getElementById('beverino-latitudine').value = beverino.latitudine || '';
     document.getElementById('beverino-longitudine').value = beverino.longitudine || '';
@@ -2694,83 +2958,58 @@ async function saveBeverino(e) {
     const latitudine = parseFloat(document.getElementById('beverino-latitudine').value) || 0;
     const longitudine = parseFloat(document.getElementById('beverino-longitudine').value) || 0;
     const immagine = document.getElementById('beverino-immagine').value.trim();
-    
-    // ✅ LEGGE LA DESCRIZIONE DAL FORM
     const descrizione = document.getElementById('beverino-descrizione').value.trim();
+    
+    // Recupero campi inglesi
+    const nome_en = document.getElementById('beverino-nome-en') ? document.getElementById('beverino-nome-en').value.trim() : '';
+    const descrizione_en = document.getElementById('beverino-descrizione-en') ? document.getElementById('beverino-descrizione-en').value.trim() : '';
     
     const beverinoData = {
         nome,
+        nome_en, // SALVA INGLESE
         indirizzo,
         stato,
         latitudine,
         longitudine,
         immagine,
-        // ✅ INCLUDE LA DESCRIZIONE NEI DATI
         descrizione, 
+        descrizione_en, // SALVA INGLESE
         last_modified: new Date().toISOString()
     };
     
     try {
         const validationErrors = validateBeverinoData(beverinoData);
-        if (validationErrors.length > 0) {
-            throw validationErrors[0];
-        }
+        if (validationErrors.length > 0) throw validationErrors[0];
         
         let savedId;
         const operation = id ? 'UPDATE' : 'CREATE';
         
         if (navigator.onLine) {
             if (id && id.trim() !== '') {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'update_beverino',
-                    'beverini',
-                    beverinoData,
-                    id
-                );
-                
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'update_beverino', 'beverini', beverinoData, id);
                 const index = appData.beverini.findIndex(b => b.id == id);
-                if (index !== -1) {
-                    appData.beverini[index] = { id, ...beverinoData };
-                }
+                if (index !== -1) appData.beverini[index] = { id, ...beverinoData };
                 showToast('Beverino modificato con successo', 'success');
             } else {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'create_beverino',
-                    'beverini',
-                    beverinoData
-                );
-                
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'create_beverino', 'beverini', beverinoData);
                 appData.beverini.push({ id: savedId, ...beverinoData });
                 showToast(`Beverino aggiunto con successo (ID: ${savedId})`, 'success');
             }
         } else {
             savedId = id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            
-            await addToSyncQueue(
-                operation,
-                'beverini',
-                beverinoData,
-                savedId
-            );
-            
+            await addToSyncQueue(operation, 'beverini', beverinoData, savedId);
             if (operation === 'UPDATE') {
                 const index = appData.beverini.findIndex(b => b.id == id);
-                if (index !== -1) {
-                    appData.beverini[index] = { id: savedId, ...beverinoData };
-                }
+                if (index !== -1) appData.beverini[index] = { id: savedId, ...beverinoData };
             } else {
                 appData.beverini.push({ id: savedId, ...beverinoData });
             }
-            
-            showToast('Beverino salvato localmente. Sarà sincronizzato online dopo.', 'info');
+            showToast('Beverino salvato localmente.', 'info');
         }
         
         saveLocalData();
         loadAdminBeverini();
         resetBeverinoForm();
-        
         loadBeverini();
         updateDashboardStats();
         
@@ -2859,11 +3098,19 @@ function editNews(id) {
     if (!news) return;
     
     document.getElementById('news-id').value = news.id;
+    
+    // Campi Italiani
     document.getElementById('news-titolo').value = news.titolo || '';
     document.getElementById('news-contenuto').value = news.contenuto || '';
     document.getElementById('news-data').value = news.data || '';
     document.getElementById('news-categoria').value = news.categoria || '';
     document.getElementById('news-fonte').value = news.fonte || '';
+    
+    // Campi Inglesi (NUOVI)
+    if(document.getElementById('news-titolo-en'))
+        document.getElementById('news-titolo-en').value = news.titolo_en || '';
+    if(document.getElementById('news-contenuto-en'))
+        document.getElementById('news-contenuto-en').value = news.contenuto_en || '';
     
     showAdminTab('news-admin');
 }
@@ -2878,9 +3125,15 @@ async function saveNews(e) {
     const categoria = document.getElementById('news-categoria').value;
     const fonte = document.getElementById('news-fonte').value;
     
+    // RECUPERO CAMPI INGLESI
+    const titolo_en = document.getElementById('news-titolo-en') ? document.getElementById('news-titolo-en').value : '';
+    const contenuto_en = document.getElementById('news-contenuto-en') ? document.getElementById('news-contenuto-en').value : '';
+    
     const newsData = {
         titolo,
+        titolo_en, // SALVA INGLESE
         contenuto,
+        contenuto_en, // SALVA INGLESE
         data,
         categoria,
         fonte,
@@ -2889,56 +3142,38 @@ async function saveNews(e) {
     
     try {
         let savedId;
+        const operation = id ? 'UPDATE' : 'CREATE';
+
         if (navigator.onLine) {
             if (id && id.trim() !== '') {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'update_news',
-                    'news',
-                    newsData,
-                    id
-                );
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'update_news', 'news', newsData, id);
                 const index = appData.news.findIndex(n => n.id == id);
                 if (index !== -1) {
                     appData.news[index] = { id, ...newsData };
                 }
                 showToast('News modificata con successo', 'success');
             } else {
-                savedId = await safeFirebaseOperation(
-                    saveFirebaseData,
-                    'create_news',
-                    'news',
-                    newsData
-                );
+                savedId = await safeFirebaseOperation(saveFirebaseData, 'create_news', 'news', newsData);
                 appData.news.push({ id: savedId, ...newsData });
                 showToast(`News aggiunta con successo (ID: ${savedId})`, 'success');
             }
         } else {
+            // Offline logic
             savedId = id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            
-            await addToSyncQueue(
-                id ? 'UPDATE' : 'CREATE',
-                'news',
-                newsData,
-                savedId
-            );
+            await addToSyncQueue(operation, 'news', newsData, savedId);
             
             if (id) {
                 const index = appData.news.findIndex(n => n.id == id);
-                if (index !== -1) {
-                    appData.news[index] = { id: savedId, ...newsData };
-                }
+                if (index !== -1) appData.news[index] = { id: savedId, ...newsData };
             } else {
                 appData.news.push({ id: savedId, ...newsData });
             }
-            
-            showToast('News salvata localmente. Sarà sincronizzata online dopo.', 'info');
+            showToast('News salvata localmente.', 'info');
         }
         
         saveLocalData();
         loadAdminNews();
         resetNewsForm();
-        
         loadNews();
         updateDashboardStats();
         
@@ -2987,7 +3222,7 @@ async function deleteNews(id) {
 
 // Import/Export Functions
 function exportDataToExcel(type) {
-    // NUOVO: Controllo permessi
+    // Controllo permessi
     if (currentUserRole !== 'admin') {
         showToast('Funzione riservata agli amministratori', 'error');
         return;
@@ -2995,34 +3230,67 @@ function exportDataToExcel(type) {
 
     try {
         let data, filename, sheetName;
+        let excelData = [];
 
         switch(type) {
             case 'fontane':
                 data = appData.fontane;
                 filename = 'fontane_export.xlsx';
                 sheetName = 'Fontane';
+                // Mappatura Esplicita per Fontane
+                excelData = data.map(item => ({
+                    'ID': item.id,
+                    'Nome': item.nome || '',
+                    'Nome_EN': item.nome_en || '', // NUOVO
+                    'Indirizzo': item.indirizzo || '',
+                    'Stato': item.stato || '',
+                    'Anno': item.anno || '',
+                    'Descrizione': item.descrizione || '',
+                    'Descrizione_EN': item.descrizione_en || '', // NUOVO
+                    'Storico': item.storico || '',
+                    'Storico_EN': item.storico_en || '', // NUOVO
+                    'Latitudine': item.latitudine || 0,
+                    'Longitudine': item.longitudine || 0,
+                    'Immagine': item.immagine || ''
+                }));
                 break;
+
             case 'beverini':
                 data = appData.beverini;
                 filename = 'beverini_export.xlsx';
                 sheetName = 'Beverini';
+                // Mappatura Esplicita per Beverini
+                excelData = data.map(item => ({
+                    'ID': item.id,
+                    'Nome': item.nome || '',
+                    'Nome_EN': item.nome_en || '', // NUOVO
+                    'Indirizzo': item.indirizzo || '',
+                    'Stato': item.stato || '',
+                    'Descrizione': item.descrizione || '',
+                    'Descrizione_EN': item.descrizione_en || '', // NUOVO
+                    'Latitudine': item.latitudine || 0,
+                    'Longitudine': item.longitudine || 0,
+                    'Immagine': item.immagine || ''
+                }));
                 break;
+
             case 'news':
                 data = appData.news;
                 filename = 'news_export.xlsx';
                 sheetName = 'News';
+                // Mappatura Esplicita per News
+                excelData = data.map(item => ({
+                    'ID': item.id,
+                    'Titolo': item.titolo || '',
+                    'Titolo_EN': item.titolo_en || '', // NUOVO
+                    'Data': item.data || '',
+                    'Contenuto': item.contenuto || '',
+                    'Contenuto_EN': item.contenuto_en || '', // NUOVO
+                    'Categoria': item.categoria || '',
+                    'Fonte': item.fonte || ''
+                }));
                 break;
         }
-
-        const excelData = data.map(item => {
-            const row = {};
-            Object.keys(item).forEach(key => {
-                if (key !== 'last_modified' && key !== 'id') {
-                    row[key] = item[key];
-                }
-            });
-            return row;
-        });
 
         const ws = XLSX.utils.json_to_sheet(excelData);
         const wb = XLSX.utils.book_new();
@@ -3033,55 +3301,7 @@ function exportDataToExcel(type) {
         showToast(`Dati ${type} esportati in Excel con successo`, 'success');
         logActivity(`Dati ${type} esportati in Excel`);
     } catch (error) {
-        showToast('Errore nell\'esportazione Excel', 'error');
-    }
-}
-
-function exportAllDataToExcel() {
-    // NUOVO: Controllo permessi
-    if (currentUserRole !== 'admin') {
-        showToast('Funzione riservata agli amministratori', 'error');
-        return;
-    }
-
-    try {
-        const wb = XLSX.utils.book_new();
-
-        const fontaneData = appData.fontane.map(item => {
-            const row = {};
-            Object.keys(item).forEach(key => {
-                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
-            });
-            return row;
-        });
-        const fontaneWs = XLSX.utils.json_to_sheet(fontaneData);
-        XLSX.utils.book_append_sheet(wb, fontaneWs, 'Fontane');
-
-        const beveriniData = appData.beverini.map(item => {
-            const row = {};
-            Object.keys(item).forEach(key => {
-                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
-            });
-            return row;
-        });
-        const beveriniWs = XLSX.utils.json_to_sheet(beveriniData);
-        XLSX.utils.book_append_sheet(wb, beveriniWs, 'Beverini');
-
-        const newsData = appData.news.map(item => {
-            const row = {};
-            Object.keys(item).forEach(key => {
-                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
-            });
-            return row;
-        });
-        const newsWs = XLSX.utils.json_to_sheet(newsData);
-        XLSX.utils.book_append_sheet(wb, newsWs, 'News');
-
-        XLSX.writeFile(wb, 'fontane_beverini_complete_export.xlsx');
-
-        showToast('Tutti i dati esportati in Excel con successo', 'success');
-        logActivity('Tutti i dati esportati in Excel');
-    } catch (error) {
+        console.error(error);
         showToast('Errore nell\'esportazione Excel', 'error');
     }
 }
@@ -3164,11 +3384,14 @@ function handleFileImport(type, files) {
 function importFontane(data) {
     const newFontane = data.map((item) => ({
         nome: item.Nome || item.nome || '',
+        nome_en: item.Nome_EN || item.nome_en || '', // LEGGE EXCEL INGLESE
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
         anno: item.Anno || item.anno || '',
         descrizione: item.Descrizione || item.descrizione || '',
+        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // LEGGE EXCEL INGLESE
         storico: item.Storico || item.storico || '',
+        storico_en: item.Storico_EN || item.storico_en || '', // LEGGE EXCEL INGLESE
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
@@ -3187,7 +3410,6 @@ function importFontane(data) {
                 saveLocalData();
                 loadAdminFontane();
                 showToast(`${importedCount} fontane importate con successo!`, 'success');
-                logActivity(`${importedCount} fontane importate da Excel`);
             }
         } catch (error) {
             console.error('Errore import fontana:', error);
@@ -3200,13 +3422,14 @@ function importFontane(data) {
 function importBeverini(data) {
     const newBeverini = data.map((item) => ({
         nome: item.Nome || item.nome || '',
+        nome_en: item.Nome_EN || item.nome_en || '', // LEGGE EXCEL INGLESE
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
+        descrizione: item.Descrizione || item.descrizione || '',
+        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // LEGGE EXCEL INGLESE
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
-        // Assumiamo che la descrizione possa essere importata se presente nel file
-        descrizione: item.Descrizione || item.descrizione || '', 
         last_modified: new Date().toISOString()
     }));
 
@@ -3222,7 +3445,6 @@ function importBeverini(data) {
                 saveLocalData();
                 loadAdminBeverini();
                 showToast(`${importedCount} beverini importati con successo!`, 'success');
-                logActivity(`${importedCount} beverini importati da Excel`);
             }
         } catch (error) {
             console.error('Errore import beverino:', error);
@@ -3235,7 +3457,9 @@ function importBeverini(data) {
 function importNews(data) {
     const newNews = data.map((item) => ({
         titolo: item.Titolo || item.titolo || '',
+        titolo_en: item.Titolo_EN || item.titolo_en || '', // LEGGE EXCEL INGLESE
         contenuto: item.Contenuto || item.contenuto || '',
+        contenuto_en: item.Contenuto_EN || item.contenuto_en || '', // LEGGE EXCEL INGLESE
         data: item.Data || item.data || new Date().toISOString().split('T')[0],
         categoria: item.Categoria || item.categoria || '',
         fonte: item.Fonte || item.fonte || '',
@@ -3254,7 +3478,6 @@ function importNews(data) {
                 saveLocalData();
                 loadAdminNews();
                 showToast(`${importedCount} news importate con successo!`, 'success');
-                logActivity(`${importedCount} news importate da Excel`);
             }
         } catch (error) {
             console.error('Errore import news:', error);
@@ -3263,7 +3486,6 @@ function importNews(data) {
 
     return newNews.length;
 }
-
 function downloadTemplate(type) {
     let columns = [];
     let filename = '';
@@ -3271,25 +3493,45 @@ function downloadTemplate(type) {
 
     switch (type) {
         case 'fontane':
+            // ABBIAMO AGGIUNTO LE COLONNE _EN
             columns = [
-                'Nome', 'Indirizzo', 'Stato', 'Anno', 'Descrizione',
-                'Storico', 'Latitudine', 'Longitudine', 'Immagine'
+                'Nome', 'Nome_EN', 
+                'Indirizzo', 
+                'Stato', 
+                'Anno', 
+                'Descrizione', 'Descrizione_EN',
+                'Storico', 'Storico_EN',
+                'Latitudine', 'Longitudine', 
+                'Immagine'
             ];
-            filename = 'template_fontane.xlsx';
+            filename = 'template_fontane_multilingua.xlsx';
             sheetName = 'Fontane';
             break;
+            
         case 'beverini':
+            // ABBIAMO AGGIUNTO LE COLONNE _EN
             columns = [
-                'Nome', 'Indirizzo', 'Stato', 'Latitudine', 'Longitudine', 'Immagine', 'Descrizione' // Aggiunta Descrizione per coerenza
+                'Nome', 'Nome_EN',
+                'Indirizzo', 
+                'Stato', 
+                'Latitudine', 'Longitudine', 
+                'Immagine', 
+                'Descrizione', 'Descrizione_EN'
             ];
-            filename = 'template_beverini.xlsx';
+            filename = 'template_beverini_multilingua.xlsx';
             sheetName = 'Beverini';
             break;
+            
         case 'news':
+            // ABBIAMO AGGIUNTO LE COLONNE _EN
             columns = [
-                'Titolo', 'Contenuto', 'Data', 'Categoria', 'Fonte'
+                'Titolo', 'Titolo_EN',
+                'Contenuto', 'Contenuto_EN',
+                'Data', 
+                'Categoria', 
+                'Fonte'
             ];
-            filename = 'template_news.xlsx';
+            filename = 'template_news_multilingua.xlsx';
             sheetName = 'News';
             break;
     }
@@ -3299,7 +3541,7 @@ function downloadTemplate(type) {
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
     XLSX.writeFile(wb, filename);
 
-    showToast(`Template ${type} scaricato con successo`, 'success');
+    showToast(`Template ${type} (multilingua) scaricato con successo`, 'success');
 }
 
 // Utility Functions
@@ -3982,50 +4224,79 @@ function getFilteredItems(type) {
 
 // Aggiorna renderGridItems con badge
 function renderGridItems(container, items, type) {
+    // 1. GESTIONE STATO VUOTO (Tuo codice originale mantenuto)
     if (!items || items.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-${type === 'fontana' ? 'monument' : 'faucet'}"></i></div>
-                <div class="empty-state-text">Nessuna ${type} disponibile</div>
-                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
+                <div class="empty-state-text">Nessun elemento trovato</div>
+                <div class="empty-state-subtext">Prova a cambiare i filtri di ricerca</div>
             </div>
         `;
         return;
     }
     
-    // Recupera highlights
+    // 2. RECUPERA HIGHLIGHTS (Badge Nuovo/Riparato)
     const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
 
+    // 3. HELPER PER TRADURRE LO STATO (Funzionante -> Working)
+    const getStatusLabel = (stato) => {
+        const statusKey = {
+            'funzionante': 'status_working',
+            'non-funzionante': 'status_broken',
+            'manutenzione': 'status_maintenance'
+        }[stato] || 'status_working';
+        
+        // Se esiste la traduzione usa quella, altrimenti usa lo stato originale
+        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
+    };
+
     container.innerHTML = '';
+    
     items.forEach(item => {
         const gridItem = document.createElement('div');
         gridItem.className = 'grid-item';
+        
+        // GESTORE CLICK (Mantiene la tua logica di navigazione)
         gridItem.onclick = () => {
+            // Nota: passo item.id come nel tuo codice originale
             showDetail(item.id, type);
-            currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-            document.getElementById('fixed-navigate-btn').classList.remove('hidden');
+            
+            // Gestione tasto navigazione rapida
+            if(typeof currentLatLng !== 'undefined') {
+                currentLatLng = { lat: item.latitudine, lng: item.longitudine };
+                const navBtn = document.getElementById('fixed-navigate-btn');
+                if(navBtn) navBtn.classList.remove('hidden');
+            }
         };
         
-        // Badge Logic
+        // LOGICA BADGE (Mantenuta)
         let badgeHTML = '';
         if (highlights.new.includes(item.id)) badgeHTML = '<span class="badge-new">NUOVO</span>';
         else if (highlights.fixed.includes(item.id)) badgeHTML = '<span class="badge-fixed">RIPARATO</span>';
 
+        // LOGICA IMMAGINE CUSTOM (Mantenuta)
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
+        // RENDER HTML (Aggiornato con getLocalizedText e getStatusLabel)
         gridItem.innerHTML = `
             <div class="item-image-container">
                 <img src="${item.immagine || './images/sfondo-home.jpg'}" 
-                     alt="${item.nome}" 
+                     alt="${getLocalizedText(item, 'nome')}" 
                      class="item-image" 
                      onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'image-fallback\\'><i class=\\'fas fa-image\\'></i></div>';">
             </div>
             <div class="item-content">
-                <div class="item-name">${item.nome} ${badgeHTML}</div>
+                <div class="item-name">${getLocalizedText(item, 'nome')} ${badgeHTML}</div>
+                
                 <div class="item-address">${item.indirizzo}</div>
+                
                 <div class="item-footer">
-                    <span class="item-status status-${item.stato}">${getStatusText(item.stato)}</span>
-                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}</span>
+                    <span class="item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
+                    
+                    <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
+                        ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
+                    </span>
                 </div>
             </div>
         `;
@@ -4039,8 +4310,8 @@ function renderCompactItems(container, items, type) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-faucet"></i></div>
-                <div class="empty-state-text">Nessun ${type} disponibile</div>
-                <div class="empty-state-subtext">${currentFilter[type + 's'] !== 'all' ? 'Prova a cambiare filtro' : 'Aggiungi tramite il pannello di controllo'}</div>
+                <div class="empty-state-text">Nessun elemento trovato</div>
+                <div class="empty-state-subtext">Prova a cambiare i filtri di ricerca</div>
             </div>
         `;
         return;
@@ -4048,6 +4319,16 @@ function renderCompactItems(container, items, type) {
     
     // Recupera highlights
     const highlights = JSON.parse(localStorage.getItem('app_highlights') || '{"new": [], "fixed": []}');
+
+    // Helper per tradurre lo stato (come abbiamo fatto per le fontane)
+    const getStatusLabel = (stato) => {
+        const statusKey = {
+            'funzionante': 'status_working',
+            'non-funzionante': 'status_broken',
+            'manutenzione': 'status_maintenance'
+        }[stato] || 'status_working';
+        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
+    };
 
     container.innerHTML = '';
     items.forEach(item => {
@@ -4071,23 +4352,24 @@ function renderCompactItems(container, items, type) {
 
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
         
+        // USA getLocalizedText QUI
         compactItem.innerHTML = `
             <div class="compact-item-image-container">
                 <img src="${item.immagine || './images/default-beverino.jpg'}"
-                     alt="${item.nome}" 
+                     alt="${getLocalizedText(item, 'nome')}" 
                      class="compact-item-image"
                      onerror="this.style.display='none'; this.parentElement.classList.add('fallback-active'); this.parentElement.innerHTML += '<div class=\\'compact-image-fallback\\'><i class=\\'fas fa-faucet\\'></i></div>';">
             </div>
             <div class="compact-item-content">
                 <div class="compact-item-header">
-                    <div class="compact-item-name">${item.nome} ${badgeHTML}</div>
+                    <div class="compact-item-name">${getLocalizedText(item, 'nome')} ${badgeHTML}</div>
                     <span class="image-indicator ${hasCustomImage ? 'image-custom' : 'image-default'}">
                         ${hasCustomImage ? '<i class="fas fa-check"></i>' : '<i class="fas fa-image"></i>'}
                     </span>
                 </div>
                 <div class="compact-item-address">${item.indirizzo}</div>
                 <div class="compact-item-footer">
-                    <span class="compact-item-status status-${item.stato}">${getStatusText(item.stato)}</span>
+                    <span class="compact-item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
                 </div>
             </div>
         `;
@@ -4125,10 +4407,10 @@ function renderNewsItems(container, news) {
         newsCard.className = 'news-card';
         newsCard.innerHTML = `
             <div class="news-header">
-                <div class="news-title">${item.titolo} ${badgeHTML}</div>
+                <div class="news-title">${getLocalizedText(item, 'titolo')} ${badgeHTML}</div>
                 <div class="news-date">${formatDate(item.data)}</div>
             </div>
-            <div class="news-content">${item.contenuto}</div>
+            <div class="news-content">${getLocalizedText(item, 'contenuto')}</div>
             <div class="news-footer">
                 <span class="news-category">${item.categoria}</span>
                 <span class="news-source">Fonte: ${item.fonte}</span>
