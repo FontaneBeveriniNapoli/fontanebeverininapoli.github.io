@@ -1848,13 +1848,7 @@ function renderGridItems(container, items, type) {
         gridItem.onclick = () => {
             // Nota: passo item.id come nel tuo codice originale
             showDetail(item.id, type);
-            
-            // Gestione tasto navigazione rapida
-            if(typeof currentLatLng !== 'undefined') {
-                currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-                const navBtn = document.getElementById('fixed-navigate-btn');
-                if(navBtn) navBtn.classList.remove('hidden');
-            }
+                      
         };
         
         // LOGICA BADGE (Mantenuta)
@@ -1933,8 +1927,7 @@ function renderCompactItems(container, items, type) {
         compactItem.onclick = () => {
             showDetail(item.id, type);
             currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-            const navBtn = document.getElementById('fixed-navigate-btn');
-            if(navBtn) navBtn.classList.remove('hidden');
+            
         };
 
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
@@ -2119,9 +2112,7 @@ function showDetail(id, type) {
     
     // Aggiornamento Navigazione e Scroll
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-    const navBtn = document.getElementById('fixed-navigate-btn');
-    if(navBtn) navBtn.classList.remove('hidden');
-    
+        
     showScreen(screenId);
     
     // Reset Scroll
