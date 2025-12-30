@@ -1167,38 +1167,27 @@ async function loadFirebaseData(type) {
             const docData = doc.data();
             data.push({ 
                 id: doc.id, 
-                // Dati Comuni
                 nome: docData.nome || '',
-                nome_en: docData.nome_en || '', // NUOVO: Carica nome inglese
                 indirizzo: docData.indirizzo || '',
                 stato: docData.stato || 'funzionante',
                 latitudine: docData.latitudine || 0,
                 longitudine: docData.longitudine || 0,
                 immagine: docData.immagine || '',
-                
-                // Dati Fontane
                 anno: docData.anno || '',
                 descrizione: docData.descrizione || '',
-                descrizione_en: docData.descrizione_en || '', // NUOVO: Carica descrizione inglese
                 storico: docData.storico || '',
-                storico_en: docData.storico_en || '', // NUOVO: Carica storico inglese
-                
-                // Dati News
                 titolo: docData.titolo || '',
-                titolo_en: docData.titolo_en || '', // NUOVO
                 contenuto: docData.contenuto || '',
-                contenuto_en: docData.contenuto_en || '', // NUOVO
                 data: docData.data || new Date().toISOString().split('T')[0],
                 categoria: docData.categoria || '',
                 fonte: docData.fonte || '',
-                
                 last_modified: docData.last_modified || new Date().toISOString()
             });
         });
         
-        // >>> CONTROLLO NOTIFICHE <<<
+        // >>> NUOVO: CONTROLLO NOTIFICHE PRIMA DI SALVARE <<<
         checkAndNotifyUpdates(data, type);
-        // >>> FINE CONTROLLO <<<
+        // >>> FINE NUOVO <<<
 
         appData[type] = data;
         saveLocalData();
@@ -2002,11 +1991,6 @@ function showDetail(id, type) {
         titleElement.textContent = isFontana ? 'Fontana' : 'Beverino';
     }
     
-    // ============================================================
-    // MODIFICA SOLO QUI: Logica per scegliere l'immagine giusta
-    // ============================================================
-    const defaultImage = isFontana ? './images/sfondo-home.jpg' : './images/default-beverino.jpg';
-
     // Helper per tradurre lo stato
     const getStatusLabel = (stato) => {
         const statusKey = {
@@ -2017,13 +2001,13 @@ function showDetail(id, type) {
         return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
     };
 
-    // 3. Generazione HTML Dettaglio (CON GRAFICA PRESERVATA)
+    // 3. Generazione HTML Dettaglio
     contentElement.innerHTML = `
         <div class="detail-header-image">
-            <img src="${item.immagine || defaultImage}" 
+            <img src="${item.immagine || './images/sfondo-home.jpg'}" 
                  alt="${getLocalizedText(item, 'nome')}" 
                  class="detail-image"
-                 onerror="this.src='${defaultImage}'">
+                 onerror="this.src='./images/sfondo-home.jpg'">
         </div>
         
         <div class="detail-info">
@@ -2748,7 +2732,8 @@ function editFontana(id) {
     document.getElementById('fontana-descrizione').value = fontana.descrizione || '';
     document.getElementById('fontana-storico').value = fontana.storico || '';
     
-    // Campi Inglesi (NUOVI - Usa ?. per sicurezza)
+    // Campi Inglesi (NUOVI)
+    // Nota: usiamo ?. per evitare errori se l'HTML non è ancora aggiornato
     if(document.getElementById('fontana-nome-en')) 
         document.getElementById('fontana-nome-en').value = fontana.nome_en || '';
     if(document.getElementById('fontana-descrizione-en')) 
@@ -2783,28 +2768,28 @@ async function saveFontana(e) {
         const longitudine = parseFloat(document.getElementById('fontana-longitudine').value) || 0;
         const immagine = document.getElementById('fontana-immagine').value.trim();
         
-        // RECUPERO CAMPI INGLESI (Nuova parte fondamentale!)
+        // Recupero campi inglesi (con controllo sicurezza)
         const nome_en = document.getElementById('fontana-nome-en') ? document.getElementById('fontana-nome-en').value.trim() : '';
         const descrizione_en = document.getElementById('fontana-descrizione-en') ? document.getElementById('fontana-descrizione-en').value.trim() : '';
         const storico_en = document.getElementById('fontana-storico-en') ? document.getElementById('fontana-storico-en').value.trim() : '';
         
         const fontanaData = {
             nome,
-            nome_en, // SALVA INGLESE
+            nome_en, // SALVA
             indirizzo,
             stato,
             anno,
             descrizione,
-            descrizione_en, // SALVA INGLESE
+            descrizione_en, // SALVA
             storico,
-            storico_en, // SALVA INGLESE
+            storico_en, // SALVA
             latitudine,
             longitudine,
             immagine,
             last_modified: new Date().toISOString()
         };
         
-        // Validazione
+        // --- BLOCCO VALIDAZIONE E SALVATAGGIO (identico a prima) ---
         const validationErrors = validateFontanaData(fontanaData);
         if (validationErrors.length > 0) throw validationErrors[0];
         
@@ -2934,7 +2919,7 @@ function editBeverino(id) {
     document.getElementById('beverino-stato').value = beverino.stato || 'funzionante';
     document.getElementById('beverino-descrizione').value = beverino.descrizione || ''; 
     
-    // Campi Inglesi (NUOVI)
+    // Campi Inglesi
     if(document.getElementById('beverino-nome-en'))
         document.getElementById('beverino-nome-en').value = beverino.nome_en || '';
     if(document.getElementById('beverino-descrizione-en'))
@@ -2966,17 +2951,18 @@ async function saveBeverino(e) {
     
     const beverinoData = {
         nome,
-        nome_en, // SALVA INGLESE
+        nome_en, // SALVA
         indirizzo,
         stato,
         latitudine,
         longitudine,
         immagine,
         descrizione, 
-        descrizione_en, // SALVA INGLESE
+        descrizione_en, // SALVA
         last_modified: new Date().toISOString()
     };
     
+    // --- BLOCCO VALIDAZIONE E SALVATAGGIO (identico a prima) ---
     try {
         const validationErrors = validateBeverinoData(beverinoData);
         if (validationErrors.length > 0) throw validationErrors[0];
@@ -3098,19 +3084,13 @@ function editNews(id) {
     if (!news) return;
     
     document.getElementById('news-id').value = news.id;
-    
-    // Campi Italiani
     document.getElementById('news-titolo').value = news.titolo || '';
+    document.getElementById('news-titolo-en').value = news.titolo_en || ''; // NUOVO
     document.getElementById('news-contenuto').value = news.contenuto || '';
+    document.getElementById('news-contenuto-en').value = news.contenuto_en || ''; // NUOVO
     document.getElementById('news-data').value = news.data || '';
     document.getElementById('news-categoria').value = news.categoria || '';
     document.getElementById('news-fonte').value = news.fonte || '';
-    
-    // Campi Inglesi (NUOVI)
-    if(document.getElementById('news-titolo-en'))
-        document.getElementById('news-titolo-en').value = news.titolo_en || '';
-    if(document.getElementById('news-contenuto-en'))
-        document.getElementById('news-contenuto-en').value = news.contenuto_en || '';
     
     showAdminTab('news-admin');
 }
@@ -3120,20 +3100,18 @@ async function saveNews(e) {
     
     const id = document.getElementById('news-id').value;
     const titolo = document.getElementById('news-titolo').value;
+    const titolo_en = document.getElementById('news-titolo-en').value; // NUOVO
     const contenuto = document.getElementById('news-contenuto').value;
+    const contenuto_en = document.getElementById('news-contenuto-en').value; // NUOVO
     const data = document.getElementById('news-data').value;
     const categoria = document.getElementById('news-categoria').value;
     const fonte = document.getElementById('news-fonte').value;
     
-    // RECUPERO CAMPI INGLESI
-    const titolo_en = document.getElementById('news-titolo-en') ? document.getElementById('news-titolo-en').value : '';
-    const contenuto_en = document.getElementById('news-contenuto-en') ? document.getElementById('news-contenuto-en').value : '';
-    
     const newsData = {
         titolo,
-        titolo_en, // SALVA INGLESE
+        titolo_en, // SALVA
         contenuto,
-        contenuto_en, // SALVA INGLESE
+        contenuto_en, // SALVA
         data,
         categoria,
         fonte,
@@ -3146,14 +3124,25 @@ async function saveNews(e) {
 
         if (navigator.onLine) {
             if (id && id.trim() !== '') {
-                savedId = await safeFirebaseOperation(saveFirebaseData, 'update_news', 'news', newsData, id);
+                savedId = await safeFirebaseOperation(
+                    saveFirebaseData,
+                    'update_news',
+                    'news',
+                    newsData,
+                    id
+                );
                 const index = appData.news.findIndex(n => n.id == id);
                 if (index !== -1) {
                     appData.news[index] = { id, ...newsData };
                 }
                 showToast('News modificata con successo', 'success');
             } else {
-                savedId = await safeFirebaseOperation(saveFirebaseData, 'create_news', 'news', newsData);
+                savedId = await safeFirebaseOperation(
+                    saveFirebaseData,
+                    'create_news',
+                    'news',
+                    newsData
+                );
                 appData.news.push({ id: savedId, ...newsData });
                 showToast(`News aggiunta con successo (ID: ${savedId})`, 'success');
             }
@@ -3222,7 +3211,7 @@ async function deleteNews(id) {
 
 // Import/Export Functions
 function exportDataToExcel(type) {
-    // Controllo permessi
+    // NUOVO: Controllo permessi
     if (currentUserRole !== 'admin') {
         showToast('Funzione riservata agli amministratori', 'error');
         return;
@@ -3230,67 +3219,34 @@ function exportDataToExcel(type) {
 
     try {
         let data, filename, sheetName;
-        let excelData = [];
 
         switch(type) {
             case 'fontane':
                 data = appData.fontane;
                 filename = 'fontane_export.xlsx';
                 sheetName = 'Fontane';
-                // Mappatura Esplicita per Fontane
-                excelData = data.map(item => ({
-                    'ID': item.id,
-                    'Nome': item.nome || '',
-                    'Nome_EN': item.nome_en || '', // NUOVO
-                    'Indirizzo': item.indirizzo || '',
-                    'Stato': item.stato || '',
-                    'Anno': item.anno || '',
-                    'Descrizione': item.descrizione || '',
-                    'Descrizione_EN': item.descrizione_en || '', // NUOVO
-                    'Storico': item.storico || '',
-                    'Storico_EN': item.storico_en || '', // NUOVO
-                    'Latitudine': item.latitudine || 0,
-                    'Longitudine': item.longitudine || 0,
-                    'Immagine': item.immagine || ''
-                }));
                 break;
-
             case 'beverini':
                 data = appData.beverini;
                 filename = 'beverini_export.xlsx';
                 sheetName = 'Beverini';
-                // Mappatura Esplicita per Beverini
-                excelData = data.map(item => ({
-                    'ID': item.id,
-                    'Nome': item.nome || '',
-                    'Nome_EN': item.nome_en || '', // NUOVO
-                    'Indirizzo': item.indirizzo || '',
-                    'Stato': item.stato || '',
-                    'Descrizione': item.descrizione || '',
-                    'Descrizione_EN': item.descrizione_en || '', // NUOVO
-                    'Latitudine': item.latitudine || 0,
-                    'Longitudine': item.longitudine || 0,
-                    'Immagine': item.immagine || ''
-                }));
                 break;
-
             case 'news':
                 data = appData.news;
                 filename = 'news_export.xlsx';
                 sheetName = 'News';
-                // Mappatura Esplicita per News
-                excelData = data.map(item => ({
-                    'ID': item.id,
-                    'Titolo': item.titolo || '',
-                    'Titolo_EN': item.titolo_en || '', // NUOVO
-                    'Data': item.data || '',
-                    'Contenuto': item.contenuto || '',
-                    'Contenuto_EN': item.contenuto_en || '', // NUOVO
-                    'Categoria': item.categoria || '',
-                    'Fonte': item.fonte || ''
-                }));
                 break;
         }
+
+        const excelData = data.map(item => {
+            const row = {};
+            Object.keys(item).forEach(key => {
+                if (key !== 'last_modified' && key !== 'id') {
+                    row[key] = item[key];
+                }
+            });
+            return row;
+        });
 
         const ws = XLSX.utils.json_to_sheet(excelData);
         const wb = XLSX.utils.book_new();
@@ -3301,7 +3257,55 @@ function exportDataToExcel(type) {
         showToast(`Dati ${type} esportati in Excel con successo`, 'success');
         logActivity(`Dati ${type} esportati in Excel`);
     } catch (error) {
-        console.error(error);
+        showToast('Errore nell\'esportazione Excel', 'error');
+    }
+}
+
+function exportAllDataToExcel() {
+    // NUOVO: Controllo permessi
+    if (currentUserRole !== 'admin') {
+        showToast('Funzione riservata agli amministratori', 'error');
+        return;
+    }
+
+    try {
+        const wb = XLSX.utils.book_new();
+
+        const fontaneData = appData.fontane.map(item => {
+            const row = {};
+            Object.keys(item).forEach(key => {
+                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
+            });
+            return row;
+        });
+        const fontaneWs = XLSX.utils.json_to_sheet(fontaneData);
+        XLSX.utils.book_append_sheet(wb, fontaneWs, 'Fontane');
+
+        const beveriniData = appData.beverini.map(item => {
+            const row = {};
+            Object.keys(item).forEach(key => {
+                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
+            });
+            return row;
+        });
+        const beveriniWs = XLSX.utils.json_to_sheet(beveriniData);
+        XLSX.utils.book_append_sheet(wb, beveriniWs, 'Beverini');
+
+        const newsData = appData.news.map(item => {
+            const row = {};
+            Object.keys(item).forEach(key => {
+                if (key !== 'last_modified' && key !== 'id') row[key] = item[key];
+            });
+            return row;
+        });
+        const newsWs = XLSX.utils.json_to_sheet(newsData);
+        XLSX.utils.book_append_sheet(wb, newsWs, 'News');
+
+        XLSX.writeFile(wb, 'fontane_beverini_complete_export.xlsx');
+
+        showToast('Tutti i dati esportati in Excel con successo', 'success');
+        logActivity('Tutti i dati esportati in Excel');
+    } catch (error) {
         showToast('Errore nell\'esportazione Excel', 'error');
     }
 }
@@ -3384,14 +3388,14 @@ function handleFileImport(type, files) {
 function importFontane(data) {
     const newFontane = data.map((item) => ({
         nome: item.Nome || item.nome || '',
-        nome_en: item.Nome_EN || item.nome_en || '', // LEGGE EXCEL INGLESE
+        nome_en: item.Nome_EN || item.nome_en || '', // NUOVO: Legge il nome inglese
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
         anno: item.Anno || item.anno || '',
         descrizione: item.Descrizione || item.descrizione || '',
-        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // LEGGE EXCEL INGLESE
+        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // NUOVO: Legge la descrizione inglese
         storico: item.Storico || item.storico || '',
-        storico_en: item.Storico_EN || item.storico_en || '', // LEGGE EXCEL INGLESE
+        storico_en: item.Storico_EN || item.storico_en || '', // NUOVO: Legge lo storico inglese
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
@@ -3410,6 +3414,7 @@ function importFontane(data) {
                 saveLocalData();
                 loadAdminFontane();
                 showToast(`${importedCount} fontane importate con successo!`, 'success');
+                logActivity(`${importedCount} fontane importate da Excel`);
             }
         } catch (error) {
             console.error('Errore import fontana:', error);
@@ -3422,11 +3427,11 @@ function importFontane(data) {
 function importBeverini(data) {
     const newBeverini = data.map((item) => ({
         nome: item.Nome || item.nome || '',
-        nome_en: item.Nome_EN || item.nome_en || '', // LEGGE EXCEL INGLESE
+        nome_en: item.Nome_EN || item.nome_en || '', // NUOVO: Nome Inglese
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
         descrizione: item.Descrizione || item.descrizione || '',
-        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // LEGGE EXCEL INGLESE
+        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // NUOVO: Descrizione Inglese
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
@@ -3445,6 +3450,7 @@ function importBeverini(data) {
                 saveLocalData();
                 loadAdminBeverini();
                 showToast(`${importedCount} beverini importati con successo!`, 'success');
+                logActivity(`${importedCount} beverini importati da Excel`);
             }
         } catch (error) {
             console.error('Errore import beverino:', error);
@@ -3457,9 +3463,9 @@ function importBeverini(data) {
 function importNews(data) {
     const newNews = data.map((item) => ({
         titolo: item.Titolo || item.titolo || '',
-        titolo_en: item.Titolo_EN || item.titolo_en || '', // LEGGE EXCEL INGLESE
+        titolo_en: item.Titolo_EN || item.titolo_en || '', // NUOVO
         contenuto: item.Contenuto || item.contenuto || '',
-        contenuto_en: item.Contenuto_EN || item.contenuto_en || '', // LEGGE EXCEL INGLESE
+        contenuto_en: item.Contenuto_EN || item.contenuto_en || '', // NUOVO
         data: item.Data || item.data || new Date().toISOString().split('T')[0],
         categoria: item.Categoria || item.categoria || '',
         fonte: item.Fonte || item.fonte || '',
@@ -3478,6 +3484,7 @@ function importNews(data) {
                 saveLocalData();
                 loadAdminNews();
                 showToast(`${importedCount} news importate con successo!`, 'success');
+                logActivity(`${importedCount} news importate da Excel`);
             }
         } catch (error) {
             console.error('Errore import news:', error);
@@ -3486,6 +3493,7 @@ function importNews(data) {
 
     return newNews.length;
 }
+
 function downloadTemplate(type) {
     let columns = [];
     let filename = '';
