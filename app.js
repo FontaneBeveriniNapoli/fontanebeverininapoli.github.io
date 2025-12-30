@@ -1995,14 +1995,12 @@ function renderNewsItems(container, news) {
 
 // Detail View
 function showDetail(id, type) {
-    // 1. MEMORIA PER CAMBIO LINGUA
     currentDetailId = id;
     currentDetailType = type;
 
     let item, screenId, titleElement, contentElement;
-    const isFontana = type === 'fontana' || type === 'fontane';
+    const isFontana = (type === 'fontana' || type === 'fontane');
 
-    // 2. IDENTIFICAZIONE ELEMENTI
     if (isFontana) {
         item = appData.fontane.find(f => f.id == id);
         screenId = 'fontana-detail-screen';
@@ -2015,29 +2013,11 @@ function showDetail(id, type) {
         contentElement = document.getElementById('beverino-detail-content');
     }
     
-    if (!item) {
-        showToast('Elemento non trovato', 'error');
-        return;
-    }
-
-    // 3. TRADUZIONE TITOLO
-    if (window.translations && window.translations[currentLanguage]) {
-        titleElement.textContent = isFontana 
-            ? window.translations[currentLanguage]['screen_fountains'] 
-            : window.translations[currentLanguage]['screen_drinkers'];
-    }
+    if (!item) return;
 
     const defaultImage = isFontana ? './images/sfondo-home.jpg' : './images/default-beverino.jpg';
-    const getStatusLabel = (stato) => {
-        const statusKey = {
-            'funzionante': 'status_working',
-            'non-funzionante': 'status_broken',
-            'manutenzione': 'status_maintenance'
-        }[stato] || 'status_working';
-        return (window.translations && window.translations[currentLanguage]) ? window.translations[currentLanguage][statusKey] : stato;
-    };
+    const t = window.translations[currentLanguage] || {};
 
-    // 4. GENERAZIONE HTML (Pulita e senza tasto doppio)
     contentElement.innerHTML = `
         <div class="detail-header-image">
             <img src="${item.immagine || defaultImage}" class="detail-image" onerror="this.src='${defaultImage}'">
@@ -2045,45 +2025,30 @@ function showDetail(id, type) {
         <div class="detail-info">
             <h2 class="detail-name">${getLocalizedText(item, 'nome')}</h2>
             <div class="info-row">
-                <span class="info-label"><i class="fas fa-map-marker-alt"></i></span>
-                <span class="info-value">${item.indirizzo}</span>
+                <i class="fas fa-map-marker-alt"></i> ${item.indirizzo}
             </div>
             <div class="info-row">
-                <span class="item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
+                <span class="item-status status-${item.stato}">${item.stato}</span>
             </div>
             ${item.anno ? `<div class="info-row">Anno: ${item.anno}</div>` : ''}
             <div class="detail-description">${getLocalizedText(item, 'descrizione') || ''}</div>
-            ${getLocalizedText(item, 'storico') ? `<div class="detail-history"><h3>Storia</h3><p>${getLocalizedText(item, 'storico')}</p></div>` : ''}
             <div class="detail-actions">
                 <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
-                    <i class="fas fa-location-arrow"></i> ${window.translations[currentLanguage]['navigate_btn']}
-                </button>
-                <button class="detail-action-btn" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\\\'")}')" style="background: #ef4444; color: white;">
-                    <i class="fas fa-bullhorn"></i> ${window.translations[currentLanguage]['report_btn']}
+                    <i class="fas fa-location-arrow"></i> ${t.navigate_btn || 'Naviga'}
                 </button>
             </div>
         </div>
     `;
     
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-    
-    // 5. CAMBIO SCHERMATA
     showScreen(screenId);
     
-    // 6. RESET SCROLL (Logica ripristinata e potenziata)
-    // Usiamo 100ms come nelle versioni più stabili per dare tempo al rendering 
+    // Reset Scroll
     setTimeout(() => {
-        // Reset finestra globale
-        window.scrollTo(0, 0); [cite: 5]
-        
-        // Reset del contenitore specifico dei dettagli
-        if (contentElement) contentElement.scrollTop = 0; [cite: 3]
-        
-        // Reset forzato per i contenitori con scroll interno (classi nel tuo CSS)
-        document.querySelectorAll('.detail-content, .content-area, .screen').forEach(el => {
-            el.scrollTop = 0; [cite: 3]
-        });
-    }, 100);
+        window.scrollTo(0, 0);
+        if (contentElement) contentElement.scrollTop = 0;
+        document.querySelectorAll('.detail-content, .content-area').forEach(el => el.scrollTop = 0);
+    }, 150);
 }
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
