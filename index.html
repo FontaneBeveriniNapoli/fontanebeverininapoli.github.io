@@ -188,9 +188,7 @@
                 </button>
             </header>
 
-            <div class="admin-config-section">
-                </div>
-
+            
             <div class="admin-tabs">
                 <button class="admin-tab-btn active" data-tab="dashboard-admin">Dashboard</button>
                 <button class="admin-tab-btn" data-tab="fontane-admin">Fontane</button>
@@ -860,31 +858,35 @@
                 <div class="app-logo logo-with-image"></div>
                 <div class="comune-logo"></div>
             </div>
-            <h1 class="home-title" data-i18n="home_title">Fontane & Beverini</h1>
-            <p class="home-subtitle" data-i18n="home_subtitle">
+    
+            <h1 class="home-title" id="home-title">Fontane & Beverini</h1>
+    
+            <p class="home-subtitle" id="home-subtitle">
                 L'acqua pubblica a portata di app.
-                Fontane, e beverini della città di Napoli, sempre nel palmo della tua mano.
+                Fontane e beverini della città di Napoli, sempre nel palmo della tua mano.
             </p>
+    
             <p class="home-welcome-animated" style="display: none;">NAPOLI</p>
+    
             <div class="home-buttons">
                 <div class="button-row">
                     <button class="home-btn fontane-btn" onclick="showScreen('fontane-screen')">
                         <span class="btn-icon"><i class="fas fa-monument"></i></span>
-                        <span class="btn-text" data-i18n="tab_fountains">Fontane</span>
+                        <span class="btn-text" id="nav-fontane">Fontane</span>
                     </button>
                     <button class="home-btn beverini-btn" onclick="showScreen('beverini-screen')">
                         <span class="btn-icon"><i class="fas fa-faucet"></i></span>
-                        <span class="btn-text" data-i18n="tab_drinkers">Beverini</span>
+                        <span class="btn-text" id="nav-beverini">Beverini</span>
                     </button>
                 </div>
                 <div class="button-row">
                     <button class="home-btn mappa-btn" onclick="showScreen('mappa-screen')">
                         <span class="btn-icon"><i class="fas fa-map-marked-alt"></i></span>
-                        <span class="btn-text" data-i18n="tab_map">Mappa</span>
+                        <span class="btn-text" id="nav-map">Mappa</span>
                     </button>
                     <button class="home-btn news-btn" onclick="showScreen('news-screen')">
                         <span class="btn-icon"><i class="fas fa-newspaper"></i></span>
-                        <span class="btn-text" data-i18n="tab_news">News</span>
+                        <span class="btn-text" id="nav-news">News</span>
                     </button>
                 </div>
             </div>
@@ -893,27 +895,35 @@
         <div class="screen list-screen" id="fontane-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title" data-i18n="screen_fountains">Fontane</h1>
-                <p class="screen-subtitle" data-i18n="subtitle_fountains">Scopri le fontane della città</p>
+        
+                <h1 class="screen-title" id="fountains-title">Fontane</h1>
+        
+                <p class="screen-subtitle" id="fountains-subtitle">Scopri le fontane della città</p>
             </header>
+    
             <div class="search-container">
-                <input type="text" class="search-input" placeholder="🔍 Cerca fontane..." onkeyup="debouncedFilter('fontane', this.value)">
+                <input type="text" id="search-input" class="search-input" placeholder="🔍 Cerca fontane..." onkeyup="debouncedFilter('fontane', this.value)">
             </div>
+    
             <div class="content-area">
                 <div class="filter-buttons">
-                    <button class="filter-btn all active" onclick="setFilter('fontane', 'all')">
+                    <button class="filter-btn all active trans-filter-all" onclick="setFilter('fontane', 'all')">
                         <i class="fas fa-layer-group"></i> Tutti
                     </button>
-                    <button class="filter-btn funzionante" onclick="setFilter('fontane', 'funzionante')">
+            
+                    <button class="filter-btn funzionante trans-filter-working" onclick="setFilter('fontane', 'funzionante')">
                         <i class="fas fa-check-circle"></i> Funzionanti
                     </button>
-                    <button class="filter-btn non-funzionante" onclick="setFilter('fontane', 'non-funzionante')">
+            
+                    <button class="filter-btn non-funzionante trans-filter-broken" onclick="setFilter('fontane', 'non-funzionante')">
                         <i class="fas fa-times-circle"></i> Non Funzionanti
                     </button>
-                    <button class="filter-btn manutenzione" onclick="setFilter('fontane', 'manutenzione')">
+            
+                    <button class="filter-btn manutenzione trans-filter-maintenance" onclick="setFilter('fontane', 'manutenzione')">
                         <i class="fas fa-tools"></i> In Manutenzione
                     </button>
                 </div>
+        
                 <div class="items-grid" id="fontane-list">
                     <div class="loading">
                         <div class="loading-spinner"></div>
@@ -921,58 +931,45 @@
                     </div>
                 </div>
             </div>
-            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
-                <i class="fas fa-map-marker-alt"></i> Naviga Verso
-            </button>
+                
         </div>
 
         <div class="screen list-screen" id="beverini-screen">
             <header class="app-header">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title" data-i18n="screen_drinkers">Beverini</h1>
-                <p class="screen-subtitle" data-i18n="subtitle_drinkers">Trova i beverini pubblici</p>
+        
+                <h1 class="screen-title" id="drinkers-title">Beverini</h1>
+        
+                <p class="screen-subtitle" id="drinkers-subtitle">Trova i beverini pubblici</p>
             </header>
+    
             <div class="search-container">
                 <input type="text" class="search-input" placeholder="🔍 Cerca beverini..." onkeyup="debouncedFilter('beverini', this.value)">
             </div>
+    
             <div class="content-area">
                 <div class="filter-buttons">
-                    <button class="filter-btn all active" onclick="setFilter('beverini', 'all')">
+                    <button class="filter-btn all active trans-filter-all" onclick="setFilter('beverini', 'all')">
                         <i class="fas fa-layer-group"></i> Tutti
                     </button>
-                    <button class="filter-btn funzionante" onclick="setFilter('beverini', 'funzionante')">
+            
+                    <button class="filter-btn funzionante trans-filter-working" onclick="setFilter('beverini', 'funzionante')">
                         <i class="fas fa-check-circle"></i> Funzionanti
                     </button>
-                    <button class="filter-btn non-funzionante" onclick="setFilter('beverini', 'non-funzionante')">
+            
+                    <button class="filter-btn non-funzionante trans-filter-broken" onclick="setFilter('beverini', 'non-funzionante')">
                         <i class="fas fa-times-circle"></i> Non Funzionanti
                     </button>
-                    <button class="filter-btn manutenzione" onclick="setFilter('beverini', 'manutenzione')">
+            
+                    <button class="filter-btn manutenzione trans-filter-maintenance" onclick="setFilter('beverini', 'manutenzione')">
                         <i class="fas fa-tools"></i> In Manutenzione
                     </button>
                 </div>
-                <div class="compact-items-list" id="beverini-list">
+        
+                <div class="items-grid" id="beverini-list">
                     <div class="loading">
                         <div class="loading-spinner"></div>
                         <p>Caricamento beverini in corso...</p>
-                    </div>
-                </div>
-            </div>
-            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
-                <i class="fas fa-map-marker-alt"></i> Naviga Verso
-            </button>
-        </div>
-
-        <div class="screen list-screen" id="news-screen">
-            <header class="app-header">
-                <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title" data-i18n="tab_news">News</h1>
-                <p class="screen-subtitle">Ultime notizie sulle fontane</p>
-            </header>
-            <div class="content-area">
-                <div class="news-container" id="news-list">
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        <p>Caricamento news in corso...</p>
                     </div>
                 </div>
             </div>
@@ -988,9 +985,7 @@
                     <div class="loading-spinner"></div>
                 </div>
             </div>
-            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
-                <i class="fas fa-map-marker-alt"></i> Naviga Verso
-            </button>
+            
         </div>
 
         <div class="screen detail-screen" id="beverino-detail-screen">
@@ -1003,16 +998,15 @@
                     <div class="loading-spinner"></div>
                 </div>
             </div>
-            <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
-                <i class="fas fa-map-marker-alt"></i> Naviga Verso
-            </button>
+            
         </div>
 
         <div class="screen" id="mappa-screen">
             <header class="app-header" style="position: absolute; top: 0; left: 0; right: 0; z-index: 1000; padding: 15px 20px;">
                 <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
-                <h1 class="screen-title" style="font-size: 1.4rem;" data-i18n="screen_map">Mappa</h1>
+                <h1 class="screen-title" id="map-title" style="font-size: 1.4rem;" data-i18n="screen_map">Mappa</h1>
             </header>
+    
             <div class="map-search-container">
                 <div class="map-search-box">
                     <input type="text" id="map-search-input" placeholder="🔍 Cerca indirizzo, luogo, punto interesse..."
@@ -1023,27 +1017,50 @@
                 </div>
                 <div class="search-results" id="map-search-results"></div>
             </div>
+    
             <div id="map" class="map-container"></div>
+    
             <div class="map-legend">
-                <div class="legend-title">Legenda</div>
+                <div class="legend-title" id="legend-title">Legenda</div>
+        
                 <div class="legend-item">
                     <div class="legend-icon icon-fontana"></div>
-                    <span>Fontana</span>
+                    <span id="legend-fontana">Fontana</span>
+             </div>
+        
+             <div class="legend-item">
+                 <div class="legend-icon icon-beverino"></div>
+                 <span id="legend-beverino">Beverini</span>
+             </div>
+        
+             <div class="legend-item">
+                 <div class="legend-icon icon-position"></div>
+                 <span id="legend-pos">La tua posizione</span>
+             </div>
+         </div>
+    
+         <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 5px; font-size: 0.7rem; z-index: 1000;">
+             © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors
+         </div>
+     </div>
+     <div class="screen list-screen" id="news-screen">
+            <header class="app-header">
+                <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i></button>
+                
+                <h1 class="screen-title" id="news-title">News</h1>
+                
+                <p class="screen-subtitle" id="news-subtitle">Ultime notizie sulle fontane</p>
+            </header>
+            
+            <div class="content-area">
+                <div class="news-container" id="news-list">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Caricamento news in corso...</p>
+                    </div>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-icon icon-beverino"></div>
-                    <span>Beverini</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-icon icon-position"></div>
-                    <span>La tua posizione</span>
-                </div>
-            </div>
-            <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 5px; font-size: 0.7rem; z-index: 1000;">
-                © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors
             </div>
         </div>
-
         <div id="segnalazioni-screen" class="screen">
             <div class="app-header" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
                 <button class="back-btn" onclick="showScreen('home-screen')">
@@ -1175,9 +1192,10 @@
                 <span class="tab-icon"><i class="fas fa-newspaper"></i></span>
                 <span data-i18n="tab_news">News</span>
             </button>
-        </div>
-    </div>
-
+        </div> <button class="fixed-navigate-btn hidden" id="fixed-navigate-btn" onclick="navigateToFixed()">
+            <i class="fas fa-map-marker-alt"></i> <span id="nav-btn-text">Naviga Verso</span>
+        </button>
+    </div> 
     <div id="top-menu-modal" class="modal-overlay" onclick="closeMenuModal(event)" style="z-index: 9999;">
         <div class="modal-content menu-modal-content" style="width: 280px; padding: 20px; position: absolute; top: 70px; right: 20px;">
             <h3 class="modal-title" style="margin-bottom: 20px; font-size:1.2rem;">Menu</h3>
