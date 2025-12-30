@@ -284,7 +284,10 @@
                     </div>
                     <div class="form-group">
                         <label for="fontana-nome-en" style="color: #3b82f6; font-style: italic;">Nome (Inglese)</label>
-                        <input type="text" id="fontana-nome-en" placeholder="Name in English" style="background: #f0f9ff; border-color: #bae6fd;">
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="fontana-nome-en" placeholder="Name in English" style="background: #f0f9ff; border-color: #bae6fd; flex: 1;">
+                            <button type="button" class="admin-btn secondary" onclick="autoTranslate('fontana-nome', 'fontana-nome-en')" style="padding: 0 10px;" title="Traduci automaticamente">✨</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="fontana-indirizzo">Indirizzo:</label>
@@ -314,7 +317,10 @@
                     </div>
                     <div class="form-group">
                         <label for="fontana-descrizione-en" style="color: #3b82f6; font-style: italic;">Descrizione (Inglese)</label>
-                        <textarea id="fontana-descrizione-en" rows="3" placeholder="Description in English" style="background: #f0f9ff; border-color: #bae6fd;"></textarea>
+                        <div style="display: flex; gap: 5px; align-items: flex-start;">
+                            <textarea id="fontana-descrizione-en" rows="3" placeholder="Description in English" style="background: #f0f9ff; border-color: #bae6fd; flex: 1;"></textarea>
+                            <button type="button" class="admin-btn secondary" onclick="autoTranslate('fontana-descrizione', 'fontana-descrizione-en')" style="padding: 10px;" title="Traduci automaticamente">✨</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="fontana-storico">Storico:</label>
@@ -322,7 +328,10 @@
                     </div>
                     <div class="form-group">
                         <label for="fontana-storico-en" style="color: #3b82f6; font-style: italic;">Storico (Inglese)</label>
-                        <textarea id="fontana-storico-en" rows="3" placeholder="History in English" style="background: #f0f9ff; border-color: #bae6fd;"></textarea>
+                        <div style="display: flex; gap: 5px; align-items: flex-start;">
+                            <textarea id="fontana-storico-en" rows="3" placeholder="History in English" style="background: #f0f9ff; border-color: #bae6fd; flex: 1;"></textarea>
+                            <button type="button" class="admin-btn secondary" onclick="autoTranslate('fontana-storico', 'fontana-storico-en')" style="padding: 10px;" title="Traduci automaticamente">✨</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="fontana-latitudine">Coordinate:</label>
@@ -406,7 +415,10 @@
                     </div>
                     <div class="form-group">
                         <label for="beverino-nome-en" style="color: #3b82f6; font-style: italic;">Nome (Inglese)</label>
-                        <input type="text" id="beverino-nome-en" placeholder="Name in English" style="background: #f0f9ff; border-color: #bae6fd;">
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="beverino-nome-en" placeholder="Name in English" style="background: #f0f9ff; border-color: #bae6fd; flex: 1;">
+                            <button type="button" class="admin-btn secondary" onclick="autoTranslate('beverino-nome', 'beverino-nome-en')" style="padding: 0 10px;" title="Traduci automaticamente">✨</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="beverino-indirizzo">Indirizzo:</label>
@@ -433,7 +445,10 @@
                     </div>
                     <div class="form-group">
                         <label for="beverino-descrizione-en" style="color: #3b82f6; font-style: italic;">Descrizione (Inglese)</label>
-                        <textarea id="beverino-descrizione-en" rows="3" placeholder="Description in English" style="background: #f0f9ff; border-color: #bae6fd;"></textarea>
+                        <div style="display: flex; gap: 5px; align-items: flex-start;">
+                            <textarea id="beverino-descrizione-en" rows="3" placeholder="Description in English" style="background: #f0f9ff; border-color: #bae6fd; flex: 1;"></textarea>
+                            <button type="button" class="admin-btn secondary" onclick="autoTranslate('beverino-descrizione', 'beverino-descrizione-en')" style="padding: 10px;" title="Traduci automaticamente">✨</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="beverino-latitudine">Coordinate:</label>
@@ -516,8 +531,11 @@
                         <input type="text" id="news-titolo" required>
                     </div>
                     <div class="form-group">
-                        <label for="news-titolo-en">Titolo (Inglese):</label>
-                        <input type="text" id="news-titolo-en">
+                        <label for="news-titolo-en" style="color: #3b82f6; font-style: italic;">Titolo (Inglese)</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="news-titolo-en" placeholder="Title in English" style="background: #f0f9ff; border-color: #bae6fd; flex: 1;">
+                            <button type="button" class="admin-btn secondary" onclick="autoTranslate('news-titolo', 'news-titolo-en')" style="padding: 0 10px;" title="Traduci automaticamente">✨</button>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -525,8 +543,11 @@
                         <textarea id="news-contenuto" rows="4" required></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="news-contenuto-en">Contenuto (Inglese):</label>
-                        <textarea id="news-contenuto-en" rows="4"></textarea>
+                        <label for="news-contenuto-en" style="color: #3b82f6; font-style: italic;">Contenuto (Inglese)</label>
+                        <div style="display: flex; gap: 5px; align-items: flex-start;">
+                            <textarea id="news-contenuto-en" rows="5" placeholder="Content in English" style="background: #f0f9ff; border-color: #bae6fd; flex: 1;"></textarea>
+                            <button type="button" class="admin-btn secondary" onclick="autoTranslate('news-contenuto', 'news-contenuto-en')" style="padding: 10px;" title="Traduci automaticamente">✨</button>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -1188,6 +1209,8 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    
+    <script src="./translations.js"></script>
     
     <script src="./app.js"></script>
     

@@ -3,73 +3,33 @@
 // ==========================================
 
 let currentLanguage = localStorage.getItem('app_language') || 'it';
-
-const translations = {
-    'it': {
-        'home_title': 'Fontane & Beverini',
-        'home_subtitle': 'L\'acqua pubblica a portata di app. Fontane e beverini della città di Napoli, sempre nel palmo della tua mano.',
-        'tab_home': 'Home',
-        'tab_fountains': 'Fontane',
-        'tab_drinkers': 'Beverini',
-        'tab_map': 'Mappa',
-        'tab_news': 'News',
-        'screen_fountains': 'Fontane',
-        'screen_drinkers': 'Beverini',
-        'screen_map': 'Mappa',
-        'subtitle_fountains': 'Scopri le fontane della città',
-        'subtitle_drinkers': 'Trova i beverini pubblici',
-        'report_btn': 'Invia Segnalazione',
-        'info_btn': 'Info & Crediti',
-        'admin_btn': 'Area Riservata',
-        'status_working': 'Funzionante',
-        'status_broken': 'Non Funzionante',
-        'status_maintenance': 'In Manutenzione',
-        'navigate_btn': 'Naviga Verso',
-        'details_btn': 'Dettagli',
-        'search_placeholder': '🔍 Cerca...',
-        'switch_lang_label': 'Switch to English'
-    },
-    'en': {
-        'home_title': 'Fountains & Dispensers',
-        'home_subtitle': 'Public water at your fingertips. Fountains and water dispensers in Naples, always in the palm of your hand.',
-        'tab_home': 'Home',
-        'tab_fountains': 'Fountains',
-        'tab_drinkers': 'Dispensers',
-        'tab_map': 'Map',
-        'tab_news': 'News',
-        'screen_fountains': 'Fountains',
-        'screen_drinkers': 'Water Dispensers',
-        'screen_map': 'Map',
-        'subtitle_fountains': 'Discover the city fountains',
-        'subtitle_drinkers': 'Find public water dispensers',
-        'report_btn': 'Send Report',
-        'info_btn': 'Info & Credits',
-        'admin_btn': 'Restricted Area',
-        'status_working': 'Working',
-        'status_broken': 'Not Working',
-        'status_maintenance': 'Maintenance',
-        'navigate_btn': 'Navigate To',
-        'details_btn': 'Details',
-        'search_placeholder': '🔍 Search...',
-        'switch_lang_label': 'Passa a Italiano'
-    }
-};
+let currentDetailId = null;
+let currentDetailType = null;
 
 // Funzione principale cambio lingua
 function toggleLanguage() {
+    // 1. Cambia lingua
     currentLanguage = currentLanguage === 'it' ? 'en' : 'it';
     localStorage.setItem('app_language', currentLanguage);
     
-    // Aggiorna interfaccia statica
+    // 2. Aggiorna testi fissi
     applyTranslations();
     updateLangButton();
     
-    // Ricarica le liste (per tradurre i dati dinamici)
+    // 3. Ricarica liste
     if (typeof loadFontane === 'function') loadFontane();
     if (typeof loadBeverini === 'function') loadBeverini();
     if (typeof loadNews === 'function') loadNews();
     
-    // Chiudi il menu dopo un po'
+    // 4. Se c'è una scheda aperta, ricaricala tradotta!
+    const activeScreen = document.querySelector('.screen.active');
+    if (activeScreen && (activeScreen.id.includes('detail'))) {
+        if (currentDetailId && currentDetailType) {
+            showDetail(currentDetailId, currentDetailType);
+        }
+    }
+    
+    // 5. Chiudi menu
     setTimeout(() => {
         const modal = document.getElementById('top-menu-modal');
         if(modal) modal.style.display = 'none';
@@ -1970,12 +1930,16 @@ function renderNewsItems(container, news) {
 
 // Detail View
 function showDetail(id, type) {
+    // 1. MEMORIA PER CAMBIO LINGUA (Nuovo!)
+    currentDetailId = id;
+    currentDetailType = type;
+
     let item, screenId, titleElement, contentElement;
     
     // Normalizziamo il tipo
     const isFontana = type === 'fontana' || type === 'fontane';
 
-    // 1. Identificazione elemento e schermata
+    // 2. Identificazione elemento e schermata
     if (isFontana) {
         item = appData.fontane.find(f => f.id == id);
         screenId = 'fontana-detail-screen';
@@ -1993,18 +1957,16 @@ function showDetail(id, type) {
         return;
     }
 
-    // 2. Traduzione Titolo
-    if (translations && translations[currentLanguage]) {
+    // 3. Traduzione Titolo (USA window.translations)
+    if (window.translations && window.translations[currentLanguage]) {
         titleElement.textContent = isFontana 
-            ? translations[currentLanguage]['screen_fountains'] 
-            : translations[currentLanguage]['screen_drinkers'];
+            ? window.translations[currentLanguage]['screen_fountains'] 
+            : window.translations[currentLanguage]['screen_drinkers'];
     } else {
         titleElement.textContent = isFontana ? 'Fontana' : 'Beverino';
     }
     
-    // ============================================================
-    // MODIFICA SOLO QUI: Logica per scegliere l'immagine giusta
-    // ============================================================
+    // 4. LOGICA IMMAGINE
     const defaultImage = isFontana ? './images/sfondo-home.jpg' : './images/default-beverino.jpg';
 
     // Helper per tradurre lo stato
@@ -2014,10 +1976,10 @@ function showDetail(id, type) {
             'non-funzionante': 'status_broken',
             'manutenzione': 'status_maintenance'
         }[stato] || 'status_working';
-        return (translations && translations[currentLanguage]) ? translations[currentLanguage][statusKey] : stato;
+        return (window.translations && window.translations[currentLanguage]) ? window.translations[currentLanguage][statusKey] : stato;
     };
 
-    // 3. Generazione HTML Dettaglio (CON GRAFICA PRESERVATA)
+    // 5. HTML (Grafica Preservata)
     contentElement.innerHTML = `
         <div class="detail-header-image">
             <img src="${item.immagine || defaultImage}" 
@@ -2035,11 +1997,9 @@ function showDetail(id, type) {
             </div>
             
             <div class="info-row" style="display: flex; align-items: center; justify-content: flex-start; gap: 4px;">
-                
                 <span class="info-label" style="width: auto !important; min-width: auto !important; flex: 0 0 auto; margin: 0 !important; padding: 0 !important;">
                     <i class="fas fa-info-circle"></i>
                 </span>
-
                 <span class="info-value" style="flex: 1; margin: 0 !important; padding: 0 !important; display: flex; align-items: center;">
                     <span class="item-status status-${item.stato}" style="
                         display: inline-block;
@@ -2073,50 +2033,26 @@ function showDetail(id, type) {
             <div class="detail-actions">
                 <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
                     <i class="fas fa-location-arrow"></i> 
-                    ${translations[currentLanguage]['navigate_btn']}
+                    ${window.translations[currentLanguage]['navigate_btn']}
                 </button>
                 <button class="detail-action-btn" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\'")}')" style="background: #ef4444; color: white;">
                     <i class="fas fa-bullhorn"></i> 
-                    ${translations[currentLanguage]['report_btn']}
+                    ${window.translations[currentLanguage]['report_btn']}
                 </button>
             </div>
         </div>
     `;
     
-    // 4. Aggiornamento Navigazione
+    // Aggiornamento Navigazione e Scroll
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
     const navBtn = document.getElementById('fixed-navigate-btn');
     if(navBtn) navBtn.classList.remove('hidden');
     
-    // 5. Mostra la schermata
     showScreen(screenId);
-
-    // ============================================================
-    // FIX SCROLL MOBILE
-    // ============================================================
     
+    // Reset Scroll
     window.scrollTo(0, 0);
-    document.body.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
     if (contentElement) contentElement.scrollTop = 0;
-
-    setTimeout(() => {
-        window.scrollTo(0, 0);
-        document.body.scrollTop = 0;
-        if (contentElement) contentElement.scrollTop = 0;
-    }, 10);
-
-    setTimeout(() => {
-        window.scrollTo({
-            top: 0,
-            left: 0,
-            behavior: 'auto'
-        });
-        if (contentElement) {
-            contentElement.scrollTop = 0;
-            contentElement.scrollTo(0, 0);
-        }
-    }, 100);
 }
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
@@ -4983,3 +4919,49 @@ async function deleteSelectedItems(type) {
 }
 
 console.log('✨ Sistema notifiche, badge e ordinamento inizializzato');
+// ==========================================
+// FUNZIONE TRADUZIONE AUTOMATICA (AI)
+// ==========================================
+async function autoTranslate(sourceId, targetId) {
+    const sourceInput = document.getElementById(sourceId);
+    const targetInput = document.getElementById(targetId);
+    
+    // Controllo se c'è testo da tradurre
+    if (!sourceInput || !sourceInput.value.trim()) {
+        showToast('Scrivi prima il testo in italiano!', 'warning');
+        return;
+    }
+
+    const textToTranslate = sourceInput.value.trim();
+    
+    // Feedback visivo: "Sto lavorando..."
+    const originalPlaceholder = targetInput.placeholder;
+    targetInput.value = '';
+    targetInput.placeholder = 'Traduzione in corso... ⏳';
+    targetInput.disabled = true;
+
+    try {
+        // Usiamo l'API gratuita di MyMemory (limite 500 parole/giorno senza email)
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(textToTranslate)}&langpair=it|en`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.responseStatus === 200) {
+            // Successo!
+            targetInput.value = data.responseData.translatedText;
+            showToast('Traduzione completata! ✨', 'success');
+        } else {
+            throw new Error('Errore API');
+        }
+        
+    } catch (error) {
+        console.error("Errore traduzione:", error);
+        showToast('Errore traduzione. Riprova o scrivi a mano.', 'error');
+        targetInput.value = ''; // Pulisce se fallisce
+    } finally {
+        // Ripristina la casella
+        targetInput.placeholder = originalPlaceholder;
+        targetInput.disabled = false;
+    }
+}
