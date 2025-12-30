@@ -1847,8 +1847,7 @@ function renderGridItems(container, items, type) {
         // GESTORE CLICK (Mantiene la tua logica di navigazione)
         gridItem.onclick = () => {
             // Nota: passo item.id come nel tuo codice originale
-            showDetail(item.id, type);
-                      
+            showDetail(item.id, type);                      
         };
         
         // LOGICA BADGE (Mantenuta)
@@ -1926,8 +1925,7 @@ function renderCompactItems(container, items, type) {
 
         compactItem.onclick = () => {
             showDetail(item.id, type);
-            currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-            
+            currentLatLng = { lat: item.latitudine, lng: item.longitudine };            
         };
 
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
@@ -4263,12 +4261,6 @@ function renderGridItems(container, items, type) {
             // Nota: passo item.id come nel tuo codice originale
             showDetail(item.id, type);
             
-            // Gestione tasto navigazione rapida
-            if(typeof currentLatLng !== 'undefined') {
-                currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-                const navBtn = document.getElementById('fixed-navigate-btn');
-                if(navBtn) navBtn.classList.remove('hidden');
-            }
         };
         
         // LOGICA BADGE (Mantenuta)
@@ -4347,8 +4339,7 @@ function renderCompactItems(container, items, type) {
 
         compactItem.onclick = () => {
             showDetail(item.id, type);
-            currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-            document.getElementById('fixed-navigate-btn').classList.remove('hidden');
+            currentLatLng = { lat: item.latitudine, lng: item.longitudine };            
         };
 
         const hasCustomImage = item.immagine && item.immagine.trim() !== '';
