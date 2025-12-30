@@ -2043,7 +2043,7 @@ function showDetail(id, type) {
         return (window.translations && window.translations[currentLanguage]) ? window.translations[currentLanguage][statusKey] : stato;
     };
 
-    // 5. HTML (Grafica Preservata)
+    // 5. HTML
     contentElement.innerHTML = `
         <div class="detail-header-image">
             <img src="${item.immagine || defaultImage}" 
@@ -2108,7 +2108,7 @@ function showDetail(id, type) {
     
     // 6. COORDINATE E CAMBIO SCHERMATA
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
-    showScreen(screenId);
+    showScreen(screenId); // showScreen nasconde già il pulsante fisso 
     
     // 7. RESET DELLO SCROLL (CORREZIONE)
     // Usiamo un timeout per assicurarci che la schermata sia caricata prima di scrollare
@@ -2119,7 +2119,7 @@ function showDetail(id, type) {
         // Se hai un contenitore principale per lo scroll delle schede:
         const detailContainer = document.querySelector('.detail-content');
         if (detailContainer) detailContainer.scrollTop = 0;
-    }, 100); // Impostato a 100ms come nel vecchio codice per stabilità
+    }, 100); 
 }
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
