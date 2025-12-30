@@ -38,18 +38,92 @@ function toggleLanguage() {
 
 // Applica le traduzioni ai testi statici (data-i18n)
 function applyTranslations() {
+    const t = window.translations[currentLanguage];
+    if (!t) return;
+
+    // 1. Traduzione generica per elementi con data-i18n (es. Menu laterale)
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
-        if (translations[currentLanguage][key]) {
-            element.textContent = translations[currentLanguage][key];
-        }
+        if (t[key]) element.textContent = t[key];
     });
+
+    // 2. HOME & MENU (Usa gli ID che hai messo nell'HTML)
+    setText('home-title', t.home_title);
+    setText('home-subtitle', t.home_subtitle);
+    setText('nav-fontane', t.tab_fountains);
+    setText('nav-beverini', t.tab_drinkers);
+    setText('nav-map', t.tab_map);
+    setText('nav-news', t.tab_news);
+    setText('nav-btn-text', t.navigate_btn); // Bottone Naviga Verso
+
+    // 3. TITOLI SCHERMATE (Fontane, Beverini, News)
+    setText('fountains-title', t.screen_fountains);
+    setText('fountains-subtitle', t.subtitle_fountains);
     
-    // Aggiorna placeholder ricerca
-    const searchInputs = document.querySelectorAll('.search-input');
-    searchInputs.forEach(input => {
-        input.placeholder = translations[currentLanguage]['search_placeholder'];
+    setText('drinkers-title', t.screen_drinkers);
+    setText('drinkers-subtitle', t.subtitle_drinkers);
+
+    setText('news-title', t.screen_news);
+    setText('news-subtitle', t.subtitle_news);
+
+    // 4. MAPPA & LEGENDA
+    setText('map-title', t.screen_map);
+    setText('legend-title', t.legend_title);
+    setText('legend-fontana', t.legend_item_fountain);
+    setText('legend-beverino', t.legend_item_drinker);
+    setText('legend-pos', t.legend_item_position);
+    
+    // 5. PLACEHOLDER (Barre di ricerca)
+    const mapSearch = document.getElementById('map-search-input');
+    if (mapSearch) mapSearch.placeholder = t.map_search_placeholder;
+    
+    const listSearch = document.getElementById('search-input');
+    if (listSearch) listSearch.placeholder = t.search_placeholder;
+    
+    // Cerca anche la barra dei beverini (se ha una classe specifica o id diverso)
+    document.querySelectorAll('.search-input').forEach(el => {
+        el.placeholder = t.search_placeholder;
     });
+
+    // 6. FILTRI (Usa le classi speciali che abbiamo aggiunto)
+    document.querySelectorAll('.trans-filter-all').forEach(el => {
+        // Mantiene l'icona se presente, cambia solo il testo
+        updateFilterText(el, t.filter_all);
+    });
+    document.querySelectorAll('.trans-filter-working').forEach(el => {
+        updateFilterText(el, t.filter_working);
+    });
+    document.querySelectorAll('.trans-filter-broken').forEach(el => {
+        updateFilterText(el, t.filter_broken);
+    });
+    document.querySelectorAll('.trans-filter-maintenance').forEach(el => {
+        updateFilterText(el, t.filter_maintenance);
+    });
+
+    // 7. Aggiorna bottone lingua nel menu
+    updateLangButton();
+}
+
+// --- FUNZIONI DI SUPPORTO ---
+
+// Funzione sicura per impostare testo tramite ID
+function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
+// Funzione per aggiornare i filtri mantenendo l'icona <i>
+function updateFilterText(btn, newText) {
+    const icon = btn.querySelector('i');
+    if (icon) {
+        // Se c'è l'icona, riscriviamo: icona + spazio + testo
+        btn.innerHTML = '';
+        btn.appendChild(icon);
+        btn.appendChild(document.createTextNode(' ' + newText));
+    } else {
+        // Solo testo
+        btn.textContent = newText;
+    }
 }
 
 // Aggiorna icona e testo del pulsante nel menu
