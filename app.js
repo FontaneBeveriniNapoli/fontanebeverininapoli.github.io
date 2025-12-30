@@ -2002,6 +2002,7 @@ function showDetail(id, type) {
     let item, screenId, titleElement, contentElement;
     const isFontana = type === 'fontana' || type === 'fontane';
 
+    // 2. IDENTIFICAZIONE ELEMENTI
     if (isFontana) {
         item = appData.fontane.find(f => f.id == id);
         screenId = 'fontana-detail-screen';
@@ -2019,7 +2020,7 @@ function showDetail(id, type) {
         return;
     }
 
-    // 3. Traduzione Titolo
+    // 3. TRADUZIONE TITOLO
     if (window.translations && window.translations[currentLanguage]) {
         titleElement.textContent = isFontana 
             ? window.translations[currentLanguage]['screen_fountains'] 
@@ -2027,8 +2028,16 @@ function showDetail(id, type) {
     }
 
     const defaultImage = isFontana ? './images/sfondo-home.jpg' : './images/default-beverino.jpg';
-    
-    // 5. HTML (Assicurati che l'id del contenitore sia corretto)
+    const getStatusLabel = (stato) => {
+        const statusKey = {
+            'funzionante': 'status_working',
+            'non-funzionante': 'status_broken',
+            'manutenzione': 'status_maintenance'
+        }[stato] || 'status_working';
+        return (window.translations && window.translations[currentLanguage]) ? window.translations[currentLanguage][statusKey] : stato;
+    };
+
+    // 4. GENERAZIONE HTML (Pulita e senza tasto doppio)
     contentElement.innerHTML = `
         <div class="detail-header-image">
             <img src="${item.immagine || defaultImage}" class="detail-image" onerror="this.src='${defaultImage}'">
@@ -2040,13 +2049,17 @@ function showDetail(id, type) {
                 <span class="info-value">${item.indirizzo}</span>
             </div>
             <div class="info-row">
-                 <span class="item-status status-${item.stato}">${currentLanguage === 'it' ? item.stato : (item.stato === 'funzionante' ? 'Working' : 'Broken')}</span>
+                <span class="item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
             </div>
+            ${item.anno ? `<div class="info-row">Anno: ${item.anno}</div>` : ''}
             <div class="detail-description">${getLocalizedText(item, 'descrizione') || ''}</div>
             ${getLocalizedText(item, 'storico') ? `<div class="detail-history"><h3>Storia</h3><p>${getLocalizedText(item, 'storico')}</p></div>` : ''}
             <div class="detail-actions">
                 <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
                     <i class="fas fa-location-arrow"></i> ${window.translations[currentLanguage]['navigate_btn']}
+                </button>
+                <button class="detail-action-btn" onclick="openReportScreen('${getLocalizedText(item, 'nome').replace(/'/g, "\\\\'")}')" style="background: #ef4444; color: white;">
+                    <i class="fas fa-bullhorn"></i> ${window.translations[currentLanguage]['report_btn']}
                 </button>
             </div>
         </div>
@@ -2054,22 +2067,23 @@ function showDetail(id, type) {
     
     currentLatLng = { lat: item.latitudine, lng: item.longitudine };
     
-    // CAMBIO SCHERMATA
+    // 5. CAMBIO SCHERMATA
     showScreen(screenId);
     
-    // --- RESET SCROLL AGGRESSIVO ---
+    // 6. RESET SCROLL (Logica ripristinata e potenziata)
+    // Usiamo 100ms come nelle versioni più stabili per dare tempo al rendering 
     setTimeout(() => {
-        // 1. Reset finestra principale
-        window.scrollTo(0, 0);
+        // Reset finestra globale
+        window.scrollTo(0, 0); [cite: 5]
         
-        // 2. Reset del contenitore interno generato (contentElement)
-        if (contentElement) contentElement.scrollTop = 0;
+        // Reset del contenitore specifico dei dettagli
+        if (contentElement) contentElement.scrollTop = 0; [cite: 3]
         
-        // 3. Reset di TUTTI i possibili contenitori di scroll definiti nel CSS
+        // Reset forzato per i contenitori con scroll interno (classi nel tuo CSS)
         document.querySelectorAll('.detail-content, .content-area, .screen').forEach(el => {
-            el.scrollTop = 0;
+            el.scrollTop = 0; [cite: 3]
         });
-    }, 100); 
+    }, 100);
 }
 // ✅ generateDetailHTML con logica condizionale per nascondere la descrizione vuota
 function generateDetailHTML(item, type) {
