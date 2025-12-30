@@ -53,23 +53,23 @@ window.translations = {
     },
     'en': {
         // HOME & NAVIGATION
-        'home_title': 'Fountains & Dispensers',
-        'home_subtitle': 'Public water at your fingertips. Fountains and water dispensers in Naples, always in the palm of your hand.',
+        'home_title': 'Fountains & Water Points',
+        'home_subtitle': 'Public water at your fingertips. Discover Naples' monuments and drinking spots, right from your phone.',
         'tab_home': 'Home',
         'tab_fountains': 'Fountains',
-        'tab_drinkers': 'Dispensers',
+        'tab_drinkers': 'Water Points',
         'tab_map': 'Map',
         'tab_news': 'News',
 
         // SCREEN TITLES
         'screen_fountains': 'Fountains',
-        'screen_drinkers': 'Water Dispensers',
+        'screen_drinkers': 'Water Points',
         'screen_map': 'Map',
         'screen_news': 'News',
 
         // SUBTITLES
         'subtitle_fountains': 'Discover the city fountains',
-        'subtitle_drinkers': 'Find public water dispensers',
+        'subtitle_drinkers': 'Find public water Points',
         'subtitle_news': 'Latest news about fountains',
 
         // MAP & SEARCH
@@ -77,7 +77,7 @@ window.translations = {
         'map_search_placeholder': '🔍 Search address, place...',
         'legend_title': 'Legend',
         'legend_item_fountain': 'Fountain',
-        'legend_item_drinker': 'Dispensers',
+        'legend_item_drinker': 'Water Points',
         'legend_item_position': 'Your position',
 
         // FILTERS
