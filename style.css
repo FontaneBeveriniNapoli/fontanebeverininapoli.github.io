@@ -3994,35 +3994,40 @@ textarea[id$="-en"]:focus {
    AGGIUNTE FINALI (OTTIMIZZAZIONE E FIRMA)
    ========================================= */
 
-/* 1. Compattiamo gli spazi nella Home per far entrare tutto */
+/* 1. Spazio sotto i loghi */
 .logo-container {
-    margin-bottom: 2px !important; /* Riduce lo spazio sotto i loghi */
+    margin-bottom: 5px !important; 
 }
 
+/* 2. Scritta NAPOLI che spinge giù tutto */
 .home-welcome-animated {
-    margin: 0 0 2px !important; /* Niente margini extra */
+    /* IL PRIMO NUMERO (10px) è lo spazio sopra. */
+    /* Più lo aumenti (es. 20px, 30px), più TUTTO il contenuto sotto scenderà. */
+    margin: 10px 0 10px !important; 
     padding: 0;
     line-height: 1;
 }
 
+/* 3. Spazio tra Titolo e Sottotitolo */
 .home-title {
     margin-top: 0 !important;
-    margin-bottom: 5px !important; /* Avvicina il titolo al sottotitolo */
+    margin-bottom: 10px !important; /* Spazio standard equilibrato */
 }
 
+/* 4. Spazio tra Sottotitolo e Bottoni */
 .home-subtitle {
-    margin-bottom: 10px !important; /* Meno spazio prima dei bottoni */
+    margin-bottom: 20px !important; /* Spazio per non attaccare i bottoni al testo */
 }
 
-/* 2. Firma sviluppatore "galleggiante" sopra la barra */
+/* 5. Firma sviluppatore (rimane fissa in basso a destra) */
 .dev-signature {
-    position: fixed;       /* Rimane fissa in quel punto anche se scorri */
-    bottom: 85px;          /* Calcolato per stare SOPRA la barra dei menu (che è alta circa 60-70px) */
-    right: 15px;           /* Allineata a destra */
-    font-size: 0.5rem;     /* Scritta molto piccola */
+    position: fixed;
+    bottom: 85px;          
+    right: 15px;           
+    font-size: 0.5rem;     
     color: var(--light-text);
-    opacity: 0.6;          /* Leggera trasparenza per essere elegante */
+    opacity: 0.6;
     font-weight: 400;
-    pointer-events: none;  /* Permette di cliccare "attraverso" la scritta se necessario */
-    z-index: 9999;         /* Assicura che sia sempre visibile sopra ogni cosa */
+    pointer-events: none;
+    z-index: 9999;
 }
