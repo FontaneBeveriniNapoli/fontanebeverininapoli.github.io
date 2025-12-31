@@ -3990,3 +3990,39 @@ textarea[id$="-en"]:focus {
     background-color: #fff;
     border-color: var(--primary-blue);
 }
+/* =========================================
+   AGGIUNTE FINALI (OTTIMIZZAZIONE E FIRMA)
+   ========================================= */
+
+/* 1. Compattiamo gli spazi nella Home per far entrare tutto */
+.logo-container {
+    margin-bottom: 2px !important; /* Riduce lo spazio sotto i loghi */
+}
+
+.home-welcome-animated {
+    margin: 0 0 2px !important; /* Niente margini extra */
+    padding: 0;
+    line-height: 1;
+}
+
+.home-title {
+    margin-top: 0 !important;
+    margin-bottom: 5px !important; /* Avvicina il titolo al sottotitolo */
+}
+
+.home-subtitle {
+    margin-bottom: 10px !important; /* Meno spazio prima dei bottoni */
+}
+
+/* 2. Firma sviluppatore "galleggiante" sopra la barra */
+.dev-signature {
+    position: fixed;       /* Rimane fissa in quel punto anche se scorri */
+    bottom: 85px;          /* Calcolato per stare SOPRA la barra dei menu (che è alta circa 60-70px) */
+    right: 15px;           /* Allineata a destra */
+    font-size: 0.5rem;     /* Scritta molto piccola */
+    color: var(--light-text);
+    opacity: 0.6;          /* Leggera trasparenza per essere elegante */
+    font-weight: 400;
+    pointer-events: none;  /* Permette di cliccare "attraverso" la scritta se necessario */
+    z-index: 9999;         /* Assicura che sia sempre visibile sopra ogni cosa */
+}
