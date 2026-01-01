@@ -4022,12 +4022,15 @@ textarea[id$="-en"]:focus {
 /* 5. Firma sviluppatore (rimane fissa in basso a destra) */
 .dev-signature {
     position: fixed;
-    bottom: 85px;          
-    right: 15px;           
-    font-size: 0.5rem;     
+    bottom: 65px;          /* 60px (altezza menu) + 5px di spazio */
+    right: 10px;           /* Allineata a destra */
+    font-size: 0.5rem;     /* Scritta molto piccola */
     color: var(--light-text);
-    opacity: 0.6;
+    opacity: 0.6;          /* Leggermente trasparente */
     font-weight: 400;
-    pointer-events: none;
-    z-index: 9999;
+    pointer-events: none;  /* Permette di cliccare "attraverso" la scritta */
+    z-index: 999;          /* Assicura che stia sopra lo sfondo */
+    
+    /* Per iPhone recenti: si alza automaticamente se c'è la barretta nera in basso */
+    margin-bottom: env(safe-area-inset-bottom, 0px);
 }
