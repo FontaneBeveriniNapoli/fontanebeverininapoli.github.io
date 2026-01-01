@@ -2057,9 +2057,9 @@ function showDetail(id, type) {
             <div class="info-row">
                 <span class="item-status status-${item.stato}">${getStatusLabel(item.stato)}</span>
             </div>
-            ${item.anno ? `<div class="info-row">Anno: ${item.anno}</div>` : ''}
+            ${item.anno ? `<div class="info-row">${t.label_year || 'Anno'}: ${item.anno}</div>` : ''}
             <div class="detail-description">${getLocalizedText(item, 'descrizione') || ''}</div>
-            ${getLocalizedText(item, 'storico') ? `<div class="detail-history"><h3>Storia</h3><p>${getLocalizedText(item, 'storico')}</p></div>` : ''}
+            ${getLocalizedText(item, 'storico') ? `<div class="detail-history"><h3>${t.label_history || 'Storia'}</h3><p>${getLocalizedText(item, 'storico')}</p></div>` : ''}
             <div class="detail-actions">
                 <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
                     <i class="fas fa-location-arrow"></i> ${t.navigate_btn || 'Naviga'}

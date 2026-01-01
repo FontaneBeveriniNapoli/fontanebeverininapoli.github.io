@@ -4,7 +4,7 @@
 
 window.translations = {
     'it': {
-        // HOME & NAVIGAZIONE
+        // ... (tutto quello che c'era prima) ...
         'home_title': 'Fontane & Beverini',
         'home_subtitle': 'L\'acqua pubblica a portata di app. Fontane e beverini della città di Napoli, sempre nel palmo della tua mano.',
         'tab_home': 'Home',
@@ -13,18 +13,15 @@ window.translations = {
         'tab_map': 'Mappa',
         'tab_news': 'News',
 
-        // TITOLI SCHERMATE
         'screen_fountains': 'Fontane',
         'screen_drinkers': 'Beverini',
         'screen_map': 'Mappa',
         'screen_news': 'News',
         
-        // SOTTOTITOLI
         'subtitle_fountains': 'Scopri le fontane della città',
         'subtitle_drinkers': 'Trova i beverini pubblici',
         'subtitle_news': 'Ultime notizie sulle fontane',
 
-        // MAPPA & RICERCA
         'search_placeholder': '🔍 Cerca...',
         'map_search_placeholder': '🔍 Cerca indirizzo, luogo...',
         'legend_title': 'Legenda',
@@ -32,13 +29,11 @@ window.translations = {
         'legend_item_drinker': 'Beverini',
         'legend_item_position': 'La tua posizione',
 
-        // FILTRI
         'filter_all': 'Tutti',
         'filter_working': 'Funzionanti',
         'filter_broken': 'Non Funzionanti',
         'filter_maintenance': 'In Manutenzione',
 
-        // PULSANTI & AZIONI
         'report_btn': 'Invia Segnalazione',
         'info_btn': 'Info & Crediti',
         'admin_btn': 'Area Riservata',
@@ -46,13 +41,18 @@ window.translations = {
         'details_btn': 'Dettagli',
         'switch_lang_label': 'Switch to English',
         
-        // STATI
         'status_working': 'Funzionante',
         'status_broken': 'Non Funzionante',
-        'status_maintenance': 'In Manutenzione'
+        'status_maintenance': 'In Manutenzione',
+
+        // <<< AGGIUNTO: LE NUOVE TRADUZIONI ITALIANE
+        'label_year': 'Anno',
+        'label_history': 'Storia',
+        'btn_close': 'Chiudi' 
     },
+   
     'en': {
-        // HOME & NAVIGATION (Usiamo "Taps" che è corto e preciso)
+        // ... (tutto quello che c'era prima) ...
         'home_title': 'Fountains & Taps',
         'home_subtitle': 'Public water at your fingertips. Discover Naples\' monuments and drinking spots, right from your phone.',
         'tab_home': 'Home',
@@ -61,18 +61,15 @@ window.translations = {
         'tab_map': 'Map',
         'tab_news': 'News',
 
-        // SCREEN TITLES
         'screen_fountains': 'Fountains',
         'screen_drinkers': 'Taps',
         'screen_map': 'Map',
         'screen_news': 'News',
 
-        // SUBTITLES
         'subtitle_fountains': 'Discover the city fountains',
         'subtitle_drinkers': 'Find public water taps',
         'subtitle_news': 'Latest news about fountains',
 
-        // MAP & SEARCH
         'search_placeholder': '🔍 Search...',
         'map_search_placeholder': '🔍 Search address, place...',
         'legend_title': 'Legend',
@@ -80,13 +77,11 @@ window.translations = {
         'legend_item_drinker': 'Tap',
         'legend_item_position': 'Your position',
 
-        // FILTERS
         'filter_all': 'All',
         'filter_working': 'Working',
         'filter_broken': 'Not Working',
         'filter_maintenance': 'Maintenance',
 
-        // BUTTONS & ACTIONS
         'report_btn': 'Send Report',
         'info_btn': 'Info & Credits',
         'admin_btn': 'Restricted Area',
@@ -94,9 +89,13 @@ window.translations = {
         'details_btn': 'Details',
         'switch_lang_label': 'Passa a Italiano',
 
-        // STATUSES
         'status_working': 'Working',
         'status_broken': 'Not Working',
-        'status_maintenance': 'Maintenance'
+        'status_maintenance': 'Maintenance',
+
+        // <<< AGGIUNTO: LE NUOVE TRADUZIONI INGLESI
+        'label_year': 'Year',
+        'label_history': 'History',
+        'btn_close': 'Close'
     }
 };
