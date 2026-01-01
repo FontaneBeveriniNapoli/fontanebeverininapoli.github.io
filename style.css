@@ -4022,17 +4022,12 @@ textarea[id$="-en"]:focus {
 /* 5. Firma sviluppatore (rimane fissa in basso a destra) */
 .dev-signature {
     position: fixed;
-    bottom: 80px;           /* Alzata un po' di più (80px) per sicurezza */
-    right: 15px;
-    
-    font-size: 0.85rem;     /* Un po' più grande (circa 13-14px) */
-    font-weight: 600;       /* Grassetto */
-    color: #ffffff;         /* Bianco */
-    
-    /* Ombra forte per renderla leggibile ovunque */
-    text-shadow: 1px 1px 2px black, 0 0 1em blue; 
-    
-    z-index: 9999;          /* Livello altissimo */
+    bottom: 85px;          
+    right: 15px;           
+    font-size: 0.5rem;     
+    color: var(--light-text);
+    opacity: 0.6;
+    font-weight: 400;
     pointer-events: none;
-    margin-bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 9999;
 }
