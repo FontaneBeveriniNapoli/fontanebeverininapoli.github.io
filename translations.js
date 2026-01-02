@@ -6,7 +6,7 @@ window.translations = {
     'it': {
         // ... (tutto quello che c'era prima) ...
         'home_title': 'Fontane & Beverini',
-        'home_subtitle': 'L\'acqua pubblica a portata di app.<br>Fontane e beverini della città di Napoli,<br>sempre nel palmo della tua mano.",
+        'home_subtitle': "L'acqua pubblica a portata di app.<br>Fontane e beverini della città di Napoli,<br>sempre nel palmo della tua mano.",
         'tab_home': 'Home',
         'tab_fountains': 'Fontane',
         'tab_drinkers': 'Beverini',
@@ -54,7 +54,7 @@ window.translations = {
     'en': {
         // ... (tutto quello che c'era prima) ...
         'home_title': 'Fountains & Taps',
-        'home_subtitle': "Public water at your fingertips.<br>Discover Naples\' monuments and drinking spots,<br>right from your phone.",
+        'home_subtitle': "Public water at your fingertips.<br>Discover Naples' monuments and drinking spots,<br>right from your phone.",
         'tab_home': 'Home',
         'tab_fountains': 'Fountains',
         'tab_drinkers': 'Taps',
