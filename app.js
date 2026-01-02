@@ -50,7 +50,13 @@ function applyTranslations() {
 
     // 2. HOME & MENU (Usa gli ID che hai messo nell'HTML)
     setText('home-title', t.home_title);
-    setText('home-subtitle', t.home_subtitle);
+
+    // MODIFICA QUESTA RIGA: sostituisci setText con innerHTML
+    const subtitleEl = document.getElementById('home-subtitle');
+    if (subtitleEl) {
+        subtitleEl.innerHTML = t.home_subtitle; 
+    }
+
     setText('nav-fontane', t.tab_fountains);
     setText('nav-beverini', t.tab_drinkers);
     setText('nav-map', t.tab_map);

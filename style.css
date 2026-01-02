@@ -289,15 +289,18 @@ body {
     width: 100%;
 }
 
+/* =========================================
+   SOTTOTITOLO HOME (OTTIMIZZATO 3 RIGHE)
+   ========================================= */
 .home-subtitle {
     color: rgba(255, 255, 255, 0.9);
-    font-size: 0.9rem;
-    font-weight: 400;
+    font-size: 0.9rem;          /* Dimensione ideale per leggibilità mobile */
     text-align: center;
-    line-height: 1.5;
-    max-width: 320px;
-    margin-bottom: 10px; /* MODIFICATO: Ridotto da 20px a 10px per compattare */
+    line-height: 1.5 !important; /* Forza lo spazio costante tra le 3 righe */
+    max-width: 90%;             /* Evita che il testo tocchi i bordi */
+    margin: 0 auto 20px auto !important; /* Centra orizzontalmente e dà spazio sotto */
     text-shadow: 0 1px 5px rgba(0,0,0,0.3);
+    display: block;             /* Assicura che si comporti come un blocco separato */
 }
 
 .home-buttons {
