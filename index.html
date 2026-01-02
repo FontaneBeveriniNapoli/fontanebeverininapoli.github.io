@@ -58,39 +58,41 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // Importiamo onSnapshot per il tempo reale
         import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        // Importiamo setAnalyticsCollectionEnabled per il "Kill Switch" privacy
         import { getAnalytics, setAnalyticsCollectionEnabled } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
         
         const firebaseConfig = {
-            apiKey: "AIzaSyBvDfxm-LSAcu0NwtJ8DYxxrjY-83LlLPU",
-            authDomain: "abcnapolifontane.firebaseapp.com",
-            projectId: "abcnapolifontane",
-            storageBucket: "abcnapolifontane.firebasestorage.app",
-            messagingSenderId: "686936372148",
-            appId: "1:686936372148:web:4147bab1bab73583b638e1",
-            measurementId: "G-DPEC2SNGDM"
+            apiKey: "AIzaSyCc7latF6oH6gUNE02gAqwlWNsjVeC5gI4",
+            authDomain: "abcnapolifontanebeverini.firebaseapp.com",
+            projectId: "abcnapolifontanebeverini",
+            storageBucket: "abcnapolifontanebeverini.firebasestorage.app",
+            messagingSenderId: "212459088024",
+            appId: "1:212459088024:web:57e11ef44c10d307cd88ed",
+            measurementId: "G-43PW58S5TL"
         };
         
+        // Inizializza Firebase
         const app = initializeApp(firebaseConfig);
         
-        // ESPORTIAMO TUTTO A LIVELLO GLOBALE (WINDOW) per usarlo in app.js
+        // Inizializza Analytics
+        const analytics = getAnalytics(app);
+
+        // ESPORTIAMO TUTTO A LIVELLO GLOBALE (Così app.js funziona)
         window.db = getFirestore(app);
         window.auth = getAuth(app);
-        window.firebaseAnalytics = getAnalytics(app);
+        window.firebaseAnalytics = analytics; 
         window.firebaseSignIn = signInWithEmailAndPassword;
         window.app = app;
 
-        // Esportiamo le funzioni Firestore e Analytics
+        // Esportiamo le funzioni necessarie
         window.doc = doc;
         window.getDoc = getDoc;
         window.setDoc = setDoc;
         window.onSnapshot = onSnapshot;
         window.setAnalyticsCollectionEnabled = setAnalyticsCollectionEnabled;
         
-        console.log('Firebase inizializzato con Remote Control System');
+        console.log('Firebase e Analytics inizializzati (Europa)');
     </script>
     <link rel="stylesheet" href="./style.css">
 
