@@ -3799,14 +3799,14 @@ body {
 }
 /* MODIFICATO: Rimosso fadeInUp e aggiunto FadeInZoomBlur */
 .home-welcome-animated {
-    color: #3b82f6; /* Azzurro ABC Primario */
+    color: #5ca8d9; /* Il celeste brillante che hai scelto */
     font-size: 2.2rem;
     font-weight: 700;
     text-align: center;
     margin: 10px 0 10px !important; 
     padding: 0;
     line-height: 1;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); /* Ombra più leggera per far risaltare il blu */
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); /* Ombra leggerissima per dare profondità */
     opacity: 0; 
     transform: translateY(0);
     animation: FadeInZoomBlur 1s ease-out forwards;
