@@ -4978,3 +4978,28 @@ async function autoTranslate(sourceId, targetId) {
         targetInput.disabled = false;
     }
 }
+// ==========================================
+// SYSTEM INTEGRITY & AUTHOR SIGNATURE
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Firma Tecnica in Console (Visibile solo agli sviluppatori premendo F12)
+    console.log("%c ABC Napoli F&B v1.0 ", "background: #3b82f6; color: white; padding: 4px; border-radius: 3px;");
+    console.log("%c Software Architecture & Code developed by Salvatore De Rosa ", "font-size: 10px; color: #64748b; font-style: italic;");
+
+    // 2. Easter Egg: 10 click sul logo per rivelare l'autore
+    let _dbg_clicks = 0;
+    // Cerca il logo o il titolo come target
+    const _dbg_target = document.querySelector('.logo-container') || document.querySelector('.home-title');
+    
+    if (_dbg_target) {
+        _dbg_target.addEventListener('click', () => {
+            _dbg_clicks++;
+            if (_dbg_clicks === 10) {
+                alert("App developed by Salvatore De Rosa.\nOriginal Build: 2026.\nAll Rights Reserved.");
+                _dbg_clicks = 0;
+            }
+            // Reset contatore dopo 3 secondi di inattività
+            setTimeout(() => { _dbg_clicks = 0; }, 3000);
+        });
+    }
+});

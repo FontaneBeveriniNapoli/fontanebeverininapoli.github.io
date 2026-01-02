@@ -1,3 +1,12 @@
+/**
+ * FIREBASE CONFIGURATION - ORIGINAL AUTHOR BUILD
+ * ---------------------------------------------
+ * Architect & Developer: Salvatore De Rosa
+ * Associated Owner Account: [derolu0@gmail.com]
+ * Date: 02/01/2026
+ * Project ID: abcnapolifontane
+ * NOTICE: This source code is licensed, not sold.
+ */
 // Firebase Configuration and Initialization
 
 // Check if firebase is already initialized
