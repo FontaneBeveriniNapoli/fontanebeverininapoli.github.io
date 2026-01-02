@@ -2,6 +2,7 @@
 // SISTEMA MULTILINGUA - AGGIUNTA INIZIALE
 // ==========================================
 
+let activityChartInstance = null;
 let currentLanguage = localStorage.getItem('app_language') || 'it';
 let currentDetailId = null;
 let currentDetailType = null;
@@ -1414,89 +1415,76 @@ function closeAdminAuth() {
 // NUOVA FUNZIONE DI LOGIN SICURA (SENZA SUPER_ADMINS)
 // ========================================================
 async function checkAdminAuth() {
-    const email = document.getElementById('admin-email').value;
-    const password = document.getElementById('admin-password').value;
+    const emailInput = document.getElementById('admin-email');
+    const passInput = document.getElementById('admin-password');
     const errorElement = document.getElementById('auth-error');
 
-    try {
-        // 1. Effettua il login normale
-        const userCredential = await window.firebaseSignIn(window.auth, email, password);
-        isAdminAuthenticated = true;
-        
-        // --- BLOCCO SBLOCCO MANUTENZIONE ---
-        localStorage.setItem('abc_admin_logged', 'true'); // Salva il flag Admin
-        
-        const maintScreen = document.getElementById('maintenance-mode');
-        if (maintScreen) maintScreen.style.display = 'none'; // Nascondi blocco
-        
-        document.body.style.overflow = 'auto'; // Riattiva scroll
-        initRemoteControl(); // Forza aggiornamento controlli
-        // -----------------------------------
+    // 1. Pulizia rigorosa dell'email (rimuove spazi invisibili prima e dopo)
+    const email = emailInput.value.trim();
+    const password = passInput.value;
 
-        // 2. RECUPERA LA LISTA DEI CAPI DAL DATABASE
-        let isSuperAdmin = false;
+    try {
+        // Login Firebase standard
+        await window.firebaseSignIn(window.auth, email, password);
         
+        isAdminAuthenticated = true;
+        localStorage.setItem('abc_admin_logged', 'true');
+        
+        // Sblocca interfaccia manutenzione se presente
+        const maintScreen = document.getElementById('maintenance-mode');
+        if (maintScreen) maintScreen.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        
+        // Forza l'inizializzazione dei controlli remoti
+        if (typeof initRemoteControl === 'function') initRemoteControl();
+
+        // 2. CONTROLLO RUOLI (Versione Robusta)
+        let isSuperAdmin = false;
         try {
-            // NOTA: Usiamo window.doc e window.getDoc perché li abbiamo caricati in index.html
-            // È più veloce e non richiede un nuovo import
             const docRef = window.doc(window.db, "impostazioni", "ruoli");
             const docSnap = await window.getDoc(docRef);
             
             if (docSnap.exists()) {
-                const listaCapi = docSnap.data().super_admins || [];
-                // Controlla se l'email è nella lista
-                if (listaCapi.map(e => e.toLowerCase()).includes(email.toLowerCase())) {
+                const data = docSnap.data();
+                // Normalizza la lista dal DB: tutto minuscolo e senza spazi
+                const dbAdmins = (data.super_admins || []).map(e => e.trim().toLowerCase());
+                const myEmail = email.toLowerCase();
+                
+                // DEBUG: Scrive nella console cosa sta succedendo (così capiamo se funziona)
+                console.log("LOGIN DEBUG - Email inserita:", myEmail);
+                console.log("LOGIN DEBUG - Lista DB:", dbAdmins);
+
+                if (dbAdmins.includes(myEmail)) {
                     isSuperAdmin = true;
                 }
             }
-        } catch (dbError) {
-            console.error("Errore lettura ruoli:", dbError);
+        } catch (e) {
+            console.error("Errore lettura ruoli DB:", e);
         }
 
-        // 3. Assegna il ruolo
+        // 3. Assegnazione Ruolo
         if (isSuperAdmin) {
-            currentUserRole = 'admin'; // O 'super_admin' se preferisci distinguerli
+            currentUserRole = 'admin';
             showToast('Benvenuto Amministratore (Accesso Completo)', 'success');
         } else {
-            currentUserRole = 'editor'; // O 'admin' semplice
+            currentUserRole = 'editor';
             showToast('Benvenuto Operatore (Accesso Modifica)', 'info');
         }
         
         closeAdminAuth();
-        // Apre il pannello admin corretto (assicurati che questa funzione esista o usa openAdminPanel)
+        
+        // Apre il pannello admin in modo sicuro
         if (typeof showAdminPanel === 'function') {
             showAdminPanel();
-        } else if (typeof openAdminPanel === 'function') {
-            openAdminPanel();
         } else {
-            document.getElementById('admin-panel').classList.add('active');
+             document.getElementById('admin-panel').style.display = 'flex';
         }
-        
-        if (adminAuthTimeout) {
-            clearTimeout(adminAuthTimeout);
-        }
-        
-        // Timeout sessione 30 minuti
-        adminAuthTimeout = setTimeout(() => {
-            isAdminAuthenticated = false;
-            currentUserRole = null;
-            localStorage.removeItem('abc_admin_logged'); // Rimuovi anche il flag locale
-            showToast('Sessione amministratore scaduta', 'info');
-            
-            if (typeof closeAdminPanel === 'function') closeAdminPanel();
-            
-            // Ricarica per riattivare eventuali blocchi manutenzione
-            window.location.reload();
-        }, 30 * 60 * 1000);
-        
-        logActivity(`Accesso effettuato come ${currentUserRole}`);
         
     } catch (error) {
+        console.error("Errore Auth:", error);
         errorElement.style.display = 'block';
         errorElement.textContent = "Email o password errati";
-        document.getElementById('admin-password').value = '';
-        document.getElementById('admin-password').focus();
-        console.error('Errore autenticazione:', error);
+        passInput.value = '';
     }
 }
 
@@ -3770,31 +3758,34 @@ function updateStorageInfo() {
         
         // Converti in KB
         const sizeKB = (totalSize / 1024).toFixed(2);
-        document.getElementById('storage-used').textContent = `${sizeKB} KB`;
+        const storageUsedEl = document.getElementById('storage-used');
+        if (storageUsedEl) storageUsedEl.textContent = `${sizeKB} KB`;
         
-        // Eventi pendenti
+        // Eventi pendenti - FIX: Usa l'ID corretto (pending-events-count)
         const pendingEvents = JSON.parse(localStorage.getItem('analytics_pending') || '[]');
-        document.getElementById('pending-events').textContent = pendingEvents.length;
+        const pendingEl = document.getElementById('pending-events-count');
+        if (pendingEl) pendingEl.textContent = pendingEvents.length;
         
         // Ultimo sync
         const lastSync = localStorage.getItem('analytics_last_sync');
-        if (lastSync) {
+        const lastSyncEl = document.getElementById('last-sync-time');
+        
+        if (lastSync && lastSyncEl) {
             const lastSyncDate = new Date(lastSync);
             const now = new Date();
             const diffMinutes = Math.floor((now - lastSyncDate) / (1000 * 60));
             
             if (diffMinutes < 1) {
-                document.getElementById('last-sync-time').textContent = 'Poco fa';
+                lastSyncEl.textContent = 'Poco fa';
             } else if (diffMinutes < 60) {
-                document.getElementById('last-sync-time').textContent = `${diffMinutes} minuti fa`;
+                lastSyncEl.textContent = `${diffMinutes} minuti fa`;
             } else {
-                document.getElementById('last-sync-time').textContent = 
-                    lastSyncDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                lastSyncEl.textContent = lastSyncDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
             }
         }
         
     } catch (error) {
-        console.error('Errore calcolo storage:', error);
+        console.warn('Errore non critico in updateStorageInfo:', error);
     }
 }
 
@@ -3806,27 +3797,30 @@ function updateActivityChart() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    // Dati di esempio per il grafico
-    const labels = [];
-    const data = [];
-    
-    // Genera dati per ultimi 7 giorni
-    for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        labels.push(date.toLocaleDateString('it-IT', { weekday: 'short' }));
-        
-        // Valore casuale per demo
-        data.push(Math.floor(Math.random() * 50) + 20);
+    // FIX: Distruggi grafico precedente se esiste per evitare l'errore "Canvas already in use"
+    // Questo usa la variabile che abbiamo messo in cima al file
+    if (typeof activityChartInstance !== 'undefined' && activityChartInstance) {
+        activityChartInstance.destroy();
+        activityChartInstance = null;
     }
     
-    // Crea grafico
-    new Chart(ctx, {
+    // Dati fake per il grafico (ultimi 7 giorni)
+    const labels = [];
+    const data = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        labels.push(d.toLocaleDateString('it-IT', { weekday: 'short' }));
+        data.push(Math.floor(Math.random() * 20) + 5); // Dati casuali
+    }
+    
+    // Crea il nuovo grafico salvandolo nella variabile globale
+    activityChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Eventi',
+                label: 'Attività',
                 data: data,
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -3835,29 +3829,13 @@ function updateActivityChart() {
                 tension: 0.4
             }]
         },
-        options: {
-            responsive: true,
+        options: { 
+            responsive: true, 
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
+            plugins: { legend: { display: false } },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    },
-                    ticks: {
-                        stepSize: 10
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { grid: { display: false } }
             }
         }
     });
