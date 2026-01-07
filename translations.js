@@ -4,7 +4,6 @@
 
 window.translations = {
     'it': {
-        // ... (tutto quello che c'era prima) ...
         'home_title': 'Fontane & Beverini',
         'home_subtitle': "L'acqua pubblica a portata di app.<br>Fontane e beverini della città di Napoli,<br>sempre nel palmo della tua mano.",
         'tab_home': 'Home',
@@ -45,14 +44,17 @@ window.translations = {
         'status_broken': 'Non Funzionante',
         'status_maintenance': 'In Manutenzione',
 
-        // <<< AGGIUNTO: LE NUOVE TRADUZIONI ITALIANE
         'label_year': 'Anno',
         'label_history': 'Storia',
+        
+        // --- SEZIONE QR CODE & MODALI ---
+        'btn_qr': 'Condividi App',
+        'qr_title': 'Fai scaricare l\'App',
+        'qr_subtitle': 'Inquadra il codice con la fotocamera per installare ABC Napoli.',
         'btn_close': 'Chiudi' 
     },
    
     'en': {
-        // ... (tutto quello che c'era prima) ...
         'home_title': 'Fountains & Taps',
         'home_subtitle': "Public water at your fingertips.<br>Discover Naples' monuments and drinking spots,<br>right from your phone.",
         'tab_home': 'Home',
@@ -93,9 +95,13 @@ window.translations = {
         'status_broken': 'Not Working',
         'status_maintenance': 'Maintenance',
 
-        // <<< AGGIUNTO: LE NUOVE TRADUZIONI INGLESI
         'label_year': 'Year',
         'label_history': 'History',
+        
+        // --- QR CODE & MODALS SECTION ---
+        'btn_qr': 'Share App',
+        'qr_title': 'Get the App',
+        'qr_subtitle': 'Scan this code with your camera to install ABC Napoli.',
         'btn_close': 'Close'
     }
 };

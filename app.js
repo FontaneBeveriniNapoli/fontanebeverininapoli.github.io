@@ -5009,3 +5009,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+// ==========================================
+// GESTIONE QR CODE (CONDIVISIONE)
+// ==========================================
+
+function openQRModal() {
+    // 1. Chiudi il menu laterale
+    const menu = document.getElementById('top-menu-modal');
+    if (menu) menu.style.display = 'none';
+    
+    // 2. Apri il popup
+    const qrModal = document.getElementById('qr-modal');
+    if (qrModal) {
+        qrModal.style.display = 'flex';
+        
+        // 3. Genera il QR Code (solo se vuoto o per rigenerarlo pulito)
+        const container = document.getElementById('qrcode-container');
+        container.innerHTML = ''; // Pulisce precedenti QR
+        
+        // URL UFFICIALE (Così funziona sempre, anche se lo apri da localhost)
+        const officialUrl = "https://fontanebeverininapoli.github.io/";
+        
+        new QRCode(container, {
+            text: officialUrl,
+            width: 180,
+            height: 180,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H // Alta correzione errori per scansione facile
+        });
+    }
+}
+
+function closeQRModal() {
+    const qrModal = document.getElementById('qr-modal');
+    if (qrModal) qrModal.style.display = 'none';
+}
+
+// Chiude cliccando fuori dal box
+document.addEventListener('click', function(event) {
+    const qrModal = document.getElementById('qr-modal');
+    if (event.target === qrModal) {
+        closeQRModal();
+    }
+});
