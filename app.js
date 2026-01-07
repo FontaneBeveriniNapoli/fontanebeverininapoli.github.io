@@ -4984,6 +4984,79 @@ async function autoTranslate(sourceId, targetId) {
         targetInput.disabled = false;
     }
 }
+// ============================================
+// GESTIONE INSTALLAZIONE (Android & iOS)
+// ============================================
+
+let deferredPrompt; 
+
+// 1. Rileva se è iOS
+function isIOS() {
+  return [
+    'iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'
+  ].includes(navigator.platform) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+}
+
+// 2. Rileva se l'app è già installata (Standalone)
+function isAppInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+// 3. Gestione Android (evento automatico)
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  
+  // Appare la SMART BAR per Android
+  showSmartInstallBanner();
+});
+
+// 4. Gestione iOS e Avvio
+document.addEventListener('DOMContentLoaded', () => {
+    // Se siamo su iOS e NON è installata -> Mostra la barra
+    if (isIOS() && !isAppInstalled()) {
+        showSmartInstallBanner();
+    }
+});
+
+// Funzione per mostrare la barra
+function showSmartInstallBanner() {
+    // Controllo extra: se l'utente l'ha chiusa in questa sessione, non mostrarla
+    if (sessionStorage.getItem('install_banner_closed')) return;
+
+    const banner = document.getElementById('smart-install-banner');
+    const btn = document.getElementById('smart-install-btn');
+    
+    if (banner && btn) {
+        banner.style.display = 'flex';
+        
+        // Assegna l'azione al click
+        btn.onclick = installAppLogic;
+    }
+}
+
+// Logica del Click su "Installa"
+async function installAppLogic() {
+    // CASO ANDROID
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`Esito installazione: ${outcome}`);
+        deferredPrompt = null;
+        document.getElementById('smart-install-banner').style.display = 'none';
+    } 
+    // CASO iOS
+    else if (isIOS()) {
+        // Apre il modale con le istruzioni che hai già creato
+        // Assicurati che in index.html esista il div con id="ios-install-modal"
+        const iosModal = document.getElementById('ios-install-modal');
+        if (iosModal) {
+            iosModal.style.display = 'flex';
+        } else {
+            alert("Per installare: Premi Condividi e poi 'Aggiungi alla schermata Home'");
+        }
+    }
+}
 // ==========================================
 // SYSTEM INTEGRITY & AUTHOR SIGNATURE
 // ==========================================
