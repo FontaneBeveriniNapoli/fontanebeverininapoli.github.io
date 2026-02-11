@@ -1069,6 +1069,17 @@ const EXIT_TOAST_TIMEOUT = 2000;
 let searchTimeout;
 let isAdminAuthenticated = false;
 let adminAuthTimeout = null;
+// --- NUOVO CODICE PER INSTALLAZIONE ---
+let deferredPrompt = null; // Variabile per salvare l'installazione
+
+// Cattura l'evento del browser (da mettere subito qui)
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Impedisce che il banner di Chrome esca da solo (brutto)
+    e.preventDefault();
+    // Ci salviamo l'evento per usarlo col nostro bel pulsante
+    deferredPrompt = e;
+    console.log('Evento installazione catturato!');
+});
 
 // ============================================
 // NUOVO: GESTIONE RUOLI AMMINISTRATORE
@@ -5100,42 +5111,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Funzione per mostrare la barra
 function showSmartInstallBanner() {
-    // Controllo extra: se l'utente l'ha chiusa in questa sessione, non mostrarla
-    if (sessionStorage.getItem('install_banner_closed')) return;
+    // 1. CONTROLLO CRUCIALE: L'app è già aperta come App (Standalone)?
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
+    if (isStandalone) {
+        console.log('App già in modalità standalone. Banner nascosto.');
+        return; // STOP! Non mostrare nulla se l'utente è già nell'app.
+    }
+
+    // 2. Controllo se siamo su iOS (iPhone)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    // 3. Se NON è iOS e il browser non ci ha dato il permesso di installare (deferredPrompt vuoto),
+    // significa che l'app è già installata o il browser non lo supporta.
+    if (!isIOS && !deferredPrompt) {
+        console.log('Installazione non disponibile o già effettuata.');
+        return; // STOP! Non mostrare nulla.
+    }
+
+    // 4. Se siamo arrivati qui, possiamo mostrare il banner
     const banner = document.getElementById('smart-install-banner');
     const btn = document.getElementById('smart-install-btn');
-    
+
     if (banner && btn) {
         banner.style.display = 'flex';
-        
-        // Assegna l'azione al click
-        btn.onclick = installAppLogic;
-    }
-}
 
-// Logica del Click su "Installa"
-async function installAppLogic() {
-    // CASO ANDROID
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`Esito installazione: ${outcome}`);
-        deferredPrompt = null;
-        document.getElementById('smart-install-banner').style.display = 'none';
-    } 
-    // CASO iOS
-    else if (isIOS()) {
-        // Apre il modale con le istruzioni che hai già creato
-        // Assicurati che in index.html esista il div con id="ios-install-modal"
-        const iosModal = document.getElementById('ios-install-modal');
-        if (iosModal) {
-            iosModal.style.display = 'flex';
-        } else {
-            alert("Per installare: Premi Condividi e poi 'Aggiungi alla schermata Home'");
-        }
+        // Definiamo cosa succede al click
+        btn.onclick = async () => {
+            if (deferredPrompt) {
+                // Android / PC: Lancia l'installazione vera
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log('Esito installazione:', outcome);
+                deferredPrompt = null;
+            } else if (isIOS) {
+                // iOS: Mostra istruzioni
+                alert("Per installare su iPhone: Premi il tasto Condividi (in basso) e scegli 'Aggiungi alla Schermata Home'.");
+            }
+            // Chiudi il banner dopo il click
+            banner.style.display = 'none';
+        };
     }
 }
 // ==========================================
