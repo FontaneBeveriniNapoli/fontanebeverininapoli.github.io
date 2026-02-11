@@ -5077,39 +5077,8 @@ async function autoTranslate(sourceId, targetId) {
     }
 }
 // ============================================
-// GESTIONE INSTALLAZIONE (Android & iOS)
+// FUNZIONE UNICA PER IL BANNER INSTALLAZIONE
 // ============================================
-
-let deferredPrompt; 
-
-// 1. Rileva se è iOS
-function isIOS() {
-  return [
-    'iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'
-  ].includes(navigator.platform) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
-}
-
-// 2. Rileva se l'app è già installata (Standalone)
-function isAppInstalled() {
-    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-}
-
-// 3. Gestione Android (evento automatico)
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  
-  // Appare la SMART BAR per Android
-  showSmartInstallBanner();
-});
-
-// 4. Gestione iOS e Avvio
-document.addEventListener('DOMContentLoaded', () => {
-    // Se siamo su iOS e NON è installata -> Mostra la barra
-    if (isIOS() && !isAppInstalled()) {
-        showSmartInstallBanner();
-    }
-});
 
 function showSmartInstallBanner() {
     // 1. CONTROLLO CRUCIALE: L'app è già aperta come App (Standalone)?
