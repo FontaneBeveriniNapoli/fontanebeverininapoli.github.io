@@ -1059,6 +1059,7 @@ let searchResults = [];
 let searchMarker = null;
 let map = null;
 let clusterGroup = null;
+let fontaneLayer = null; // <--- AGGIUNGI QUI
 let markers = new Map();
 
 // Variabili per la gestione del doppio tocco/uscita
@@ -2177,49 +2178,84 @@ function closeNavigationModal() {
 // Map Functions
 function initMappa() {
     if (!map) {
-        map = L.map('map').setView([40.8518, 14.2681], 13);
+        // Inizializza mappa centrata su Napoli
+        map = L.map('map', {
+            zoomControl: false, // Disabilita lo zoom standard (lo aggiungiamo noi posizionato meglio)
+            tap: !L.Browser.mobile // Fix per iOS
+        }).setView([40.8518, 14.2681], 13);
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
         }).addTo(map);
 
-        clusterGroup = L.markerClusterGroup();
+        // 1. Gruppo CLUSTER per i BEVERINI (si raggruppano)
+        clusterGroup = L.markerClusterGroup({
+            showCoverageOnHover: false,
+            maxClusterRadius: 40
+        });
         map.addLayer(clusterGroup);
 
+        // 2. Gruppo STANDARD per le FONTANE (fisse, niente raggruppamento)
+        fontaneLayer = L.layerGroup();
+        map.addLayer(fontaneLayer);
+
+        // Aggiungi controlli (zoom e pulsanti personalizzati)
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
         addMapControls();
         setupSearchAutocomplete();
     }
 
+    // Pulisci i layer esistenti prima di ridisegnare
     clusterGroup.clearLayers();
-    markers.clear();
+    if (fontaneLayer) fontaneLayer.clearLayers();
+    markers.clear(); // Resetta la mappa dei marker per la ricerca
 
-    appData.fontane.forEach(fontana => {
-        if (isValidCoordinate(fontana.latitudine, fontana.longitudine)) {
-            const marker = createMarker(fontana, 'fontana');
-            const markerId = `fontana-${fontana.id}`;
+    // --- CARICAMENTO FONTANE (Layer Fisso) ---
+    if (appData.fontane) {
+        appData.fontane.forEach(fontana => {
+            if (isValidCoordinate(fontana.latitudine, fontana.longitudine)) {
+                const marker = createMarker(fontana, 'fontana');
+                
+                // TRUCCO: Z-Index alto per farle stare SEMPRE sopra i beverini
+                marker.setZIndexOffset(1000); 
+                
+                const markerId = `fontana-${fontana.id}`;
+                markers.set(markerId, marker);
+                
+                // Aggiungi al layer fisso, NON al cluster
+                fontaneLayer.addLayer(marker); 
+            }
+        });
+    }
 
-            markers.set(markerId, marker);
-            clusterGroup.addLayer(marker);
-        }
-    });
+    // --- CARICAMENTO BEVERINI (Layer Cluster) ---
+    if (appData.beverini) {
+        appData.beverini.forEach(beverino => {
+            if (isValidCoordinate(beverino.latitudine, beverino.longitudine)) {
+                const marker = createMarker(beverino, 'beverino');
+                const markerId = `beverino-${beverino.id}`;
+                
+                markers.set(markerId, marker);
+                
+                // Aggiungi al cluster (si raggruppano se vicini)
+                clusterGroup.addLayer(marker); 
+            }
+        });
+    }
 
-    appData.beverini.forEach(beverino => {
-        if (isValidCoordinate(beverino.latitudine, beverino.longitudine)) {
-            const marker = createMarker(beverino, 'beverino');
-            const markerId = `beverino-${beverino.id}`;
-
-            markers.set(markerId, marker);
-            clusterGroup.addLayer(marker);
-        }
-    });
-
+    // Adatta lo zoom per mostrare TUTTO (Fontane + Beverini)
     if (markers.size > 0) {
-        const bounds = clusterGroup.getBounds();
+        // Creiamo un gruppo temporaneo solo per calcolare i confini totali
+        const group = L.featureGroup([clusterGroup, fontaneLayer]);
+        const bounds = group.getBounds();
         if (bounds.isValid()) {
             map.fitBounds(bounds.pad(0.1));
         }
     }
-
-    requestUserLocation();
+    
+    // Prova a localizzare l'utente all'avvio
+    requestUserLocation(true); // true = silenzioso (niente toast se fallisce all'avvio)
 }
 
 function createMarker(item, type) {
@@ -2246,69 +2282,96 @@ function isValidCoordinate(lat, lng) {
 }
 
 function getIconForType(type) {
+    // Definizione icone personalizzate
     const iconConfigs = {
         fontana: {
-            iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+            // Icona BLU per le Fontane
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
             iconSize: [25, 41],
             iconAnchor: [12, 41],
-            popupAnchor: [1, -34]
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
         },
         beverino: {
-            iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+            // Icona ARANCIONE per i Beverini
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
             iconSize: [25, 41],
             iconAnchor: [12, 41],
-            popupAnchor: [1, -34]
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
         }
     };
 
-    return L.icon(iconConfigs[type] || iconConfigs.fontana);
+    const config = iconConfigs[type] || iconConfigs.fontana;
+    return L.icon(config);
 }
 
 function addMapControls() {
+    // Crea contenitore controlli personalizzati
     const controlsContainer = document.createElement('div');
     controlsContainer.className = 'map-controls';
+    // Stile inline per posizionarlo sopra la mappa (in basso a sinistra o dove preferisci)
+    controlsContainer.style.cssText = "position: absolute; bottom: 20px; left: 10px; z-index: 999; display: flex; flex-direction: column; gap: 10px;";
     
+    // Pulsante "La mia posizione"
     const locateBtn = document.createElement('button');
     locateBtn.className = 'map-control-btn';
     locateBtn.innerHTML = '<i class="fas fa-location-arrow"></i>';
     locateBtn.title = 'Centra sulla mia posizione';
-    locateBtn.onclick = requestUserLocation;
+    locateBtn.style.cssText = "width: 40px; height: 40px; border-radius: 50%; background: white; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #333;";
+    locateBtn.onclick = () => requestUserLocation(false);
     
+    // Pulsante "Vedi Tutto"
     const fitBoundsBtn = document.createElement('button');
     fitBoundsBtn.className = 'map-control-btn';
     fitBoundsBtn.innerHTML = '<i class="fas fa-expand"></i>';
     fitBoundsBtn.title = 'Mostra tutti i punti';
+    fitBoundsBtn.style.cssText = "width: 40px; height: 40px; border-radius: 50%; background: white; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #333;";
     fitBoundsBtn.onclick = fitMapToMarkers;
     
     controlsContainer.appendChild(locateBtn);
     controlsContainer.appendChild(fitBoundsBtn);
-    document.getElementById('mappa-screen').appendChild(controlsContainer);
+    
+    // Aggiungi al contenitore della mappa
+    const mapContainer = document.getElementById('map');
+    if(mapContainer) {
+        mapContainer.appendChild(controlsContainer);
+    }
 }
 
-function requestUserLocation() {
+function requestUserLocation(silent = false) {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             position => {
                 const { latitude, longitude } = position.coords;
+                
+                // Rimuovi vecchio marker posizione se esiste
                 if (window.userMarker) {
                     map.removeLayer(window.userMarker);
                 }
+                
+                // Crea nuovo marker rosso per l'utente
                 window.userMarker = L.marker([latitude, longitude], {
                     icon: L.icon({
-                        iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
                         iconSize: [25, 41],
                         iconAnchor: [12, 41],
-                        popupAnchor: [1, -34]
+                        popupAnchor: [1, -34],
+                        shadowSize: [41, 41]
                     })
                 })
                 .addTo(map)
                 .bindPopup('La tua posizione');
 
                 map.setView([latitude, longitude], 16);
-                showToast('Posizione corrente visualizzata sulla mappa', 'success');
+                
+                if(!silent) showToast('Posizione trovata', 'success');
             },
             error => {
-                handleGeolocationError(error);
+                if(!silent) handleGeolocationError(error);
             },
             {
                 enableHighAccuracy: true,
@@ -2317,36 +2380,27 @@ function requestUserLocation() {
             }
         );
     } else {
-        showToast('Geolocalizzazione non supportata dal browser', 'error');
+        if(!silent) showToast('Geolocalizzazione non supportata', 'error');
     }
 }
 
 function handleGeolocationError(error) {
     let message = 'Errore nel rilevamento posizione';
-
     switch(error.code) {
-        case error.PERMISSION_DENIED:
-            message = 'Autorizzazione alla geolocalizzazione negata.';
-            break;
-        case error.POSITION_UNAVAILABLE:
-            message = 'Posizione non disponibile. Verifica che il GPS sia attivo.';
-            break;
-        case error.TIMEOUT:
-            message = 'Timeout nel rilevamento. Riprova in zona con migliore ricezione.';
-            break;
-        default:
-            message = `Errore: ${error.message}`;
+        case 1: message = 'Permesso negato per la posizione.'; break;
+        case 2: message = 'Posizione non disponibile.'; break;
+        case 3: message = 'Timeout rilevamento posizione.'; break;
     }
-
     showToast(message, 'error');
 }
 
 function fitMapToMarkers() {
     if (markers.size > 0) {
-        const bounds = clusterGroup.getBounds();
+        const group = L.featureGroup([clusterGroup, fontaneLayer]);
+        const bounds = group.getBounds();
         if (bounds.isValid()) {
             map.fitBounds(bounds.pad(0.1));
-            showToast('Vista adattata a tutti i punti', 'success');
+            // showToast('Vista adattata', 'success'); // Opzionale
         }
     } else {
         showToast('Nessun punto da mostrare', 'info');
