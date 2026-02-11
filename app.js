@@ -4526,6 +4526,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1000);
     
     logActivity('Applicazione avviata');
+// --- GESTIONE COOKIE & INSTALLAZIONE ---
+    setTimeout(() => {
+        // 1. Controlla se l'utente ha già deciso per i cookie
+        const cookieStatus = checkCookieConsent();
+        
+        // 2. Se checkCookieConsent() restituisce TRUE (ha già scelto),
+        // allora prova a mostrare il banner di installazione
+        if (cookieStatus === true) {
+            showSmartInstallBanner();
+        }
+        // Se restituisce FALSE, non fare nulla: ci penserà il banner privacy
+        // a lanciare l'installazione quando l'utente cliccherà "Accetta".
+    }, 2000)
 });
 
 // ===== SPLASH SCREEN MANAGEMENT (VERSIONE CON PROGRESS BAR) =====
@@ -5194,3 +5207,55 @@ document.addEventListener('click', function(event) {
         closeQRModal();
     }
 });
+// ==========================================
+// GESTIONE PRIVACY & COOKIE
+// ==========================================
+
+function checkCookieConsent() {
+    const consent = localStorage.getItem('cookie_consent');
+    
+    // Se l'utente NON ha mai scelto
+    if (!consent) {
+        // Mostra il banner Privacy
+        const banner = document.getElementById('cookie-banner');
+        if (banner) banner.style.display = 'flex';
+        
+        // Blocchiamo temporaneamente analytics (se presente)
+        if (window.Analytics) window.Analytics.setTrackingEnabled(false);
+        
+        return false; // Dice all'app: "Aspetta, non mostrare ancora l'installazione"
+    } 
+    
+    // Se ha già scelto, applica la scelta
+    if (consent === 'true') {
+        if (window.Analytics) window.Analytics.setTrackingEnabled(true);
+    } else {
+        if (window.Analytics) window.Analytics.setTrackingEnabled(false);
+    }
+    
+    return true; // Dice all'app: "Tutto ok, procedi pure"
+}
+
+function acceptCookies() {
+    localStorage.setItem('cookie_consent', 'true');
+    document.getElementById('cookie-banner').style.display = 'none';
+    
+    // Attiva analytics
+    if (window.Analytics) window.Analytics.setTrackingEnabled(true);
+    showToast('Preferenze salvate', 'success');
+    
+    // Ora prova a mostrare il banner installazione dopo 1 secondo
+    setTimeout(showSmartInstallBanner, 1000);
+}
+
+function rejectCookies() {
+    localStorage.setItem('cookie_consent', 'false');
+    document.getElementById('cookie-banner').style.display = 'none';
+    
+    // Disattiva analytics
+    if (window.Analytics) window.Analytics.setTrackingEnabled(false);
+    showToast('Cookie analitici rifiutati', 'info');
+    
+    // Ora prova a mostrare il banner installazione dopo 1 secondo
+    setTimeout(showSmartInstallBanner, 1000);
+}
