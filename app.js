@@ -2178,9 +2178,9 @@ function closeNavigationModal() {
 // Map Functions
 function initMappa() {
     if (!map) {
-        // Inizializza mappa centrata su Napoli
+        // Inizializza mappa (zoomControl: false è importante!)
         map = L.map('map', {
-            zoomControl: false, // Disabilita lo zoom standard (lo aggiungiamo noi posizionato meglio)
+            zoomControl: false, // Disabilita zoom standard
             tap: !L.Browser.mobile // Fix per iOS
         }).setView([40.8518, 14.2681], 13);
 
@@ -2189,64 +2189,54 @@ function initMappa() {
             maxZoom: 19
         }).addTo(map);
 
-        // 1. Gruppo CLUSTER per i BEVERINI (si raggruppano)
+        // 1. Gruppo CLUSTER per i BEVERINI
         clusterGroup = L.markerClusterGroup({
             showCoverageOnHover: false,
             maxClusterRadius: 40
         });
         map.addLayer(clusterGroup);
 
-        // 2. Gruppo STANDARD per le FONTANE (fisse, niente raggruppamento)
+        // 2. Gruppo STANDARD per le FONTANE
         fontaneLayer = L.layerGroup();
         map.addLayer(fontaneLayer);
 
-        // Aggiungi controlli (zoom e pulsanti personalizzati)
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
+        // Aggiungi controlli (incluso lo zoom personalizzato)
         addMapControls();
         setupSearchAutocomplete();
     }
 
-    // Pulisci i layer esistenti prima di ridisegnare
+    // Pulisci i layer
     clusterGroup.clearLayers();
     if (fontaneLayer) fontaneLayer.clearLayers();
-    markers.clear(); // Resetta la mappa dei marker per la ricerca
+    markers.clear();
 
-    // --- CARICAMENTO FONTANE (Layer Fisso) ---
+    // --- CARICAMENTO FONTANE ---
     if (appData.fontane) {
         appData.fontane.forEach(fontana => {
             if (isValidCoordinate(fontana.latitudine, fontana.longitudine)) {
                 const marker = createMarker(fontana, 'fontana');
-                
-                // TRUCCO: Z-Index alto per farle stare SEMPRE sopra i beverini
                 marker.setZIndexOffset(1000); 
-                
                 const markerId = `fontana-${fontana.id}`;
                 markers.set(markerId, marker);
-                
-                // Aggiungi al layer fisso, NON al cluster
                 fontaneLayer.addLayer(marker); 
             }
         });
     }
 
-    // --- CARICAMENTO BEVERINI (Layer Cluster) ---
+    // --- CARICAMENTO BEVERINI ---
     if (appData.beverini) {
         appData.beverini.forEach(beverino => {
             if (isValidCoordinate(beverino.latitudine, beverino.longitudine)) {
                 const marker = createMarker(beverino, 'beverino');
                 const markerId = `beverino-${beverino.id}`;
-                
                 markers.set(markerId, marker);
-                
-                // Aggiungi al cluster (si raggruppano se vicini)
                 clusterGroup.addLayer(marker); 
             }
         });
     }
 
-    // Adatta lo zoom per mostrare TUTTO (Fontane + Beverini)
+    // Adatta zoom
     if (markers.size > 0) {
-        // Creiamo un gruppo temporaneo solo per calcolare i confini totali
         const group = L.featureGroup([clusterGroup, fontaneLayer]);
         const bounds = group.getBounds();
         if (bounds.isValid()) {
@@ -2254,8 +2244,7 @@ function initMappa() {
         }
     }
     
-    // Prova a localizzare l'utente all'avvio
-    requestUserLocation(true); // true = silenzioso (niente toast se fallisce all'avvio)
+    requestUserLocation(true);
 }
 
 function createMarker(item, type) {
@@ -2282,10 +2271,8 @@ function isValidCoordinate(lat, lng) {
 }
 
 function getIconForType(type) {
-    // Definizione icone personalizzate
     const iconConfigs = {
         fontana: {
-            // Icona BLU per le Fontane
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
             iconSize: [25, 41],
@@ -2294,7 +2281,6 @@ function getIconForType(type) {
             shadowSize: [41, 41]
         },
         beverino: {
-            // Icona ARANCIONE per i Beverini
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
             iconSize: [25, 41],
@@ -2303,38 +2289,75 @@ function getIconForType(type) {
             shadowSize: [41, 41]
         }
     };
-
-    const config = iconConfigs[type] || iconConfigs.fontana;
-    return L.icon(config);
+    return L.icon(iconConfigs[type] || iconConfigs.fontana);
 }
 
 function addMapControls() {
-    // Crea contenitore controlli personalizzati
+    // Rimuovi vecchi controlli se esistono
+    const oldControls = document.querySelector('.map-controls');
+    if (oldControls) oldControls.remove();
+
     const controlsContainer = document.createElement('div');
     controlsContainer.className = 'map-controls';
-    // Stile inline per posizionarlo sopra la mappa (in basso a sinistra o dove preferisci)
-    controlsContainer.style.cssText = "position: absolute; bottom: 20px; left: 10px; z-index: 999; display: flex; flex-direction: column; gap: 10px;";
     
-    // Pulsante "La mia posizione"
+    // POSIZIONAMENTO: Colonna a destra, leggermente sotto il centro
+    controlsContainer.style.cssText = `
+        position: absolute; 
+        right: 10px; 
+        top: 60%; 
+        transform: translateY(-50%); 
+        z-index: 1000; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 15px;
+    `;
+    
+    // Stile dei bottoni
+    const btnStyle = `
+        width: 44px; 
+        height: 44px; 
+        border-radius: 50%; 
+        background: white; 
+        border: none; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2); 
+        cursor: pointer; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        font-size: 1.2rem; 
+        color: #444;
+    `;
+
+    // 1. Pulsante POSIZIONE
     const locateBtn = document.createElement('button');
-    locateBtn.className = 'map-control-btn';
-    locateBtn.innerHTML = '<i class="fas fa-location-arrow"></i>';
-    locateBtn.title = 'Centra sulla mia posizione';
-    locateBtn.style.cssText = "width: 40px; height: 40px; border-radius: 50%; background: white; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #333;";
+    locateBtn.innerHTML = '<i class="fas fa-location-arrow" style="color: #007bff;"></i>';
+    locateBtn.style.cssText = btnStyle;
     locateBtn.onclick = () => requestUserLocation(false);
     
-    // Pulsante "Vedi Tutto"
+    // 2. Pulsante VEDI TUTTO
     const fitBoundsBtn = document.createElement('button');
-    fitBoundsBtn.className = 'map-control-btn';
     fitBoundsBtn.innerHTML = '<i class="fas fa-expand"></i>';
-    fitBoundsBtn.title = 'Mostra tutti i punti';
-    fitBoundsBtn.style.cssText = "width: 40px; height: 40px; border-radius: 50%; background: white; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #333;";
+    fitBoundsBtn.style.cssText = btnStyle;
     fitBoundsBtn.onclick = fitMapToMarkers;
+
+    // 3. Pulsante ZOOM IN (+)
+    const zoomInBtn = document.createElement('button');
+    zoomInBtn.innerHTML = '<i class="fas fa-plus"></i>';
+    zoomInBtn.style.cssText = btnStyle;
+    zoomInBtn.style.marginTop = "10px"; // Separatore visivo
+    zoomInBtn.onclick = () => map.zoomIn();
+
+    // 4. Pulsante ZOOM OUT (-)
+    const zoomOutBtn = document.createElement('button');
+    zoomOutBtn.innerHTML = '<i class="fas fa-minus"></i>';
+    zoomOutBtn.style.cssText = btnStyle;
+    zoomOutBtn.onclick = () => map.zoomOut();
     
     controlsContainer.appendChild(locateBtn);
     controlsContainer.appendChild(fitBoundsBtn);
+    controlsContainer.appendChild(zoomInBtn);
+    controlsContainer.appendChild(zoomOutBtn);
     
-    // Aggiungi al contenitore della mappa
     const mapContainer = document.getElementById('map');
     if(mapContainer) {
         mapContainer.appendChild(controlsContainer);
@@ -2346,13 +2369,8 @@ function requestUserLocation(silent = false) {
         navigator.geolocation.getCurrentPosition(
             position => {
                 const { latitude, longitude } = position.coords;
+                if (window.userMarker) map.removeLayer(window.userMarker);
                 
-                // Rimuovi vecchio marker posizione se esiste
-                if (window.userMarker) {
-                    map.removeLayer(window.userMarker);
-                }
-                
-                // Crea nuovo marker rosso per l'utente
                 window.userMarker = L.marker([latitude, longitude], {
                     icon: L.icon({
                         iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -2362,22 +2380,13 @@ function requestUserLocation(silent = false) {
                         popupAnchor: [1, -34],
                         shadowSize: [41, 41]
                     })
-                })
-                .addTo(map)
-                .bindPopup('La tua posizione');
+                }).addTo(map).bindPopup('La tua posizione');
 
                 map.setView([latitude, longitude], 16);
-                
                 if(!silent) showToast('Posizione trovata', 'success');
             },
-            error => {
-                if(!silent) handleGeolocationError(error);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            }
+            error => { if(!silent) handleGeolocationError(error); },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     } else {
         if(!silent) showToast('Geolocalizzazione non supportata', 'error');
@@ -2385,11 +2394,11 @@ function requestUserLocation(silent = false) {
 }
 
 function handleGeolocationError(error) {
-    let message = 'Errore nel rilevamento posizione';
+    let message = 'Errore posizione';
     switch(error.code) {
-        case 1: message = 'Permesso negato per la posizione.'; break;
+        case 1: message = 'Permesso negato.'; break;
         case 2: message = 'Posizione non disponibile.'; break;
-        case 3: message = 'Timeout rilevamento posizione.'; break;
+        case 3: message = 'Timeout.'; break;
     }
     showToast(message, 'error');
 }
@@ -2398,10 +2407,7 @@ function fitMapToMarkers() {
     if (markers.size > 0) {
         const group = L.featureGroup([clusterGroup, fontaneLayer]);
         const bounds = group.getBounds();
-        if (bounds.isValid()) {
-            map.fitBounds(bounds.pad(0.1));
-            // showToast('Vista adattata', 'success'); // Opzionale
-        }
+        if (bounds.isValid()) map.fitBounds(bounds.pad(0.1));
     } else {
         showToast('Nessun punto da mostrare', 'info');
     }
