@@ -2405,9 +2405,16 @@ function handleGeolocationError(error) {
 
 function fitMapToMarkers() {
     if (markers.size > 0) {
-        const group = L.featureGroup([clusterGroup, fontaneLayer]);
-        const bounds = group.getBounds();
-        if (bounds.isValid()) map.fitBounds(bounds.pad(0.1));
+        // Prende tutti i marker salvati (sia fontane che beverini)
+        const allMarkers = Array.from(markers.values());
+        
+        // Crea un gruppo temporaneo solo per calcolare l'area totale
+        const group = L.featureGroup(allMarkers);
+        
+        // Calcola i confini e adatta lo zoom
+        if (group.getBounds().isValid()) {
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
     } else {
         showToast('Nessun punto da mostrare', 'info');
     }
