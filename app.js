@@ -2235,14 +2235,8 @@ function initMappa() {
         });
     }
 
-    // Adatta zoom
-    if (markers.size > 0) {
-        const group = L.featureGroup([clusterGroup, fontaneLayer]);
-        const bounds = group.getBounds();
-        if (bounds.isValid()) {
-            map.fitBounds(bounds.pad(0.1));
-        }
-    }
+   // Adatta zoom usando la funzione sicura
+    fitMapToMarkers();
     
     requestUserLocation(true);
 }
@@ -2404,16 +2398,23 @@ function handleGeolocationError(error) {
 }
 
 function fitMapToMarkers() {
+    // Se ci sono marker salvati
     if (markers.size > 0) {
-        // Prende tutti i marker salvati (sia fontane che beverini)
-        const allMarkers = Array.from(markers.values());
-        
-        // Crea un gruppo temporaneo solo per calcolare l'area totale
-        const group = L.featureGroup(allMarkers);
-        
-        // Calcola i confini e adatta lo zoom
-        if (group.getBounds().isValid()) {
-            map.fitBounds(group.getBounds().pad(0.1));
+        try {
+            // 1. Creiamo un "recinto" matematico vuoto
+            const bounds = L.latLngBounds();
+            
+            // 2. Per ogni marker, allarghiamo il recinto per includerlo
+            markers.forEach(marker => {
+                bounds.extend(marker.getLatLng());
+            });
+
+            // 3. Se il recinto è valido, diciamo alla mappa di guardare lì
+            if (bounds.isValid()) {
+                map.fitBounds(bounds.pad(0.1));
+            }
+        } catch (e) {
+            console.log("Errore trascurabile nello zoom:", e);
         }
     } else {
         showToast('Nessun punto da mostrare', 'info');
