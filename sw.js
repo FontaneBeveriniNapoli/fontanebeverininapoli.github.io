@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fontane-beverini-v5.5.6-EUROPA'; // VERSIONE AGGIORNATA
+const CACHE_NAME = 'fontane-beverini-v5.5.7-EUROPA'; // VERSIONE AGGIORNATA
 const STATIC_CACHE = 'static-v3';
 const DYNAMIC_CACHE = 'dynamic-v2';
 

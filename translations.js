@@ -51,6 +51,7 @@ window.translations = {
         'btn_qr': 'Condividi App',
         'qr_title': 'Fai scaricare l\'App',
         'qr_subtitle': 'Inquadra il codice con la fotocamera per installare ABC Napoli.',
+        'share_link_btn': 'Invia Link',
         'btn_close': 'Chiudi',
         // --- SMART INSTALL BANNER ---
         'install_title': 'Installa ABC Napoli',
@@ -106,6 +107,7 @@ window.translations = {
         'btn_qr': 'Share App',
         'qr_title': 'Get the App',
         'qr_subtitle': 'Scan this code with your camera to install ABC Napoli.',
+        'share_link_btn': 'Send Link',
         'btn_close': 'Close',
         // --- SMART INSTALL BANNER ---
         'install_title': 'Install ABC Napoli',

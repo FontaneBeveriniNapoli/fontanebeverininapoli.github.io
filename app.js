@@ -5244,3 +5244,26 @@ function rejectCookies() {
     // Ora prova a mostrare il banner installazione dopo 1 secondo
     setTimeout(showSmartInstallBanner, 1000);
 }
+// ==========================================
+// CONDIVISIONE LINK APP DA MODAL QR
+// ==========================================
+function shareAppLink() {
+    const shareData = {
+        title: 'ABC Napoli F&B',
+        text: 'Scarica l\'app ufficiale per trovare fontane e beverini a Napoli!',
+        url: 'https://fontanebeverininapoli.github.io/'
+    };
+
+    if (navigator.share) {
+        navigator.share(shareData)
+            .then(() => showToast('Grazie per aver condiviso!', 'success'))
+            .catch((err) => {
+                if (err.name !== 'AbortError') console.error('Errore condivisione:', err);
+            });
+    } else {
+        // Fallback per PC o browser non compatibili
+        navigator.clipboard.writeText(shareData.url).then(() => {
+            showToast('Link copiato negli appunti!', 'success');
+        });
+    }
+}
