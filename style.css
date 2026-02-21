@@ -17,26 +17,25 @@
     box-sizing: border-box;
 }
 
-html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%; /* Blocca l'altezza esattamente a quella dello schermo */
-    background-color: var(--background); /* Evita sfondi bianchi durante caricamenti */
-    
-    /* IL SEGRETO: Blocca lo scroll generale della pagina */
-    overflow: hidden !important; 
-    overscroll-behavior-y: none;
-    -webkit-tap-highlight-color: transparent;
+html {
+    background-color: var(--background); /* Maschera il rimbalzo */
+    height: 100dvh;
+    overscroll-behavior-y: none; /* Blocca l'effetto elastico nativo */
 }
 
 body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100dvh;
+    background-color: var(--background);
     font-family: 'Inter', sans-serif;
     color: var(--dark-text);
     line-height: 1.6;
-    /* Trasforma il body in un contenitore flessibile */
-    display: flex;
-    flex-direction: column;
+    overscroll-behavior-y: none; /* Sicurezza extra per iOS */
+    -webkit-tap-highlight-color: transparent;
+    
+    /* ABBIAMO RIMOSSO overflow: hidden e display: flex CHE ROMPEVANO TUTTO */
 }
 
 /* ===== SPLASH SCREEN STYLES (Invariato) ===== */
@@ -183,25 +182,20 @@ body {
 }
 
 .screen {
-    flex: 1; /* Il sistema calcola lo spazio al posto tuo */
+    display: none;
     width: 100%;
     position: relative;
+    min-height: calc(100vh - 120px); /* Il tuo vecchio calcolo che funzionava benissimo! */
     
-    /* ABILITA LO SCROLL INTERNO ALLA SCHERMATA */
-    overflow-y: auto; 
-    -webkit-overflow-scrolling: touch; /* Per lo scroll fluido su iOS */
+    /* LA SOLUZIONE PER LE NEWS: Aggiungiamo un cuscinetto in basso per non farle coprire dal menu */
+    padding-bottom: 90px; 
     
-    display: none; 
-    flex-direction: column;
-    
-    /* Mantiene il tuo effetto di transizione originale */
     opacity: 0;
     transition: opacity 0.3s ease;
 }
 
-/* Assicurati di avere anche questo per quando la schermata si attiva */
 .screen.active {
-    display: flex;
+    /* L'opacità la gestisce il tuo JavaScript, va bene così */
     opacity: 1;
 }
 
