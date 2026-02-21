@@ -706,8 +706,12 @@ body {
 .tab-icon {
     font-size: 1.1rem;
     transition: all 0.3s ease;
-    filter: grayscale(0.7);
     opacity: 0.8;
+}
+
+/* Mantieni i colori originali per le icone inattive (nessun filtro grigio) */
+.tab-btn:not(.active) .tab-icon {
+    filter: grayscale(0);
 }
 
 .tab-btn.active .tab-icon {
@@ -4214,26 +4218,4 @@ html, body {
     overflow: hidden !important; 
     overscroll-behavior: none !important;
     touch-action: none; /* Disabilita i trascinamenti fantasma sulla Home */
-}
-/* ==========================================
-   COLORI PERSONALIZZATI BARRA INFERIORE
-   ========================================== */
-
-/* Colore Blu per il pulsante Fontane */
-.tab-btn[data-target="fontane-screen"] i {
-    color: var(--primary-blue) !important;
-}
-
-/* Colore Viola per il pulsante Mappa */
-.tab-btn[data-target="mappa-screen"] i {
-    color: var(--primary-purple) !important;
-}
-
-/* Opzionale: Se vuoi colorare anche il testo sotto l'icona, aggiungi questo */
-.tab-btn[data-target="fontane-screen"] span {
-    color: var(--primary-blue) !important;
-}
-
-.tab-btn[data-target="mappa-screen"] span {
-    color: var(--primary-purple) !important;
 }
