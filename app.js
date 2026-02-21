@@ -1202,6 +1202,14 @@ function sendSystemNotification(title, body) {
 }
 
 async function loadFirebaseData(type) {
+    // >>> AGGIUNTA OFFLINE START <<<
+    if (!navigator.onLine) {
+        console.log(`[Offline] Rete assente, uso cache locale per ${type}`);
+        loadLocalData(type); // Carica in memoria i dati
+        return appData[type]; // Restituisce i dati per sbloccare la vista
+    }
+    // >>> AGGIUNTA OFFLINE END <<<
+
     try {
         const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         
@@ -1660,40 +1668,73 @@ function initializeScreenContent(screenId) {
 async function loadFontane() {
     const fontaneList = document.getElementById('fontane-list');
     if (!fontaneList) return;
-    
-    showSkeletonLoader(fontaneList);
-    
-    try {
-        await loadFirebaseData('fontane');
+
+    // 1. MOSTRA SUBITO I DATI LOCALI (Risolve il caricamento infinito)
+    const localData = loadLocalData('fontane');
+    if (localData && localData.length > 0) {
+        appData['fontane'] = localData; 
         renderGridItems(fontaneList, getFilteredItems('fontane'), 'fontana');
-    } catch (error) {
-        showToast('Errore nel caricamento fontane', 'error');
+    } else {
+        // Mostra il caricamento SOLO se l'app è vuota (es. primo avvio in assoluto)
+        showSkeletonLoader(fontaneList);
+    }
+
+    // 2. AGGIORNA IN BACKGROUND SE SEI ONLINE
+    if (navigator.onLine) {
+        try {
+            await loadFirebaseData('fontane');
+            renderGridItems(fontaneList, getFilteredItems('fontane'), 'fontana');
+        } catch (error) {
+            console.log("Offline o errore: mantengo i dati locali per le fontane.");
+            // Ho tolto il toast di errore qui per non infastidire l'utente se la rete cade un attimo
+        }
     }
 }
 
 async function loadBeverini() {
     const beveriniList = document.getElementById('beverini-list');
     if (!beveriniList) return;
-    
-    showSkeletonLoaderCompact(beveriniList);
-    
-    try {
-        await loadFirebaseData('beverini');
+
+    // 1. MOSTRA SUBITO I DATI LOCALI (Niente blocco offline)
+    const localData = loadLocalData('beverini');
+    if (localData && localData.length > 0) {
+        appData['beverini'] = localData;
         renderCompactItems(beveriniList, getFilteredItems('beverini'), 'beverino');
-    } catch (error) {
-        showToast('Errore nel caricamento beverini', 'error');
+    } else {
+        // Usa la tua funzione specifica per i beverini se non ci sono dati
+        showSkeletonLoaderCompact(beveriniList);
+    }
+
+    // 2. AGGIORNA IN BACKGROUND SE SEI ONLINE
+    if (navigator.onLine) {
+        try {
+            await loadFirebaseData('beverini');
+            renderCompactItems(beveriniList, getFilteredItems('beverini'), 'beverino');
+        } catch (error) {
+            console.log("Offline o errore: mantengo i dati locali per i beverini.");
+        }
     }
 }
 
 async function loadNews() {
     const newsList = document.getElementById('news-list');
     if (!newsList) return;
-    
-    try {
-        await loadFirebaseData('news');
-        renderNewsItems(newsList, appData.news);
-    } catch (error) {
-        showToast('Errore nel caricamento news', 'error');
+
+    // 1. MOSTRA SUBITO I DATI LOCALI (Evita il blocco offline)
+    const localData = loadLocalData('news');
+    if (localData && localData.length > 0) {
+        appData['news'] = localData;
+        renderNewsItems(newsList, appData['news']);
+    }
+
+    // 2. AGGIORNA IN BACKGROUND SE SEI ONLINE
+    if (navigator.onLine) {
+        try {
+            await loadFirebaseData('news');
+            renderNewsItems(newsList, appData['news']);
+        } catch (error) {
+            console.log("Offline o errore: mantengo i dati locali per le news.");
+        }
     }
 }
 
