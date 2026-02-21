@@ -4199,3 +4199,19 @@ textarea[id$="-en"]:focus {
     background: #f3f4f6;
     color: #4b5563;
 }
+/* ==========================================
+   FIX DEFINITIVO RIMBALZO E SPAZIO BIANCO
+   ========================================== */
+
+/* 1. Forza il colore di sfondo globale per nascondere i rimbalzi del browser */
+html, body {
+    background-color: #f8fafc !important; 
+    overscroll-behavior: none !important;
+}
+
+/* 2. Blocca fisicamente lo scroll SOLO sulla Home Page */
+#home-screen {
+    overflow: hidden !important; 
+    overscroll-behavior: none !important;
+    touch-action: none; /* Disabilita i trascinamenti fantasma sulla Home */
+}
