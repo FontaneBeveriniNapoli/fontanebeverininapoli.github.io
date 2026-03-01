@@ -1353,7 +1353,7 @@ function debounce(func, wait) {
 
 function getStatusText(stato) {
     const statusMap = {
-        'funzionante': 'Funzionante',
+        'funzionante': 'In Servizio',
         'non-funzionante': 'Non Funzionante',
         'manutenzione': 'In Manutenzione'
     };
