@@ -3496,108 +3496,113 @@ function handleFileImport(type, files) {
     reader.readAsArrayBuffer(file);
 }
 
+// --- IMPORTAZIONE FONTANE ---
 function importFontane(data) {
     const newFontane = data.map((item) => ({
         nome: item.Nome || item.nome || '',
-        nome_en: item.Nome_EN || item.nome_en || '', // LEGGE EXCEL INGLESE
+        nome_en: item.Nome_EN || item.nome_en || '', 
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
         anno: item.Anno || item.anno || '',
         descrizione: item.Descrizione || item.descrizione || '',
-        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // LEGGE EXCEL INGLESE
+        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', 
         storico: item.Storico || item.storico || '',
-        storico_en: item.Storico_EN || item.storico_en || '', // LEGGE EXCEL INGLESE
+        storico_en: item.Storico_EN || item.storico_en || '', 
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
         last_modified: new Date().toISOString()
     }));
 
-    let importedCount = 0;
-    
-    newFontane.forEach(async (fontana) => {
-        try {
-            const id = await saveFirebaseData('fontane', fontana);
-            appData.fontane.push({ id, ...fontana });
-            importedCount++;
-            
-            if (importedCount === newFontane.length) {
-                saveLocalData();
-                loadAdminFontane();
-                showToast(`${importedCount} fontane importate con successo!`, 'success');
+    // Funzione interna che le salva UNA ALLA VOLTA (Sequenziale)
+    (async () => {
+        let successCount = 0;
+        for (let i = 0; i < newFontane.length; i++) {
+            try {
+                // Aspetta che questa fontana sia salvata prima di passare alla prossima
+                const id = await saveFirebaseData('fontane', newFontane[i]);
+                appData.fontane.push({ id, ...newFontane[i] });
+                successCount++;
+            } catch (error) {
+                console.error('Errore import fontana:', error);
             }
-        } catch (error) {
-            console.error('Errore import fontana:', error);
         }
-    });
+        if (successCount > 0) {
+            saveLocalData();
+            loadAdminFontane();
+            showToast(`${successCount} fontane importate con successo!`, 'success');
+        }
+    })();
 
     return newFontane.length;
 }
 
+// --- IMPORTAZIONE BEVERINI ---
 function importBeverini(data) {
     const newBeverini = data.map((item) => ({
         nome: item.Nome || item.nome || '',
-        nome_en: item.Nome_EN || item.nome_en || '', // LEGGE EXCEL INGLESE
+        nome_en: item.Nome_EN || item.nome_en || '',
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
         descrizione: item.Descrizione || item.descrizione || '',
-        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // LEGGE EXCEL INGLESE
+        descrizione_en: item.Descrizione_EN || item.descrizione_en || '',
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
         last_modified: new Date().toISOString()
     }));
 
-    let importedCount = 0;
-    
-    newBeverini.forEach(async (beverino) => {
-        try {
-            const id = await saveFirebaseData('beverini', beverino);
-            appData.beverini.push({ id, ...beverino });
-            importedCount++;
-            
-            if (importedCount === newBeverini.length) {
-                saveLocalData();
-                loadAdminBeverini();
-                showToast(`${importedCount} beverini importati con successo!`, 'success');
+    (async () => {
+        let successCount = 0;
+        for (let i = 0; i < newBeverini.length; i++) {
+            try {
+                const id = await saveFirebaseData('beverini', newBeverini[i]);
+                appData.beverini.push({ id, ...newBeverini[i] });
+                successCount++;
+            } catch (error) {
+                console.error('Errore import beverino:', error);
             }
-        } catch (error) {
-            console.error('Errore import beverino:', error);
         }
-    });
+        if (successCount > 0) {
+            saveLocalData();
+            loadAdminBeverini();
+            showToast(`${successCount} beverini importati con successo!`, 'success');
+        }
+    })();
 
     return newBeverini.length;
 }
 
+// --- IMPORTAZIONE NEWS ---
 function importNews(data) {
     const newNews = data.map((item) => ({
         titolo: item.Titolo || item.titolo || '',
-        titolo_en: item.Titolo_EN || item.titolo_en || '', // LEGGE EXCEL INGLESE
+        titolo_en: item.Titolo_EN || item.titolo_en || '',
         contenuto: item.Contenuto || item.contenuto || '',
-        contenuto_en: item.Contenuto_EN || item.contenuto_en || '', // LEGGE EXCEL INGLESE
+        contenuto_en: item.Contenuto_EN || item.contenuto_en || '',
         data: item.Data || item.data || new Date().toISOString().split('T')[0],
         categoria: item.Categoria || item.categoria || '',
         fonte: item.Fonte || item.fonte || '',
         last_modified: new Date().toISOString()
     }));
 
-    let importedCount = 0;
-    
-    newNews.forEach(async (news) => {
-        try {
-            const id = await saveFirebaseData('news', news);
-            appData.news.push({ id, ...news });
-            importedCount++;
-            
-            if (importedCount === newNews.length) {
-                saveLocalData();
-                loadAdminNews();
-                showToast(`${importedCount} news importate con successo!`, 'success');
+    (async () => {
+        let successCount = 0;
+        for (let i = 0; i < newNews.length; i++) {
+            try {
+                const id = await saveFirebaseData('news', newNews[i]);
+                appData.news.push({ id, ...newNews[i] });
+                successCount++;
+            } catch (error) {
+                console.error('Errore import news:', error);
             }
-        } catch (error) {
-            console.error('Errore import news:', error);
         }
-    });
+        if (successCount > 0) {
+            saveLocalData();
+            loadAdminNews();
+            showToast(`${successCount} news importate con successo!`, 'success');
+        }
+    })();
 
     return newNews.length;
 }
