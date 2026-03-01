@@ -1404,16 +1404,17 @@ function updateActivityLog() {
 }
 
 function updateDashboardStats() {
+    // Statistiche Fontane
     document.getElementById('total-fontane').textContent = appData.fontane.length;
     document.getElementById('fontane-funzionanti').textContent = appData.fontane.filter(f => f.stato === 'funzionante').length;
-    document.getElementById('fontane-non-funzionanti').textContent = appData.fontane.filter(f => f.stato === 'non-funzionante').length;
     document.getElementById('fontane-manutenzione').textContent = appData.fontane.filter(f => f.stato === 'manutenzione').length;
     
+    // Statistiche Beverini
     document.getElementById('total-beverini').textContent = appData.beverini.length;
     document.getElementById('beverini-funzionanti').textContent = appData.beverini.filter(b => b.stato === 'funzionante').length;
-    document.getElementById('beverini-non-funzionanti').textContent = appData.beverini.filter(b => b.stato === 'non-funzionante').length;
     document.getElementById('beverini-manutenzione').textContent = appData.beverini.filter(b => b.stato === 'manutenzione').length;
     
+    // Statistiche News
     document.getElementById('total-news').textContent = appData.news.length;
 }
 
