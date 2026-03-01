@@ -29,7 +29,7 @@ window.translations = {
         'legend_item_position': 'La tua posizione',
 
         'filter_all': 'Tutti',
-        'filter_working': 'Funzionanti',
+        'filter_working': 'In Servizio',
         'filter_broken': 'Non Funzionanti',
         'filter_maintenance': 'In Manutenzione',
 
@@ -40,7 +40,7 @@ window.translations = {
         'details_btn': 'Dettagli',
         'switch_lang_label': 'Switch to English',
         
-        'status_working': 'Funzionante',
+        'status_working': 'In Servizio',
         'status_broken': 'Non Funzionante',
         'status_maintenance': 'In Manutenzione',
 
@@ -85,7 +85,7 @@ window.translations = {
         'legend_item_position': 'Your position',
 
         'filter_all': 'All',
-        'filter_working': 'Working',
+        'filter_working': 'In Service',
         'filter_broken': 'Not Working',
         'filter_maintenance': 'Maintenance',
 
@@ -96,7 +96,7 @@ window.translations = {
         'details_btn': 'Details',
         'switch_lang_label': 'Passa a Italiano',
 
-        'status_working': 'Working',
+        'status_working': 'In Service',
         'status_broken': 'Not Working',
         'status_maintenance': 'Maintenance',
 
