@@ -1275,21 +1275,43 @@ async function loadFirebaseData(type) {
     }
 }
 
+function trovaNumeroDisponibile(type) {
+    const items = appData[type] || [];
+    // Estraiamo tutti gli ID che sono numeri puri e li ordiniamo
+    const numeriOccupati = items
+        .map(item => parseInt(item.id))
+        .filter(num => !isNaN(num))
+        .sort((a, b) => a - b);
+
+    let nuovoNumero = 1;
+    for (let i = 0; i < numeriOccupati.length; i++) {
+        if (numeriOccupati[i] === nuovoNumero) {
+            nuovoNumero++;
+        } else if (numeriOccupati[i] > nuovoNumero) {
+            break; // Abbiamo trovato un buco nella sequenza!
+        }
+    }
+    return nuovoNumero.toString();
+}
+
+// MODIFICATA: Salva su Firebase usando la numerazione intelligente
 async function saveFirebaseData(type, item, id = null) {
     try {
-        const { doc, setDoc, updateDoc, collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        
+        const { doc, setDoc, updateDoc, collection } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         let savedId;
         const collectionName = COLLECTIONS[type.toUpperCase()];
         
         if (id) {
+            // Se stiamo modificando un elemento esistente, aggiorniamo e basta
             const docRef = doc(window.db, collectionName, id);
             await updateDoc(docRef, item);
             savedId = id;
         } else {
-            const dataRef = collection(window.db, collectionName);
-            const newDoc = await addDoc(dataRef, item);
-            savedId = newDoc.id;
+            // SE È NUOVO: Calcoliamo il numero progressivo pulito!
+            const nuovoId = trovaNumeroDisponibile(type);
+            const docRef = doc(window.db, collectionName, nuovoId);
+            await setDoc(docRef, item); // Usiamo setDoc invece di addDoc per forzare l'ID
+            savedId = nuovoId;
         }
         
         return savedId;
@@ -2300,7 +2322,7 @@ function createMarker(item, type) {
 
     marker.bindPopup(`
         <div class="leaflet-popup-content">
-            <div class="popup-title">${item.nome}</div>
+            <div class="popup-title"><span style="color: var(--primary-color); font-weight: 900; margin-right: 5px;">#${item.id}</span> ${item.nome}</div>
             <p>${item.indirizzo}</p>
             <p>Stato: ${getStatusText(item.stato)}</p>
             <button class="popup-btn" onclick="showDetail('${item.id}', '${type}')">Dettagli</button>
@@ -2814,7 +2836,7 @@ async function loadAdminFontane() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td style="text-align: center;">${checkboxHtml}</td>
-            <td>${fontana.id}</td>
+            <td style="font-weight: bold; color: var(--primary-color);">#${fontana.id}</td>
             <td>${fontana.nome}</td>
             <td>${fontana.indirizzo}</td>
             <td><span class="item-status status-${fontana.stato}">${getStatusText(fontana.stato)}</span></td>
@@ -3002,7 +3024,7 @@ async function loadAdminBeverini() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td style="text-align: center;">${checkboxHtml}</td>
-            <td>${beverino.id}</td>
+            <td style="font-weight: bold; color: var(--primary-color);">#${beverino.id}</td>
             <td>${beverino.nome}</td>
             <td>${beverino.indirizzo}</td>
             <td><span class="item-status status-${beverino.stato}">${getStatusText(beverino.stato)}</span></td>
@@ -3172,7 +3194,7 @@ async function loadAdminNews() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td style="text-align: center;">${checkboxHtml}</td>
-            <td>${news.id}</td>
+            <td style="font-weight: bold; color: var(--primary-color);">#${news.id}</td>
             <td>${news.titolo}</td>
             <td>${formatDate(news.data)}</td>
             <td>${news.categoria}</td>
