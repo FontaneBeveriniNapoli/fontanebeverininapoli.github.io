@@ -27,6 +27,25 @@ if (!window.firebaseInitialized) {
     // Initialize Firebase (Standard method if library is loaded via script tag)
     if (typeof firebase !== 'undefined') {
         firebase.initializeApp(firebaseConfig);
+        
+        // ==========================================
+        // MAGIA ZERO-COSTI: ATTIVAZIONE DATABASE OFFLINE
+        // ==========================================
+        if (firebase.firestore) {
+            firebase.firestore().enablePersistence({ synchronizeTabs: true })
+                .then(() => {
+                    console.log("✅ Database Offline attivato con successo! Consumi azzerati.");
+                })
+                .catch((err) => {
+                    if (err.code == 'failed-precondition') {
+                        console.warn("⚠️ Più schede aperte, offline attivo solo nella principale.");
+                    } else if (err.code == 'unimplemented') {
+                        console.warn("⚠️ Il browser non supporta il database offline.");
+                    }
+                });
+        }
+        // ==========================================
+
         // Tenta di inizializzare analytics se la libreria è presente
         if (firebase.analytics) {
             firebase.analytics();
