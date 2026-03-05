@@ -1555,6 +1555,7 @@ function showAdminPanel() {
     loadAdminBeverini();
     loadAdminNews();
     updateDashboardStats();
+    loadAdminTickets();
     
     // ✅ CARICA ANALYTICS DASHBOARD
     loadAnalyticsDashboard();
@@ -2134,8 +2135,8 @@ function showDetail(id, type) {
                 <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
                     <i class="fas fa-location-arrow"></i> ${t.navigate_btn || 'Naviga'}
                 </button>
-                <button class="detail-action-btn" onclick="openReportScreen('${(getLocalizedText(item, 'nome') || '').replace(/'/g, "\\\\'")}')" style="background: #ef4444; color: white;">
-                    <i class="fas fa-bullhorn"></i> ${t.report_btn || 'Segnala'}
+                <button class="detail-action-btn" onclick="apriTicket('${item.id}', '${(getLocalizedText(item, 'nome') || '').replace(/'/g, "\\\\'")}', '${type}')" style="background: #ef4444; color: white;">
+                    <i class="fas fa-exclamation-triangle"></i> ${t.report_btn || 'Segnala'}
                 </button>
             </div>
         </div>
@@ -4924,32 +4925,66 @@ function goToAdmin() {
     }
 }
 
-// FUNZIONE CHE PREPARA L'EMAIL
-function inviaSegnalazione(event) {
-    event.preventDefault();
+// ==========================================
+// SISTEMA TICKET E ANTI-SPAM (15 GIORNI)
+// ==========================================
 
-    const tipo = document.getElementById('report-type').value;
-    const descrizione = document.getElementById('report-desc').value;
+// 1. Funzione che prepara la schermata quando clicchi "Segnala"
+function apriTicket(id, nome, type) {
+    document.getElementById('ticket-item-id').value = id;
+    document.getElementById('ticket-item-name').value = nome;
+    document.getElementById('ticket-item-type').value = type;
+    document.getElementById('ticket-item-display').textContent = `Segnalazione per: ${nome}`;
+    document.getElementById('ticket-problema').value = ""; // Resetta la tendina
     
-    // INDIRIZZO EMAIL UFFICIALE
-    const emailDestinatario = "fontane.beverini@abc.napoli.it"; 
-    
-    const oggetto = encodeURIComponent(`Segnalazione App ABC: ${tipo}`);
-    
-    // Costruiamo il corpo della mail in modo ordinato
-    const corpo = encodeURIComponent(
-        `Gentile Assistenza ABC Napoli,\n\n` +
-        `Vorrei segnalare il seguente problema:\n` +
-        `TIPO: ${tipo}\n\n` +
-        `DESCRIZIONE E POSIZIONE:\n${descrizione}\n\n` +
-        `---\nInviato dall'App ABC Napoli F&B`
-    );
+    showScreen('segnalazioni-screen');
+}
 
-    // Apre l'app di posta predefinita
-    window.location.href = `mailto:${emailDestinatario}?subject=${oggetto}&body=${corpo}`;
+// 2. Funzione che invia il ticket a Firebase e attiva lo scudo
+async function inviaSegnalazioneTicket(event) {
+    event.preventDefault(); // Evita il ricaricamento della pagina
+
+    const id = document.getElementById('ticket-item-id').value;
+    const nome = document.getElementById('ticket-item-name').value;
+    const type = document.getElementById('ticket-item-type').value;
+    const problema = document.getElementById('ticket-problema').value;
+
+    // --- CONTROLLO ANTI-SPAM (15 giorni) ---
+    const spamKey = `ticket_${type}_${id}`;
+    const lastTicketDate = localStorage.getItem(spamKey);
     
-    // Opzionale: svuota il campo descrizione dopo l'invio
-    // document.getElementById('report-desc').value = ''; 
+    if (lastTicketDate) {
+        const giorniPassati = (new Date().getTime() - new Date(lastTicketDate).getTime()) / (1000 * 3600 * 24);
+        if (giorniPassati < 15) {
+            showToast(`Hai già segnalato questa fontana. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
+            return; // Ferma tutto, non invia niente al server!
+        }
+    }
+
+    // --- SALVATAGGIO SU FIREBASE ---
+    const nuovoTicket = {
+        itemId: id,
+        itemNome: nome,
+        itemType: type,
+        problema: problema,
+        dataSegnalazione: new Date().toISOString(),
+        stato: 'aperto'
+    };
+
+    try {
+        const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const dataRef = collection(window.db, 'tickets'); // Crea una nuova cartella 'tickets' nel database
+        await addDoc(dataRef, nuovoTicket);
+
+        // --- REGISTRAZIONE ANTI-SPAM LOCALE ---
+        localStorage.setItem(spamKey, new Date().toISOString());
+
+        showToast('Segnalazione inviata con successo! Grazie.', 'success');
+        goBack(); // Torna alla schermata precedente
+    } catch (error) {
+        console.error("Errore nell'invio del ticket:", error);
+        showToast('Errore di connessione. Riprova più tardi.', 'error');
+    }
 }
 
 // ==========================================
@@ -5335,4 +5370,77 @@ function shareAppLink() {
             showToast('Link copiato negli appunti!', 'success');
         });
     }
+}
+// ==========================================
+// GESTIONE TICKETS ADMIN
+// ==========================================
+
+async function loadAdminTickets() {
+    const tbody = document.getElementById('tickets-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Caricamento in corso...</td></tr>';
+
+    try {
+        const { collection, getDocs, query, orderBy } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const ticketsRef = collection(window.db, 'tickets');
+        const q = query(ticketsRef, orderBy("dataSegnalazione", "desc"));
+        const snapshot = await getDocs(q);
+        
+        tbody.innerHTML = '';
+        let openTickets = 0;
+
+        snapshot.forEach(doc => {
+            const t = doc.data();
+            const id = doc.id;
+            if (t.stato === 'aperto') openTickets++;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${new Date(t.dataSegnalazione).toLocaleDateString('it-IT')}</td>
+                <td><strong>#${t.itemId}</strong><br>${t.itemNome}</td>
+                <td>${t.problema}</td>
+                <td><span class="item-status status-${t.stato === 'aperto' ? 'broken' : 'working'}">${t.stato.toUpperCase()}</span></td>
+                <td class="admin-item-actions">
+                    ${t.stato === 'aperto' ? 
+                        `<button class="edit-btn" onclick="chiudiTicket('${id}')">Risolto</button>` : 
+                        `<i class="fas fa-check-circle" style="color:green"></i>`
+                    }
+                    <button class="delete-btn" onclick="eliminaTicket('${id}')">Elimina</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        // Aggiorna il badge con il numero di ticket aperti
+        const badge = document.getElementById('ticket-badge-count');
+        if (badge) {
+            badge.textContent = openTickets;
+            badge.style.display = openTickets > 0 ? 'inline-block' : 'none';
+        }
+
+    } catch (error) {
+        console.error("Errore caricamento ticket:", error);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Errore nel caricamento.</td></tr>';
+    }
+}
+
+async function chiudiTicket(id) {
+    if (!confirm("Segnare questa segnalazione come risolta?")) return;
+    try {
+        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        await updateDoc(doc(window.db, 'tickets', id), { stato: 'chiuso' });
+        showToast("Ticket chiuso con successo", "success");
+        loadAdminTickets();
+    } catch (e) { showToast("Errore durante l'aggiornamento", "error"); }
+}
+
+async function eliminaTicket(id) {
+    if (!confirm("Eliminare definitivamente questo ticket?")) return;
+    try {
+        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        await deleteDoc(doc(window.db, 'tickets', id));
+        showToast("Ticket eliminato", "success");
+        loadAdminTickets();
+    } catch (e) { showToast("Errore durante l'eliminazione", "error"); }
 }
