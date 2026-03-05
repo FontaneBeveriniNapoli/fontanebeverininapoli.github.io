@@ -2135,7 +2135,7 @@ function showDetail(id, type) {
                 <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
                     <i class="fas fa-location-arrow"></i> ${t.navigate_btn || 'Naviga'}
                 </button>
-                <button class="detail-action-btn" onclick="apriTicket('${item.id}', '${(getLocalizedText(item, 'nome') || '').replace(/'/g, "\\\\'")}', '${type}')" style="background: #ef4444; color: white;">
+                <button class="detail-action-btn" onclick="apriTicket('${item.id}', '${(getLocalizedText(item, 'nome') || '').replace(/'/g, "\\\\'").replace(/"/g, '&quot;')}', '${type}')" style="background: #ef4444; color: white;">
                     <i class="fas fa-exclamation-triangle"></i> ${t.report_btn || 'Segnala'}
                 </button>
             </div>
@@ -5372,7 +5372,7 @@ function shareAppLink() {
     }
 }
 // ==========================================
-// GESTIONE TICKETS E ANTI-SPAM (VERSIONE SICURA)
+// GESTIONE TICKETS E ANTI-SPAM (CORRETTO V9)
 // ==========================================
 
 function apriTicket(id, nome, type) {
@@ -5397,29 +5397,28 @@ async function inviaSegnalazioneTicket(event) {
     if (lastTicketDate) {
         const giorniPassati = (new Date().getTime() - new Date(lastTicketDate).getTime()) / (1000 * 3600 * 24);
         if (giorniPassati < 15) {
-            showToast(`Hai già segnalato questa fontana. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
+            showToast(`Hai già segnalato questo punto. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
             return;
         }
     }
 
-    const nuovoTicket = {
-        itemId: id,
-        itemNome: nome,
-        itemType: type,
-        problema: problema,
-        dataSegnalazione: new Date().toISOString(),
-        stato: 'aperto'
-    };
-
     try {
-        // Usa il db diretto senza importazioni esterne
-        await window.db.collection('tickets').add(nuovoTicket);
+        const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        await addDoc(collection(window.db, 'tickets'), {
+            itemId: id,
+            itemNome: nome,
+            itemType: type,
+            problema: problema,
+            dataSegnalazione: new Date().toISOString(),
+            stato: 'aperto'
+        });
+
         localStorage.setItem(spamKey, new Date().toISOString());
-        showToast('Segnalazione inviata con successo! Grazie.', 'success');
+        showToast('Segnalazione inviata con successo!', 'success');
         goBack();
     } catch (error) {
-        console.error("Errore nell'invio del ticket:", error);
-        showToast('Errore di connessione. Riprova più tardi.', 'error');
+        console.error("Errore invio:", error);
+        showToast('Errore di connessione. Riprova.', 'error');
     }
 }
 
@@ -5428,26 +5427,27 @@ async function inviaSegnalazioneTicket(event) {
 async function loadAdminTickets() {
     const tbody = document.getElementById('tickets-table-body');
     if (!tbody) return;
-    
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Caricamento in corso...</td></tr>';
 
     try {
-        // Usa il db diretto senza importazioni esterne
-        const snapshot = await window.db.collection('tickets').orderBy("dataSegnalazione", "desc").get();
+        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const snapshot = await getDocs(collection(window.db, 'tickets'));
         
+        // Ordiniamo in Javascript per aggirare il blocco di Firebase
+        let tickets = [];
+        snapshot.forEach(doc => tickets.push({ id: doc.id, ...doc.data() }));
+        tickets.sort((a, b) => new Date(b.dataSegnalazione) - new Date(a.dataSegnalazione));
+
         tbody.innerHTML = '';
         let openTickets = 0;
 
-        if (snapshot.empty) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Nessun ticket presente in memoria.</td></tr>';
+        if (tickets.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Nessun ticket presente.</td></tr>';
             return;
         }
 
-        snapshot.forEach(doc => {
-            const t = doc.data();
-            const id = doc.id;
+        tickets.forEach(t => {
             if (t.stato === 'aperto') openTickets++;
-
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${new Date(t.dataSegnalazione).toLocaleDateString('it-IT')}</td>
@@ -5456,10 +5456,10 @@ async function loadAdminTickets() {
                 <td><span class="item-status status-${t.stato === 'aperto' ? 'broken' : 'working'}">${t.stato.toUpperCase()}</span></td>
                 <td class="admin-item-actions">
                     ${t.stato === 'aperto' ? 
-                        `<button class="edit-btn" onclick="chiudiTicket('${id}')">Risolto</button>` : 
+                        `<button class="edit-btn" onclick="chiudiTicket('${t.id}')">Risolto</button>` : 
                         `<i class="fas fa-check-circle" style="color:green"></i>`
                     }
-                    <button class="delete-btn" onclick="eliminaTicket('${id}')">Elimina</button>
+                    <button class="delete-btn" onclick="eliminaTicket('${t.id}')">Elimina</button>
                 </td>
             `;
             tbody.appendChild(row);
@@ -5470,27 +5470,28 @@ async function loadAdminTickets() {
             badge.textContent = openTickets;
             badge.style.display = openTickets > 0 ? 'inline-block' : 'none';
         }
-
     } catch (error) {
-        console.error("Errore caricamento ticket:", error);
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Errore di caricamento (Controlla connessione).</td></tr>';
+        console.error("Errore Admin:", error);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Errore server (permessi o connessione).</td></tr>';
     }
 }
 
 async function chiudiTicket(id) {
     if (!confirm("Segnare questa segnalazione come risolta?")) return;
     try {
-        await window.db.collection('tickets').doc(id).update({ stato: 'chiuso' });
-        showToast("Ticket chiuso con successo", "success");
+        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        await updateDoc(doc(window.db, 'tickets', id), { stato: 'chiuso' });
+        showToast("Ticket risolto!", "success");
         loadAdminTickets();
-    } catch (e) { showToast("Errore durante l'aggiornamento", "error"); }
+    } catch (e) { showToast("Errore di aggiornamento", "error"); }
 }
 
 async function eliminaTicket(id) {
     if (!confirm("Eliminare definitivamente questo ticket?")) return;
     try {
-        await window.db.collection('tickets').doc(id).delete();
+        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        await deleteDoc(doc(window.db, 'tickets', id));
         showToast("Ticket eliminato", "success");
         loadAdminTickets();
-    } catch (e) { showToast("Errore durante l'eliminazione", "error"); }
+    } catch (e) { showToast("Errore eliminazione", "error"); }
 }
