@@ -4068,7 +4068,7 @@ function exportAnalyticsData() {
 function refreshAnalyticsDashboard() {
     loadAnalyticsDashboard();
     updatePerformanceMetrics();
-    showToast('Dashboard analytics aggiornata', 'success');
+    //showToast('Dashboard analytics aggiornata', 'success');
     
     if (window.Analytics) {
         window.Analytics.trackEvent('analytics', 'dashboard_refreshed');
@@ -5381,53 +5381,89 @@ function shareAppLink() {
     }
 }
 // ==========================================
-// GESTIONE TICKETS E ANTI-SPAM (CORRETTO V9)
+// GESTIONE TICKETS E ANTI-SPAM (V10 - PROFESSIONALE)
 // ==========================================
+
+let isSubmittingTicket = false; // Variabile per il blocco istantaneo (Debounce)
 
 function apriTicket(id, nome, type) {
     document.getElementById('ticket-item-id').value = id;
     document.getElementById('ticket-item-name').value = nome;
     document.getElementById('ticket-item-type').value = type;
     document.getElementById('ticket-item-display').textContent = `Segnalazione per: ${nome}`;
-    document.getElementById('ticket-problema').value = ""; 
     showScreen('segnalazioni-screen');
 }
 
-async function inviaSegnalazioneTicket(event) {
-    event.preventDefault();
+async function inviaSegnalazioneTicket(problema) {
+    // 1. BLOCCO ISTANTANEO (Evita il doppio click accidentale)
+    if (isSubmittingTicket) return;
+    isSubmittingTicket = true;
+
     const id = document.getElementById('ticket-item-id').value;
     const nome = document.getElementById('ticket-item-name').value;
     const type = document.getElementById('ticket-item-type').value;
-    const problema = document.getElementById('ticket-problema').value;
 
+    // 2. BLOCCO LOCALE 15 GIORNI (Cooldown per singolo telefono)
     const spamKey = `ticket_${type}_${id}`;
     const lastTicketDate = localStorage.getItem(spamKey);
     
     if (lastTicketDate) {
         const giorniPassati = (new Date().getTime() - new Date(lastTicketDate).getTime()) / (1000 * 3600 * 24);
         if (giorniPassati < 15) {
-            showToast(`Hai già segnalato questo punto. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
+            showToast(`Hai già segnalato questo problema. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
+            isSubmittingTicket = false;
             return;
         }
     }
 
     try {
-        const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        await addDoc(collection(window.db, 'tickets'), {
-            itemId: id,
-            itemNome: nome,
-            itemType: type,
-            problema: problema,
-            dataSegnalazione: new Date().toISOString(),
-            stato: 'aperto'
-        });
+        const { collection, getDocs, query, where, addDoc, updateDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const ticketsRef = collection(window.db, 'tickets');
+        
+        // 3. LOGICA FIREBASE: Cerchiamo se c'è già un ticket APERTO per questa fontana
+        const q = query(ticketsRef, where("itemId", "==", id), where("stato", "==", "aperto"));
+        const snapshot = await getDocs(q);
 
-        localStorage.setItem(spamKey, new Date().toISOString());
-        showToast('Segnalazione inviata con successo!', 'success');
-        goBack();
+        const dataCorrente = new Date().toISOString();
+
+        if (snapshot.empty) {
+            // NESSUN TICKET APERTO: Ne creiamo uno nuovo (Contatore a 1)
+            await addDoc(ticketsRef, {
+                itemId: id,
+                itemNome: nome,
+                itemType: type,
+                problema: problema, // Salviamo "Guasto idrico" o "Vandalizzato"
+                dataPrimaSegnalazione: dataCorrente,
+                dataUltimaSegnalazione: dataCorrente,
+                contatore: 1,
+                stato: 'aperto'
+            });
+            showToast('Segnalazione inviata con successo!', 'success'); // Toast Verde
+        } else {
+            // C'È GIÀ UN TICKET: Non creiamo doppioni, aggiungiamo +1 e aggiorniamo la data
+            const ticketDoc = snapshot.docs[0];
+            const ticketData = ticketDoc.data();
+            
+            await updateDoc(doc(window.db, 'tickets', ticketDoc.id), {
+                contatore: (ticketData.contatore || 1) + 1,
+                dataUltimaSegnalazione: dataCorrente
+            });
+            showToast('Segnalazione aggiunta a un ticket già esistente.', 'info'); // Toast Azzurro
+        }
+
+        // Attiviamo lo scudo di 15 giorni sul telefono
+        localStorage.setItem(spamKey, dataCorrente);
+        
+        // Aspettiamo 1 secondo prima di tornare indietro per far leggere il toast all'utente
+        setTimeout(() => {
+            isSubmittingTicket = false;
+            goBack();
+        }, 1200);
+
     } catch (error) {
         console.error("Errore invio:", error);
         showToast('Errore di connessione. Riprova.', 'error');
+        isSubmittingTicket = false;
     }
 }
 
@@ -5436,71 +5472,105 @@ async function inviaSegnalazioneTicket(event) {
 async function loadAdminTickets() {
     const tbody = document.getElementById('tickets-table-body');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Caricamento in corso...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Caricamento in corso...</td></tr>';
 
     try {
         const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         const snapshot = await getDocs(collection(window.db, 'tickets'));
         
-        // Ordiniamo in Javascript per aggirare il blocco di Firebase
         let tickets = [];
-        snapshot.forEach(doc => tickets.push({ id: doc.id, ...doc.data() }));
-        tickets.sort((a, b) => new Date(b.dataSegnalazione) - new Date(a.dataSegnalazione));
+        let statReali = 0;
+        let statSegnalazioni = 0;
+        let statRisolti = 0;
+        let statAttesa = 0;
+
+        snapshot.forEach(doc => {
+            const t = doc.data();
+            tickets.push({ id: doc.id, ...t });
+            
+            // Calcolo Statistiche Dashboard (I 4 Riquadri)
+            statReali++; // Ogni documento su Firebase è un intervento reale
+            statSegnalazioni += (t.contatore || 1); // Somma matematica di tutti i click degli utenti
+            
+            if (t.stato === 'aperto') {
+                statAttesa++;
+            } else {
+                statRisolti++;
+            }
+        });
+
+        // Aggiorna i riquadri HTML in cima alla pagina Admin
+        const badgeReali = document.getElementById('ticket-reali');
+        if (badgeReali) badgeReali.textContent = statReali;
+        
+        const badgeSegnalazioni = document.getElementById('ticket-segnalazioni');
+        if (badgeSegnalazioni) badgeSegnalazioni.textContent = statSegnalazioni;
+        
+        const badgeRisolti = document.getElementById('ticket-risolti');
+        if (badgeRisolti) badgeRisolti.textContent = statRisolti;
+        
+        const badgeAttesa = document.getElementById('ticket-attesa');
+        if (badgeAttesa) badgeAttesa.textContent = statAttesa;
+
+        // Estraiamo solo i ticket aperti e LI ORDINIAMO PER PRIORITÀ (Contatore più alto = in cima)
+        let openTicketsList = tickets.filter(t => t.stato === 'aperto');
+        openTicketsList.sort((a, b) => (b.contatore || 1) - (a.contatore || 1));
 
         tbody.innerHTML = '';
-        let openTickets = 0;
 
-        if (tickets.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Nessun ticket presente.</td></tr>';
+        if (openTicketsList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Nessun intervento in attesa. Ottimo lavoro!</td></tr>';
             return;
         }
 
-        tickets.forEach(t => {
-            if (t.stato === 'aperto') openTickets++;
+        openTicketsList.forEach(t => {
             const row = document.createElement('tr');
+            // Usiamo l'ultima data di segnalazione per capire quanto è recente
+            const dataFormat = new Date(t.dataUltimaSegnalazione || t.dataPrimaSegnalazione).toLocaleDateString('it-IT');
+            
             row.innerHTML = `
-                <td>${new Date(t.dataSegnalazione).toLocaleDateString('it-IT')}</td>
+                <td>${dataFormat}</td>
                 <td><strong>#${t.itemId}</strong><br>${t.itemNome}</td>
                 <td>${t.problema}</td>
-                <td><span class="item-status status-${t.stato === 'aperto' ? 'broken' : 'working'}">${t.stato.toUpperCase()}</span></td>
+                <td><span style="background:#ef4444; color:white; padding:4px 10px; border-radius:12px; font-weight:bold; font-size:1.1rem;">${t.contatore || 1}</span></td>
+                <td><span class="item-status status-broken">IN ATTESA</span></td>
                 <td class="admin-item-actions">
-                    ${t.stato === 'aperto' ? 
-                        `<button class="edit-btn" onclick="chiudiTicket('${t.id}')">Risolto</button>` : 
-                        `<i class="fas fa-check-circle" style="color:green"></i>`
-                    }
-                    <button class="delete-btn" onclick="eliminaTicket('${t.id}')">Elimina</button>
+                    <button class="edit-btn" onclick="chiudiTicket('${t.id}')"><i class="fas fa-wrench"></i> Risolto</button>
                 </td>
             `;
             tbody.appendChild(row);
         });
 
-        const badge = document.getElementById('ticket-badge-count');
-        if (badge) {
-            badge.textContent = openTickets;
-            badge.style.display = openTickets > 0 ? 'inline-block' : 'none';
-        }
     } catch (error) {
         console.error("Errore Admin:", error);
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Errore server (permessi o connessione).</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Errore server (permessi o connessione).</td></tr>';
     }
 }
 
 async function chiudiTicket(id) {
-    if (!confirm("Segnare questa segnalazione come risolta?")) return;
+    // 5. CHIUSURA OBBLIGATORIA CON NOTA E STORICO
+    const nota = prompt("Inserisci la nota di intervento per chiudere questo ticket (OBBLIGATORIO):");
+    
+    if (nota === null) return; // L'operatore ha cliccato Annulla sul prompt
+    if (nota.trim() === "") {
+        alert("ERRORE: La nota di intervento è obbligatoria per segnare il ticket come risolto.");
+        return; // Blocca la chiusura se la nota è vuota
+    }
+
     try {
         const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        await updateDoc(doc(window.db, 'tickets', id), { stato: 'chiuso' });
-        showToast("Ticket risolto!", "success");
-        loadAdminTickets();
-    } catch (e) { showToast("Errore di aggiornamento", "error"); }
-}
-
-async function eliminaTicket(id) {
-    if (!confirm("Eliminare definitivamente questo ticket?")) return;
-    try {
-        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        await deleteDoc(doc(window.db, 'tickets', id));
-        showToast("Ticket eliminato", "success");
-        loadAdminTickets();
-    } catch (e) { showToast("Errore eliminazione", "error"); }
+        
+        // Aggiorna il database chiudendo il ticket e salvando i dati dell'operatore
+        await updateDoc(doc(window.db, 'tickets', id), { 
+            stato: 'chiuso',
+            notaIntervento: nota,
+            operatore: currentUserRole || 'Admin', // Salva chi ha fatto l'operazione
+            dataChiusura: new Date().toISOString()
+        });
+        
+        showToast("Ticket risolto e archiviato nello storico!", "success");
+        loadAdminTickets(); // Ricarica la tabella e i riquadri
+    } catch (e) { 
+        showToast("Errore di aggiornamento", "error"); 
+    }
 }
