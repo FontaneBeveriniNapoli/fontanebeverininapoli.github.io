@@ -5372,8 +5372,58 @@ function shareAppLink() {
     }
 }
 // ==========================================
-// GESTIONE TICKETS ADMIN
+// GESTIONE TICKETS E ANTI-SPAM (VERSIONE SICURA)
 // ==========================================
+
+function apriTicket(id, nome, type) {
+    document.getElementById('ticket-item-id').value = id;
+    document.getElementById('ticket-item-name').value = nome;
+    document.getElementById('ticket-item-type').value = type;
+    document.getElementById('ticket-item-display').textContent = `Segnalazione per: ${nome}`;
+    document.getElementById('ticket-problema').value = ""; 
+    showScreen('segnalazioni-screen');
+}
+
+async function inviaSegnalazioneTicket(event) {
+    event.preventDefault();
+    const id = document.getElementById('ticket-item-id').value;
+    const nome = document.getElementById('ticket-item-name').value;
+    const type = document.getElementById('ticket-item-type').value;
+    const problema = document.getElementById('ticket-problema').value;
+
+    const spamKey = `ticket_${type}_${id}`;
+    const lastTicketDate = localStorage.getItem(spamKey);
+    
+    if (lastTicketDate) {
+        const giorniPassati = (new Date().getTime() - new Date(lastTicketDate).getTime()) / (1000 * 3600 * 24);
+        if (giorniPassati < 15) {
+            showToast(`Hai già segnalato questa fontana. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
+            return;
+        }
+    }
+
+    const nuovoTicket = {
+        itemId: id,
+        itemNome: nome,
+        itemType: type,
+        problema: problema,
+        dataSegnalazione: new Date().toISOString(),
+        stato: 'aperto'
+    };
+
+    try {
+        // Usa il db diretto senza importazioni esterne
+        await window.db.collection('tickets').add(nuovoTicket);
+        localStorage.setItem(spamKey, new Date().toISOString());
+        showToast('Segnalazione inviata con successo! Grazie.', 'success');
+        goBack();
+    } catch (error) {
+        console.error("Errore nell'invio del ticket:", error);
+        showToast('Errore di connessione. Riprova più tardi.', 'error');
+    }
+}
+
+// --- ADMIN TICKETS ---
 
 async function loadAdminTickets() {
     const tbody = document.getElementById('tickets-table-body');
@@ -5382,13 +5432,16 @@ async function loadAdminTickets() {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Caricamento in corso...</td></tr>';
 
     try {
-        const { collection, getDocs, query, orderBy } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        const ticketsRef = collection(window.db, 'tickets');
-        const q = query(ticketsRef, orderBy("dataSegnalazione", "desc"));
-        const snapshot = await getDocs(q);
+        // Usa il db diretto senza importazioni esterne
+        const snapshot = await window.db.collection('tickets').orderBy("dataSegnalazione", "desc").get();
         
         tbody.innerHTML = '';
         let openTickets = 0;
+
+        if (snapshot.empty) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Nessun ticket presente in memoria.</td></tr>';
+            return;
+        }
 
         snapshot.forEach(doc => {
             const t = doc.data();
@@ -5412,7 +5465,6 @@ async function loadAdminTickets() {
             tbody.appendChild(row);
         });
 
-        // Aggiorna il badge con il numero di ticket aperti
         const badge = document.getElementById('ticket-badge-count');
         if (badge) {
             badge.textContent = openTickets;
@@ -5421,15 +5473,14 @@ async function loadAdminTickets() {
 
     } catch (error) {
         console.error("Errore caricamento ticket:", error);
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Errore nel caricamento.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Errore di caricamento (Controlla connessione).</td></tr>';
     }
 }
 
 async function chiudiTicket(id) {
     if (!confirm("Segnare questa segnalazione come risolta?")) return;
     try {
-        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        await updateDoc(doc(window.db, 'tickets', id), { stato: 'chiuso' });
+        await window.db.collection('tickets').doc(id).update({ stato: 'chiuso' });
         showToast("Ticket chiuso con successo", "success");
         loadAdminTickets();
     } catch (e) { showToast("Errore durante l'aggiornamento", "error"); }
@@ -5438,8 +5489,7 @@ async function chiudiTicket(id) {
 async function eliminaTicket(id) {
     if (!confirm("Eliminare definitivamente questo ticket?")) return;
     try {
-        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        await deleteDoc(doc(window.db, 'tickets', id));
+        await window.db.collection('tickets').doc(id).delete();
         showToast("Ticket eliminato", "success");
         loadAdminTickets();
     } catch (e) { showToast("Errore durante l'eliminazione", "error"); }

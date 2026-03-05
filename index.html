@@ -1069,39 +1069,41 @@
             </div>
         </div>
         <div id="segnalazioni-screen" class="screen">
-            <div class="app-header" style="background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));">
-                <button class="back-btn" onclick="showScreen('home-screen')">
+            <div class="app-header" style="background-color: #ef4444; color: white;">
+                <button class="back-btn" onclick="showScreen('home-screen')" style="color: white;">
                     <i class="fas fa-arrow-left"></i>
                 </button>
-                <div class="screen-title">Segnala Problema</div>
+                <div class="screen-title" style="color: white;">Segnala Problema</div>
             </div>
     
-            <div class="content-area" style="padding: 20px;">
-                <div style="background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                    <h3 id="ticket-item-display" style="margin-top: 0; color: var(--primary-color); font-size: 1.2rem; margin-bottom: 15px; text-align: center;">
-                       </h3>
+            <div class="content-area" style="padding: 20px; background-color: #f3f4f6;">
+                <div style="background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            
+                    <h3 id="ticket-item-display" style="margin-top: 0; color: #ef4444; font-size: 1.2rem; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #fee2e2; padding-bottom: 10px;">
+                        Seleziona un problema
+                    </h3>
 
                     <form id="ticket-form" onsubmit="inviaSegnalazioneTicket(event)">
-                
-                        <input type="hidden" id="ticket-item-id" value="">
-                        <input type="hidden" id="ticket-item-name" value="">
-                        <input type="hidden" id="ticket-item-type" value="">
+                        <input type="hidden" id="ticket-item-id">
+                        <input type="hidden" id="ticket-item-name">
+                        <input type="hidden" id="ticket-item-type">
 
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Tipo di Problema</label>
-                        <select id="ticket-problema" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; font-size: 1rem; background: #f9f9f9;">
-                            <option value="" disabled selected>Scegli un'opzione...</option>
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Di cosa si tratta?</label>
+                
+                        <select id="ticket-problema" required style="width: 100%; padding: 15px; border: 2px solid #ef4444; border-radius: 8px; margin-bottom: 25px; font-size: 1.1rem; background: #fff; color: #333; outline: none;">
+                            <option value="" disabled selected>Seleziona un'opzione...</option>
                             <option value="Guasto idrico">💧 Guasto (Non esce acqua / Perde)</option>
                             <option value="Vandalismo">🔨 Vandalizzato / Danneggiato</option>
                             <option value="Sporcizia">🗑️ Molto sporco / Ostruito</option>
                         </select>
 
-                        <button type="submit" style="width: 100%; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                            <i class="fas fa-paper-plane"></i> Invia Segnalazione
+                        <button type="submit" style="width: 100%; padding: 18px; background-color: #ef4444; color: white; border: none; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.4);">
+                            <i class="fas fa-paper-plane"></i> INVIA SEGNALAZIONE
                         </button>
                     </form>
-            
-                    <p style="font-size: 0.85rem; color: #666; margin-top: 15px; text-align: center; line-height: 1.4;">
-                        <i class="fas fa-shield-alt"></i> Sistema Anti-Spam attivo. Le segnalazioni multiple per lo stesso punto vengono raggruppate.
+
+                    <p style="font-size: 0.85rem; color: #666; margin-top: 20px; text-align: center;">
+                        <i class="fas fa-shield-alt"></i> Sistema Anti-Spam (15 giorni) attivo.
                     </p>
                 </div>
             </div>
