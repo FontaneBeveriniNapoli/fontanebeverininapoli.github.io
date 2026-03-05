@@ -1388,15 +1388,24 @@ function formatDate(dateString) {
 }
 
 // ======================================================
-// MODIFICA: Funzione showToast() con output visivo rimosso
+// GESTIONE MESSAGGI A SCHERMO (TOAST)
 // ======================================================
 function showToast(message, type = 'info', duration = 3000) {
-    console.log(`[Toast Disabled] Tipo: ${type}, Messaggio: ${message}`);
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    
+    // Resetta le classi e imposta il colore/tipo
+    toast.className = 'toast ' + type;
+    toast.textContent = message;
+    
+    // Mostra il toast
+    toast.classList.add('show');
+    
+    // Nascondi dopo X secondi
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, duration);
 }
-// ======================================================
-// FINE MODIFICA
-// ======================================================
-
 function logActivity(description) {
     const timestamp = new Date().toLocaleString('it-IT');
     activityLog.unshift({ description, timestamp });
