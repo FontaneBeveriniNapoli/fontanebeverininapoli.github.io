@@ -1264,7 +1264,7 @@ async function loadFirebaseData(type) {
         appData[type] = data;
         saveLocalData();
         
-        showToast(`${data.length} ${type} caricati da Firebase`, 'success');
+        //showToast(`${data.length} ${type} caricati da Firebase`, 'success');
         logActivity(`${data.length} ${type} caricati da Firebase`);
         
         return data;
