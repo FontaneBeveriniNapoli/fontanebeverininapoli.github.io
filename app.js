@@ -4938,7 +4938,6 @@ function goToAdmin() {
 // SISTEMA TICKET V10 (ANTI-SPAM, VELOCITÀ E RAGGRUPPAMENTO)
 // ==========================================
 
-let isSubmittingTicket = false; // Variabile per bloccare il doppio click veloce
 
 // 1. Funzione che prepara la schermata quando clicchi "Segnala"
 function apriTicket(id, nome, type) {
