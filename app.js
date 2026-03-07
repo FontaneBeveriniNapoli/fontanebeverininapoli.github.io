@@ -206,6 +206,9 @@ function initRemoteControl() {
             // 2. GESTIONE PRIVACY (KILL SWITCH)
             const isTrackingAllowed = data.analyticsEnabled !== false; 
             
+            // *** AGGIUNTO: Salva lo stato precedente di Analytics ***
+            const oldTrackingState = window.Analytics ? window.Analytics.config.trackingEnabled : null;
+            
             // Aggiorna interruttore admin
             const privacyBtn = document.getElementById('global-privacy-toggle');
             const privacyText = document.getElementById('privacy-status-text');
@@ -225,6 +228,34 @@ function initRemoteControl() {
                         privacyText.textContent = "🛡️ PROTEZIONE ATTIVA (No Dati)";
                         privacyText.style.color = "#ef4444";
                     }
+                }
+            }
+            
+            // *** NUOVO: Aggiorna la dashboard Analytics se lo stato è cambiato ***
+            if (oldTrackingState !== null && oldTrackingState !== isTrackingAllowed) {
+                console.log('📊 Stato Analytics cambiato, aggiorno dashboard');
+                
+                // Aggiorna anche l'indicatore nella dashboard Analytics
+                const statusIndicator = document.getElementById('analytics-status-indicator');
+                const statusText = document.getElementById('analytics-status-text');
+                
+                if (statusIndicator && statusText) {
+                    if (isTrackingAllowed) {
+                        statusIndicator.classList.remove('inactive');
+                        statusIndicator.classList.add('active');
+                        statusText.textContent = 'Analytics Attivo';
+                        statusText.className = 'status-active';
+                    } else {
+                        statusIndicator.classList.remove('active');
+                        statusIndicator.classList.add('inactive');
+                        statusText.textContent = 'Analytics Disattivo';
+                        statusText.className = 'status-inactive';
+                    }
+                }
+                
+                // Se la funzione refreshAnalyticsDashboard esiste, chiamala
+                if (typeof refreshAnalyticsDashboard === 'function') {
+                    setTimeout(refreshAnalyticsDashboard, 300);
                 }
             }
         }
@@ -3755,14 +3786,41 @@ function loadAnalyticsDashboard() {
     // Aggiorna tabelle
     updateAnalyticsTables();
     
-    // Aggiorna info sessione
-    updateSessionInfo();
-    
     // Aggiorna info storage
     updateStorageInfo();
     
     // Aggiorna grafico
     updateActivityChart();
+    
+    // *** AGGIUNTO: Prima aggiorna Session ID e User ID ***
+    updateSessionInfo();
+    
+    // *** AGGIUNTO: Poi aggiorna l'indicatore di stato dall'interruttore ***
+    updateAnalyticsStatusFromConfig();
+}
+
+// *** NUOVA FUNZIONE DA AGGIUNGERE (dopo loadAnalyticsDashboard) ***
+function updateAnalyticsStatusFromConfig() {
+    const globalToggle = document.getElementById('global-privacy-toggle');
+    if (!globalToggle) return;
+    
+    const isEnabled = globalToggle.checked;
+    const statusIndicator = document.getElementById('analytics-status-indicator');
+    const statusText = document.getElementById('analytics-status-text');
+    
+    if (statusIndicator && statusText) {
+        if (isEnabled) {
+            statusIndicator.classList.remove('inactive');
+            statusIndicator.classList.add('active');
+            statusText.textContent = 'Analytics Attivo';
+            statusText.className = 'status-active';
+        } else {
+            statusIndicator.classList.remove('active');
+            statusIndicator.classList.add('inactive');
+            statusText.textContent = 'Analytics Disattivo';
+            statusText.className = 'status-inactive';
+        }
+    }
 }
 
 // Aggiorna statistiche
@@ -3913,23 +3971,20 @@ function updateEventsTable() {
 // Aggiorna info sessione
 function updateSessionInfo() {
     if (window.Analytics && window.Analytics.session) {
-        document.getElementById('current-session-id').textContent = 
-            window.Analytics.session.id.substring(0, 15) + '...';
-        
-        const statusIndicator = document.getElementById('analytics-status-indicator');
-        const statusText = document.getElementById('analytics-status-text');
-        
-        if (window.Analytics.config.trackingEnabled) {
-            statusIndicator.classList.remove('inactive');
-            statusIndicator.classList.add('active');
-            statusText.textContent = 'Analytics Attivo';
-            statusText.className = 'status-active';
-        } else {
-            statusIndicator.classList.remove('active');
-            statusIndicator.classList.add('inactive');
-            statusText.textContent = 'Analytics Disattivo';
-            statusText.className = 'status-inactive';
+        // Aggiorna Session ID
+        const sessionIdEl = document.getElementById('current-session-id');
+        if (sessionIdEl) {
+            sessionIdEl.textContent = window.Analytics.session.id.substring(0, 15) + '...';
         }
+        
+        // Aggiorna User ID
+        const userIdEl = document.getElementById('current-user-id');
+        if (userIdEl) {
+            userIdEl.textContent = window.Analytics.user.id.substring(0, 15) + '...';
+        }
+        
+        // *** RIMOSSO: Tutto il codice che aggiornava l'indicatore di stato ***
+        // L'indicatore ora viene aggiornato da updateAnalyticsStatusFromConfig()
     }
 }
 
@@ -4101,7 +4156,29 @@ function exportAnalyticsData() {
 function refreshAnalyticsDashboard() {
     loadAnalyticsDashboard();
     updatePerformanceMetrics();
-    //showToast('Dashboard analytics aggiornata', 'success');
+    
+    // *** AGGIUNGI QUESTA PARTE ***
+    const globalToggle = document.getElementById('global-privacy-toggle');
+    if (globalToggle) {
+        const isEnabled = globalToggle.checked;
+        const statusIndicator = document.getElementById('analytics-status-indicator');
+        const statusText = document.getElementById('analytics-status-text');
+        
+        if (statusIndicator && statusText) {
+            if (isEnabled) {
+                statusIndicator.classList.remove('inactive');
+                statusIndicator.classList.add('active');
+                statusText.textContent = 'Analytics Attivo';
+                statusText.className = 'status-active';
+            } else {
+                statusIndicator.classList.remove('active');
+                statusIndicator.classList.add('inactive');
+                statusText.textContent = 'Analytics Disattivo';
+                statusText.className = 'status-inactive';
+            }
+        }
+    }
+    // *** FINE PARTE AGGIUNTA ***
     
     if (window.Analytics) {
         window.Analytics.trackEvent('analytics', 'dashboard_refreshed');
@@ -5587,11 +5664,13 @@ async function loadAdminTickets() {
                 `;
             }
 
+            // GRAFICA PER L'EMAIL OPERATORE (Solo nello storico)
             let statoColonna = '';
             if (mostraStoricoTickets) {
                 statoColonna = `
                     <span style="background:#10b981; color:white; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:bold;">RISOLTO</span>
                     <div style="font-size: 0.85rem; margin-top: 8px; color: #475569; border-top: 1px dashed #cbd5e1; padding-top: 5px;">
+                        <strong style="color: #3b82f6;"><i class="fas fa-user-check"></i> By:</strong> ${t.operatore || 'Sconosciuto'}<br>
                         <strong>Nota:</strong> ${t.notaIntervento || 'Nessuna nota'}
                     </div>
                 `;
@@ -5630,10 +5709,13 @@ async function chiudiTicket(id) {
     try {
         const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         
+        // RECUPERA L'EMAIL REALE DELL'UTENTE
+        const userEmail = window.auth && window.auth.currentUser ? window.auth.currentUser.email : 'Admin Locale';
+        
         await updateDoc(doc(window.db, 'tickets', id), { 
             stato: 'chiuso',
             notaIntervento: nota,
-            operatore: currentUserRole || 'Admin', 
+            operatore: userEmail, // <--- Salva nel database l'indirizzo email vero
             dataChiusura: new Date().toISOString()
         });
         
