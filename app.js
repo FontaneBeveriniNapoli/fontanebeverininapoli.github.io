@@ -3805,20 +3805,41 @@ function updateAnalyticsStatusFromConfig() {
     if (!globalToggle) return;
     
     const isEnabled = globalToggle.checked;
+    
+    // Gli elementi della grafica
     const statusIndicator = document.getElementById('analytics-status-indicator');
     const statusText = document.getElementById('analytics-status-text');
+    const btnAnalytics = document.getElementById('btn-azioni-analytics'); // Il nostro nuovo bottone
     
     if (statusIndicator && statusText) {
         if (isEnabled) {
+            // STATO ATTIVO (VERDE)
             statusIndicator.classList.remove('inactive');
             statusIndicator.classList.add('active');
             statusText.textContent = 'Analytics Attivo';
             statusText.className = 'status-active';
+            
+            // Colora il bottone di rosso (per spegnerlo)
+            if (btnAnalytics) {
+                btnAnalytics.innerHTML = '<i class="fas fa-stop-circle"></i> Disattiva Analytics';
+                btnAnalytics.style.backgroundColor = '#ef4444';
+                btnAnalytics.style.color = 'white';
+                btnAnalytics.style.borderColor = '#ef4444';
+            }
         } else {
+            // STATO DISATTIVO (ROSSO)
             statusIndicator.classList.remove('active');
             statusIndicator.classList.add('inactive');
             statusText.textContent = 'Analytics Disattivo';
             statusText.className = 'status-inactive';
+            
+            // Colora il bottone di verde (per accenderlo)
+            if (btnAnalytics) {
+                btnAnalytics.innerHTML = '<i class="fas fa-play-circle"></i> Attiva Analytics';
+                btnAnalytics.style.backgroundColor = '#10b981';
+                btnAnalytics.style.color = 'white';
+                btnAnalytics.style.borderColor = '#10b981';
+            }
         }
     }
 }
@@ -4185,17 +4206,16 @@ function refreshAnalyticsDashboard() {
     }
 }
 
-function toggleAnalyticsTracking() {
-    if (window.Analytics) {
-        const newState = !window.Analytics.config.trackingEnabled;
-        window.Analytics.setTrackingEnabled(newState);
-        
-        showToast(`Analytics ${newState ? 'attivato' : 'disattivato'}`, 'info');
-        updateSessionInfo();
-        
-        window.Analytics.trackEvent('analytics', 'tracking_toggled', null, null, {
-            new_state: newState
-        });
+async function toggleAnalyticsTracking() {
+    // Trova l'interruttore della pagina Configurazione
+    const checkbox = document.getElementById('global-privacy-toggle');
+    
+    if (checkbox) {
+        // Inverte lo stato dell'interruttore e avvia la funzione con il popup!
+        checkbox.checked = !checkbox.checked;
+        await toggleGlobalAnalytics(checkbox);
+    } else {
+        showToast("Errore di sincronizzazione bottoni", "error");
     }
 }
 
