@@ -197,37 +197,43 @@
                 <button class="admin-tab-btn" data-tab="fontane-admin">Fontane</button>
                 <button class="admin-tab-btn" data-tab="beverini-admin">Beverini</button>
                 <button class="admin-tab-btn" data-tab="news-admin">News</button>
-                <button class="admin-tab-btn" data-tab="tickets-admin">
-                    <i class="fas fa-ticket-alt"></i> Tickets <span id="ticket-badge-count" class="admin-badge" style="display:none;">0</span>
-                </button>
                 <button class="admin-tab-btn" data-tab="analytics-admin">Analytics</button>
                 <button class="admin-tab-btn" data-tab="config-admin">Configurazione</button>
             </div>
 
             <div class="admin-tab-content active" id="dashboard-admin">
                 <div class="dashboard-stats">
-        
                     <div class="stat-card fontane">
                         <div class="stat-title">Fontane Totali</div>
                         <div class="stat-value" id="total-fontane">0</div>
                         <div class="stat-details">
                             <div class="stat-detail">
                                 <div class="detail-value status-funzionante" id="fontane-funzionanti">0</div>
-                                <div class="detail-label">In Servizio</div>
+                                <div class="detail-label">Funzionanti</div>
+                            </div>
+                            <div class="stat-detail">
+                                <div class="detail-value status-non-funzionante" id="fontane-non-funzionanti">0</div>
+                                <div class="detail-label">Non Funzionanti</div>
                             </div>
                             <div class="stat-detail">
                                 <div class="detail-value status-manutenzione" id="fontane-manutenzione">0</div>
                                 <div class="detail-label">In Manutenzione</div>
                             </div>
                         </div>
-                    </div> <div class="stat-card beverini">
+                    </div>
+
+                    <div class="stat-card beverini">
                         <div class="stat-title">Beverini Totali</div>
                         <div class="stat-value" id="total-beverini">0</div>
                         <div class="stat-details">
                             <div class="stat-detail">
                                 <div class="detail-value status-funzionante" id="beverini-funzionanti">0</div>
-                                <div class="detail-label">In Servizio</div>
-                            </div>  
+                                <div class="detail-label">Funzionanti</div>
+                            </div>
+                            <div class="stat-detail">
+                                <div class="detail-value status-non-funzionante" id="beverini-non-funzionanti">0</div>
+                                <div class="detail-label">Non Funzionanti</div>
+                            </div>
                             <div class="stat-detail">
                                 <div class="detail-value status-manutenzione" id="beverini-manutenzione">0</div>
                                 <div class="detail-label">In Manutenzione</div>
@@ -239,7 +245,6 @@
                         <div class="stat-title">News Totali</div>
                         <div class="stat-value" id="total-news">0</div>
                     </div>
-        
                 </div>
 
                 <div class="recent-activity">
@@ -298,7 +303,8 @@
                     <div class="form-group">
                         <label for="fontana-stato">Stato:</label>
                         <select id="fontana-stato" required>
-                            <option value="funzionante">In Servizio</option>                            
+                            <option value="funzionante">Funzionante</option>
+                            <option value="non-funzionante">Non Funzionante</option>
                             <option value="manutenzione">In Manutenzione</option>
                         </select>
                     </div>
@@ -428,7 +434,8 @@
                     <div class="form-group">
                         <label for="beverino-stato">Stato:</label>
                         <select id="beverino-stato" required>
-                            <option value="funzionante">In Servizio</option>                            
+                            <option value="funzionante">Funzionante</option>
+                            <option value="non-funzionante">Non Funzionante</option>
                             <option value="manutenzione">In Manutenzione</option>
                         </select>
                     </div>
@@ -791,52 +798,6 @@
                     </div>
                 </div>
             </div>
-            <div id="tickets-admin" class="admin-tab-content">
-                <div class="admin-section-header">
-                    <h2><i class="fas fa-ticket-alt"></i> Centro Segnalazioni</h2>
-                    <div class="admin-actions">
-                        <button class="refresh-btn" onclick="loadAdminTickets()"><i class="fas fa-sync"></i> Aggiorna</button>
-                    </div>
-                </div>
-
-                <div class="dashboard-stats" style="margin-bottom: 20px;">
-                    <div class="stat-card" style="border-left: 4px solid #ef4444;">
-                        <div class="stat-title">Interventi Reali</div>
-                        <div class="stat-value" id="ticket-reali">0</div>
-                        <div class="stat-detail"><div class="detail-label">Punti da riparare</div></div>
-                    </div>
-                    <div class="stat-card" style="border-left: 4px solid #3b82f6;">
-                        <div class="stat-title">Segnalazioni Tot.</div>
-                        <div class="stat-value" id="ticket-segnalazioni">0</div>
-                        <div class="stat-detail"><div class="detail-label">Avvisi ricevuti</div></div>
-                    </div>
-                    <div class="stat-card" style="border-left: 4px solid #10b981;">
-                        <div class="stat-title">Risolti</div>
-                        <div class="stat-value" id="ticket-risolti">0</div>
-                    </div>
-                    <div class="stat-card" style="border-left: 4px solid #f59e0b;">
-                        <div class="stat-title">In Attesa</div>
-                        <div class="stat-value" id="ticket-attesa">0</div>
-                    </div>
-                </div>
-
-                <div class="admin-table-container">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Punto (ID)</th>
-                                <th>Problema</th>
-                                <th>Segnalazioni</th>
-                                <th>Stato</th>
-                                <th>Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tickets-table-body">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
 
             <div class="admin-tab-content" id="config-admin">
                 <div class="config-section" style="border: 2px solid #ef4444; background: #fff1f2; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
@@ -955,9 +916,13 @@
                     </button>
             
                     <button class="filter-btn funzionante trans-filter-working" onclick="setFilter('fontane', 'funzionante')">
-                        <i class="fas fa-check-circle"></i> In Servizio
+                        <i class="fas fa-check-circle"></i> Funzionanti
                     </button>
-                                           
+            
+                    <button class="filter-btn non-funzionante trans-filter-broken" onclick="setFilter('fontane', 'non-funzionante')">
+                        <i class="fas fa-times-circle"></i> Non Funzionanti
+                    </button>
+            
                     <button class="filter-btn manutenzione trans-filter-maintenance" onclick="setFilter('fontane', 'manutenzione')">
                         <i class="fas fa-tools"></i> In Manutenzione
                     </button>
@@ -988,9 +953,13 @@
                     </button>
             
                     <button class="filter-btn funzionante trans-filter-working" onclick="setFilter('beverini', 'funzionante')">
-                        <i class="fas fa-check-circle"></i> In Servizio
-                    </button>           
-                                
+                        <i class="fas fa-check-circle"></i> Funzionanti
+                    </button>
+            
+                    <button class="filter-btn non-funzionante trans-filter-broken" onclick="setFilter('beverini', 'non-funzionante')">
+                        <i class="fas fa-times-circle"></i> Non Funzionanti
+                    </button>
+            
                     <button class="filter-btn manutenzione trans-filter-maintenance" onclick="setFilter('beverini', 'manutenzione')">
                         <i class="fas fa-tools"></i> In Manutenzione
                     </button>
@@ -1092,42 +1061,42 @@
             </div>
         </div>
         <div id="segnalazioni-screen" class="screen">
-            <div class="app-header" style="background-color: #ef4444; color: white;">
-                <button class="back-btn" onclick="showScreen('home-screen')" style="color: white;">
+            <div class="app-header" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
+                <button class="back-btn" onclick="showScreen('home-screen')">
                     <i class="fas fa-arrow-left"></i>
                 </button>
-                <div class="screen-title" style="color: white;">Segnala Problema</div>
+                <div class="screen-title">Segnalazione</div>
             </div>
-    
-            <div class="content-area" style="padding: 20px; background-color: #f3f4f6;">
-                <div style="background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            
-                    <h3 id="ticket-item-display" style="margin-top: 0; color: #ef4444; font-size: 1.2rem; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #fee2e2; padding-bottom: 10px;">
-                        Seleziona il problema
-                    </h3>
 
-                    <input type="hidden" id="ticket-item-id">
-                    <input type="hidden" id="ticket-item-name">
-                    <input type="hidden" id="ticket-item-type">
-
-                    <p style="text-align: center; font-weight: bold; color: #333; margin-bottom: 15px;">Cosa è successo?</p>
-            
-                    <div style="display: flex; flex-direction: column; gap: 15px;">
-                        <button type="button" id="btn-guasto" onclick="inviaSegnalazioneTicket('Guasto idrico')" style="width: 100%; padding: 20px; background-color: #3b82f6; color: white; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);">
-                            <i class="fas fa-tint-slash" style="font-size: 1.5rem;"></i> GUASTO (Non esce acqua)
-                        </button>
-
-                        <button type="button" id="btn-vandalo" onclick="inviaSegnalazioneTicket('Vandalizzato')" style="width: 100%; padding: 20px; background-color: #ef4444; color: white; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.4);">
-                            <i class="fas fa-hammer" style="font-size: 1.5rem;"></i> VANDALIZZATO
-                        </button>
-                    </div>
-
-                    <p style="font-size: 0.85rem; color: #666; margin-top: 25px; text-align: center;">
-                        <i class="fas fa-shield-alt"></i> Sistema Anti-Spam (15 giorni) attivo.
+            <div class="content-area">
+                <div class="report-form-container" style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <p style="margin-bottom: 20px; color: #666; font-size: 0.95rem; line-height:1.5;">
+                        Hai notato un problema? Compila il modulo. <br>
+                        Si aprirà la tua app di posta per inviare una mail ufficiale a <b>ABC Napoli</b>.
                     </p>
+
+                    <form onsubmit="inviaSegnalazione(event)">
+                        <div class="form-group" style="margin-bottom:20px;">
+                            <label style="font-weight:600; display:block; margin-bottom:8px;">Tipo segnalazione</label>
+                            <select id="report-type" class="form-input" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:1rem; background: #f9f9f9;">
+                                <option value="Guasto">Guasto / Non eroga acqua</option>
+                                <option value="Perdita">Perdita d'acqua</option>
+                                <option value="Sporcizia">Pulizia/Manutenzione</option>
+                                <option value="Altro">Altro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:25px;">
+                            <label style="font-weight:600; display:block; margin-bottom:8px;">Descrizione e Posizione</label>
+                            <textarea id="report-desc" rows="5" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:1rem; background: #f9f9f9; font-family:inherit; resize:none;"></textarea>
+                        </div>
+
+                        <button type="submit" style="width:100%; padding:15px; background: linear-gradient(135deg, #ef4444, #b91c1c); color:white; border:none; border-radius:12px; font-weight:700; font-size:1.1rem; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);">
+                            <i class="fas fa-paper-plane"></i> INVIA EMAIL
+                        </button>
+                    </form>
                 </div>
             </div>
-        </div>
             
             <div class="tab-bar">
                 <button class="tab-btn" onclick="showScreen('home-screen')"><span class="tab-icon"><i class="fas fa-home"></i></span><span>Home</span></button>
@@ -1240,7 +1209,11 @@
                 <button class="modal-btn lang-switch" onclick="toggleLanguage()">
                     <span id="lang-flag">🇬🇧</span> 
                     <span id="lang-label">Switch to English</span>
-                </button>                
+                </button>
+
+                <button class="modal-btn primary" onclick="openReportScreen()" style="background: #ef4444;">
+                    <i class="fas fa-bullhorn"></i> <span data-i18n="report_btn">Invia Segnalazione</span>
+                </button>
                 
                 <button class="modal-btn primary" onclick="openCreditsScreen()" style="background: #3b82f6;">
                     <i class="fas fa-info-circle"></i> <span data-i18n="info_btn">Info & Crediti</span>
