@@ -3786,14 +3786,41 @@ function loadAnalyticsDashboard() {
     // Aggiorna tabelle
     updateAnalyticsTables();
     
-    // Aggiorna info sessione
-    updateSessionInfo();
-    
     // Aggiorna info storage
     updateStorageInfo();
     
     // Aggiorna grafico
     updateActivityChart();
+    
+    // *** AGGIUNTO: Prima aggiorna Session ID e User ID ***
+    updateSessionInfo();
+    
+    // *** AGGIUNTO: Poi aggiorna l'indicatore di stato dall'interruttore ***
+    updateAnalyticsStatusFromConfig();
+}
+
+// *** NUOVA FUNZIONE DA AGGIUNGERE (dopo loadAnalyticsDashboard) ***
+function updateAnalyticsStatusFromConfig() {
+    const globalToggle = document.getElementById('global-privacy-toggle');
+    if (!globalToggle) return;
+    
+    const isEnabled = globalToggle.checked;
+    const statusIndicator = document.getElementById('analytics-status-indicator');
+    const statusText = document.getElementById('analytics-status-text');
+    
+    if (statusIndicator && statusText) {
+        if (isEnabled) {
+            statusIndicator.classList.remove('inactive');
+            statusIndicator.classList.add('active');
+            statusText.textContent = 'Analytics Attivo';
+            statusText.className = 'status-active';
+        } else {
+            statusIndicator.classList.remove('active');
+            statusIndicator.classList.add('inactive');
+            statusText.textContent = 'Analytics Disattivo';
+            statusText.className = 'status-inactive';
+        }
+    }
 }
 
 // Aggiorna statistiche
@@ -3944,29 +3971,20 @@ function updateEventsTable() {
 // Aggiorna info sessione
 function updateSessionInfo() {
     if (window.Analytics && window.Analytics.session) {
-        document.getElementById('current-session-id').textContent = 
-            window.Analytics.session.id.substring(0, 15) + '...';
-        
-        const statusIndicator = document.getElementById('analytics-status-indicator');
-        const statusText = document.getElementById('analytics-status-text');
-        
-        // *** MODIFICATO: Legge dall'interruttore in configurazione ***
-        const globalToggle = document.getElementById('global-privacy-toggle');
-        
-        // Se l'interruttore esiste, usa quello, altrimenti usa window.Analytics (come fallback)
-        const isEnabled = globalToggle ? globalToggle.checked : window.Analytics.config.trackingEnabled;
-        
-        if (isEnabled) {
-            statusIndicator.classList.remove('inactive');
-            statusIndicator.classList.add('active');
-            statusText.textContent = 'Analytics Attivo';
-            statusText.className = 'status-active';
-        } else {
-            statusIndicator.classList.remove('active');
-            statusIndicator.classList.add('inactive');
-            statusText.textContent = 'Analytics Disattivo';
-            statusText.className = 'status-inactive';
+        // Aggiorna Session ID
+        const sessionIdEl = document.getElementById('current-session-id');
+        if (sessionIdEl) {
+            sessionIdEl.textContent = window.Analytics.session.id.substring(0, 15) + '...';
         }
+        
+        // Aggiorna User ID
+        const userIdEl = document.getElementById('current-user-id');
+        if (userIdEl) {
+            userIdEl.textContent = window.Analytics.user.id.substring(0, 15) + '...';
+        }
+        
+        // *** RIMOSSO: Tutto il codice che aggiornava l'indicatore di stato ***
+        // L'indicatore ora viene aggiornato da updateAnalyticsStatusFromConfig()
     }
 }
 
