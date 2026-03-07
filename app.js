@@ -5420,10 +5420,10 @@ function shareAppLink() {
     }
 }
 // ==========================================
-// GESTIONE TICKETS E ANTI-SPAM (V10 - PROFESSIONALE - VELOCE)
+// GESTIONE TICKETS E ANTI-SPAM (V10 - PROFESSIONALE - FIX SERVER)
 // ==========================================
 
-let isSubmittingTicket = false; // Variabile per il blocco istantaneo (Debounce)
+let isSubmittingTicket = false;
 
 function apriTicket(id, nome, type) {
     currentDetailId = id;
@@ -5457,8 +5457,8 @@ async function inviaSegnalazioneTicket(tipo) {
     if (btn) btn.style.opacity = "0.5";
 
     try {
-        // VELOCITÀ MASSIMA: Usiamo window.firebaseFirestore (niente await import!)
-        const { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } = window.firebaseFirestore;
+        // COLLEGAMENTO UFFICIALE A FIREBASE
+        const { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
 
         const ticketsRef = collection(window.db, 'tickets');
         const q = query(ticketsRef, where('itemId', '==', currentDetailId), where('stato', '==', 'aperto'));
@@ -5508,8 +5508,8 @@ async function loadAdminTickets() {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Caricamento in corso...</td></tr>';
 
     try {
-        // VELOCITÀ MASSIMA: Togliamo await import anche qui
-        const { collection, getDocs } = window.firebaseFirestore;
+        // COLLEGAMENTO UFFICIALE A FIREBASE
+        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         const snapshot = await getDocs(collection(window.db, 'tickets'));
         
         let tickets = [];
@@ -5557,7 +5557,6 @@ async function loadAdminTickets() {
         openTicketsList.forEach(t => {
             const row = document.createElement('tr');
             
-            // Fix per la data (supporta sia i vecchi ticket che i nuovi)
             let dataMostrata = 'N/A';
             if (t.ultimaSegnalazione && t.ultimaSegnalazione.toDate) {
                 dataMostrata = t.ultimaSegnalazione.toDate().toLocaleDateString('it-IT');
@@ -5594,8 +5593,8 @@ async function chiudiTicket(id) {
     }
 
     try {
-        // VELOCITÀ MASSIMA
-        const { doc, updateDoc } = window.firebaseFirestore;
+        // COLLEGAMENTO UFFICIALE A FIREBASE
+        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         
         await updateDoc(doc(window.db, 'tickets', id), { 
             stato: 'chiuso',
