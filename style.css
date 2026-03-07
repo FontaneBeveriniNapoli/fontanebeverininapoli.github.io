@@ -1135,6 +1135,7 @@ body {
     align-items: center;
     gap: 10px;
     max-width: 90%;
+    pointer-events: none;
 }
 
 .toast.show {

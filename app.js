@@ -5397,8 +5397,15 @@ async function inviaSegnalazioneTicket(tipo) {
     }
 
     isSubmittingTicket = true;
-    const btn = document.querySelector(`.report-choice-btn.${tipo === 'guasto' ? 'danger' : 'warning'}`);
-    if (btn) btn.style.opacity = "0.5";
+
+    // FEEDBACK VISIVO IMMEDIATO: Il bottone mostra che sta caricando
+    const btn = tipo === 'Guasto idrico' ? document.getElementById('btn-guasto') : document.getElementById('btn-vandalo');
+    const testoOriginale = btn ? btn.innerHTML : '';
+
+    if (btn) {
+        btn.style.opacity = "0.7";
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Attendere...`;
+    }
 
     try {
         // COLLEGAMENTO UFFICIALE A FIREBASE
@@ -5440,7 +5447,11 @@ async function inviaSegnalazioneTicket(tipo) {
         showToast("Errore di connessione. Riprova più tardi.", "error");
     } finally {
         isSubmittingTicket = false;
-        if (btn) btn.style.opacity = "1";
+        // Ripristiniamo il bottone alla normalità in modo pulito
+        if (btn) {
+            btn.style.opacity = "1";
+            btn.innerHTML = testoOriginale;
+        }
     }
 }
 
