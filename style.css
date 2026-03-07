@@ -4275,3 +4275,15 @@ button, .report-choice-btn, .action-btn {
     background-color: #ef4444 !important; /* Rosso per Errori */
     color: white !important;
 }
+/* FIX IMPAGINAZIONE PAGINA INFO */
+#info-screen {
+    display: block !important;
+    padding-top: 80px !important; /* Lascia lo spazio esatto per il menu blu in alto */
+    height: 100%;
+    overflow-y: auto;
+}
+
+#info-screen .info-container {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
