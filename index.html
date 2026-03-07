@@ -1356,44 +1356,11 @@
         }
         
         function toggleAnalyticsTracking() {
-            // 1. Controllo permessi
-            if (typeof currentUserRole !== 'undefined' && currentUserRole !== 'admin') {
-                showToast('Solo gli amministratori possono modificare questa impostazione', 'error');
-                return;
+            if (window.Analytics) {
+                const newState = !window.Analytics.config.trackingEnabled;
+                window.Analytics.setTrackingEnabled(newState);
+                refreshAnalyticsDashboard();
             }
-    
-            // 2. Prendiamo l'interruttore in Configurazione (fonte di verità)
-            const globalToggle = document.getElementById('global-privacy-toggle');
-            if (!globalToggle) {
-                showToast('Errore: interruttore configurazione non trovato', 'error');
-                return;
-            }
-    
-            // 3. Calcoliamo il nuovo stato (opposto a quello attuale)
-            const newState = !globalToggle.checked;
-            const msg = newState 
-                ? "⚠️ Vuoi ATTIVARE il tracciamento dati per tutti gli utenti?" 
-                : "🛡️ Vuoi DISATTIVARE Analytics per tutti gli utenti?";
-    
-            // 4. Chiediamo conferma
-            if (!confirm(msg)) return;
-    
-            // 5. Disabilitiamo il pulsante per evitare doppi click
-            const btn = event?.target;
-            if (btn) btn.disabled = true;
-    
-            // 6. Salviamo su Firebase (il resto lo farà initRemoteControl)
-            updateConfig('analyticsEnabled', newState)
-                .then(() => {
-                    showToast(newState ? "✅ Analytics ATTIVATO" : "🛡️ Analytics DISATTIVATO", "success");
-            })
-            .catch(error => {
-                console.error('Errore:', error);
-                showToast("❌ Errore di connessione", "error");
-            })
-            .finally(() => {
-                if (btn) btn.disabled = false;
-            });
         }
         
         function forceSyncAnalytics() {
