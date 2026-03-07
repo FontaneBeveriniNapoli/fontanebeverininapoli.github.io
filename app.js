@@ -5421,89 +5421,83 @@ function shareAppLink() {
     }
 }
 // ==========================================
-// GESTIONE TICKETS E ANTI-SPAM (V10 - PROFESSIONALE)
+// GESTIONE TICKETS E ANTI-SPAM (V10 - PROFESSIONALE - VELOCE)
 // ==========================================
 
 let isSubmittingTicket = false; // Variabile per il blocco istantaneo (Debounce)
 
 function apriTicket(id, nome, type) {
-    document.getElementById('ticket-item-id').value = id;
-    document.getElementById('ticket-item-name').value = nome;
-    document.getElementById('ticket-item-type').value = type;
-    document.getElementById('ticket-item-display').textContent = `Segnalazione per: ${nome}`;
+    currentDetailId = id;
+    currentDetailName = nome;
+    currentDetailType = type;
+    
+    const displayEl = document.getElementById('ticket-item-display');
+    if(displayEl) {
+        displayEl.textContent = `Segnalazione per: ${nome}`;
+    }
     showScreen('segnalazioni-screen');
 }
 
-async function inviaSegnalazioneTicket(problema) {
-    // 1. BLOCCO ISTANTANEO (Evita il doppio click accidentale)
+async function inviaSegnalazioneTicket(tipo) {
     if (isSubmittingTicket) return;
-    isSubmittingTicket = true;
-
-    const id = document.getElementById('ticket-item-id').value;
-    const nome = document.getElementById('ticket-item-name').value;
-    const type = document.getElementById('ticket-item-type').value;
-
-    // 2. BLOCCO LOCALE 15 GIORNI (Cooldown per singolo telefono)
-    const spamKey = `ticket_${type}_${id}`;
-    const lastTicketDate = localStorage.getItem(spamKey);
     
-    if (lastTicketDate) {
-        const giorniPassati = (new Date().getTime() - new Date(lastTicketDate).getTime()) / (1000 * 3600 * 24);
+    // BLOCCO LOCALE 15 GIORNI
+    const spamKey = `ticket_${currentDetailId}_${tipo}`;
+    const lastSubmission = localStorage.getItem(spamKey);
+    
+    if (lastSubmission) {
+        const giorniPassati = (Date.now() - parseInt(lastSubmission)) / (1000 * 60 * 60 * 24);
         if (giorniPassati < 15) {
-            showToast(`Hai già segnalato questo problema. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
-            isSubmittingTicket = false;
+            showToast(`Hai già inviato questa segnalazione. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
             return;
         }
     }
 
+    isSubmittingTicket = true;
+    const btn = document.querySelector(`.report-choice-btn.${tipo === 'guasto' ? 'danger' : 'warning'}`);
+    if (btn) btn.style.opacity = "0.5";
+
     try {
-        const { collection, getDocs, query, where, addDoc, updateDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        // VELOCITÀ MASSIMA: Usiamo window.firebaseFirestore (niente await import!)
+        const { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } = window.firebaseFirestore;
+
         const ticketsRef = collection(window.db, 'tickets');
-        
-        // 3. LOGICA FIREBASE: Cerchiamo se c'è già un ticket APERTO per questa fontana
-        const q = query(ticketsRef, where("itemId", "==", id), where("stato", "==", "aperto"));
-        const snapshot = await getDocs(q);
+        const q = query(ticketsRef, where('itemId', '==', currentDetailId), where('stato', '==', 'aperto'));
+        const querySnapshot = await getDocs(q);
 
-        const dataCorrente = new Date().toISOString();
-
-        if (snapshot.empty) {
-            // NESSUN TICKET APERTO: Ne creiamo uno nuovo (Contatore a 1)
-            await addDoc(ticketsRef, {
-                itemId: id,
-                itemNome: nome,
-                itemType: type,
-                problema: problema, // Salviamo "Guasto idrico" o "Vandalizzato"
-                dataPrimaSegnalazione: dataCorrente,
-                dataUltimaSegnalazione: dataCorrente,
-                contatore: 1,
-                stato: 'aperto'
-            });
-            showToast('Segnalazione inviata con successo!', 'success'); // Toast Verde
-        } else {
-            // C'È GIÀ UN TICKET: Non creiamo doppioni, aggiungiamo +1 e aggiorniamo la data
-            const ticketDoc = snapshot.docs[0];
-            const ticketData = ticketDoc.data();
+        if (!querySnapshot.empty) {
+            const ticketDoc = querySnapshot.docs[0];
+            const data = ticketDoc.data();
+            const nuovoContatore = (data.contatore || 1) + 1;
             
             await updateDoc(doc(window.db, 'tickets', ticketDoc.id), {
-                contatore: (ticketData.contatore || 1) + 1,
-                dataUltimaSegnalazione: dataCorrente
+                contatore: nuovoContatore,
+                ultimaSegnalazione: serverTimestamp()
             });
-            showToast('Segnalazione aggiunta a un ticket già esistente.', 'info'); // Toast Azzurro
+            showToast("Segnalazione aggiunta! (Il problema è già noto ai tecnici)", "info");
+        } else {
+            await addDoc(ticketsRef, {
+                itemId: currentDetailId,
+                itemNome: currentDetailName || 'N/A',
+                itemType: currentDetailType || 'N/A',
+                tipo: tipo,
+                stato: 'aperto',
+                contatore: 1,
+                dataCreazione: serverTimestamp(),
+                ultimaSegnalazione: serverTimestamp()
+            });
+            showToast("Grazie! Segnalazione inviata con successo", "success");
         }
 
-        // Attiviamo lo scudo di 15 giorni sul telefono
-        localStorage.setItem(spamKey, dataCorrente);
-        
-        // Aspettiamo 1 secondo prima di tornare indietro per far leggere il toast all'utente
-        setTimeout(() => {
-            isSubmittingTicket = false;
-            goBack();
-        }, 1200);
+        localStorage.setItem(spamKey, Date.now().toString());
+        goBack();
 
     } catch (error) {
-        console.error("Errore invio:", error);
-        showToast('Errore di connessione. Riprova.', 'error');
+        console.error("Errore nell'invio del ticket:", error);
+        showToast("Errore di connessione. Riprova più tardi.", "error");
+    } finally {
         isSubmittingTicket = false;
+        if (btn) btn.style.opacity = "1";
     }
 }
 
@@ -5515,7 +5509,8 @@ async function loadAdminTickets() {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Caricamento in corso...</td></tr>';
 
     try {
-        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        // VELOCITÀ MASSIMA: Togliamo await import anche qui
+        const { collection, getDocs } = window.firebaseFirestore;
         const snapshot = await getDocs(collection(window.db, 'tickets'));
         
         let tickets = [];
@@ -5528,9 +5523,8 @@ async function loadAdminTickets() {
             const t = doc.data();
             tickets.push({ id: doc.id, ...t });
             
-            // Calcolo Statistiche Dashboard (I 4 Riquadri)
-            statReali++; // Ogni documento su Firebase è un intervento reale
-            statSegnalazioni += (t.contatore || 1); // Somma matematica di tutti i click degli utenti
+            statReali++;
+            statSegnalazioni += (t.contatore || 1);
             
             if (t.stato === 'aperto') {
                 statAttesa++;
@@ -5539,7 +5533,6 @@ async function loadAdminTickets() {
             }
         });
 
-        // Aggiorna i riquadri HTML in cima alla pagina Admin
         const badgeReali = document.getElementById('ticket-reali');
         if (badgeReali) badgeReali.textContent = statReali;
         
@@ -5552,7 +5545,6 @@ async function loadAdminTickets() {
         const badgeAttesa = document.getElementById('ticket-attesa');
         if (badgeAttesa) badgeAttesa.textContent = statAttesa;
 
-        // Estraiamo solo i ticket aperti e LI ORDINIAMO PER PRIORITÀ (Contatore più alto = in cima)
         let openTicketsList = tickets.filter(t => t.stato === 'aperto');
         openTicketsList.sort((a, b) => (b.contatore || 1) - (a.contatore || 1));
 
@@ -5565,13 +5557,19 @@ async function loadAdminTickets() {
 
         openTicketsList.forEach(t => {
             const row = document.createElement('tr');
-            // Usiamo l'ultima data di segnalazione per capire quanto è recente
-            const dataFormat = new Date(t.dataUltimaSegnalazione || t.dataPrimaSegnalazione).toLocaleDateString('it-IT');
+            
+            // Fix per la data (supporta sia i vecchi ticket che i nuovi)
+            let dataMostrata = 'N/A';
+            if (t.ultimaSegnalazione && t.ultimaSegnalazione.toDate) {
+                dataMostrata = t.ultimaSegnalazione.toDate().toLocaleDateString('it-IT');
+            } else if (t.dataUltimaSegnalazione) {
+                dataMostrata = new Date(t.dataUltimaSegnalazione).toLocaleDateString('it-IT');
+            }
             
             row.innerHTML = `
-                <td>${dataFormat}</td>
+                <td>${dataMostrata}</td>
                 <td><strong>#${t.itemId}</strong><br>${t.itemNome}</td>
-                <td>${t.problema}</td>
+                <td>${t.tipo ? t.tipo.toUpperCase() : 'SEGNALAZIONE'}</td>
                 <td><span style="background:#ef4444; color:white; padding:4px 10px; border-radius:12px; font-weight:bold; font-size:1.1rem;">${t.contatore || 1}</span></td>
                 <td><span class="item-status status-broken">IN ATTESA</span></td>
                 <td class="admin-item-actions">
@@ -5588,28 +5586,27 @@ async function loadAdminTickets() {
 }
 
 async function chiudiTicket(id) {
-    // 5. CHIUSURA OBBLIGATORIA CON NOTA E STORICO
     const nota = prompt("Inserisci la nota di intervento per chiudere questo ticket (OBBLIGATORIO):");
     
-    if (nota === null) return; // L'operatore ha cliccato Annulla sul prompt
+    if (nota === null) return; 
     if (nota.trim() === "") {
         alert("ERRORE: La nota di intervento è obbligatoria per segnare il ticket come risolto.");
-        return; // Blocca la chiusura se la nota è vuota
+        return; 
     }
 
     try {
-        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        // VELOCITÀ MASSIMA
+        const { doc, updateDoc } = window.firebaseFirestore;
         
-        // Aggiorna il database chiudendo il ticket e salvando i dati dell'operatore
         await updateDoc(doc(window.db, 'tickets', id), { 
             stato: 'chiuso',
             notaIntervento: nota,
-            operatore: currentUserRole || 'Admin', // Salva chi ha fatto l'operazione
+            operatore: currentUserRole || 'Admin', 
             dataChiusura: new Date().toISOString()
         });
         
         showToast("Ticket risolto e archiviato nello storico!", "success");
-        loadAdminTickets(); // Ricarica la tabella e i riquadri
+        loadAdminTickets(); 
     } catch (e) { 
         showToast("Errore di aggiornamento", "error"); 
     }
