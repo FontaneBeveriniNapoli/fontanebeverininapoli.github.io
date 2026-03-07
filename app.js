@@ -5107,7 +5107,7 @@ async function deleteSelectedItems(type) {
 
     if (idsToDelete.length === 0) return;
 
-    if (!confirm(`ATTENZIONE: Stai per eliminare ${idsToDelete.length} elementi.\nQuesta azione è irreversibile.\nProcedere?`)) {
+    if (!confirm(`ATTENZIONE: Stai per eliminare ${idsToDelete.length} elementi definitivamente.\nQuesta azione è irreversibile.\nProcedere?`)) {
         return;
     }
 
@@ -5122,35 +5122,44 @@ async function deleteSelectedItems(type) {
 
     for (const id of idsToDelete) {
         try {
-            // Elimina effettivamente i dati (Online o Offline queue)
-            if (navigator.onLine) {
-                await deleteFirebaseData(type, id);
+            // SE IL TIPO E' "TICKETS" SI CONNETTE DIRETTAMENTE AL DATABASE DEI TICKET
+            if (type === 'tickets') {
+                const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                await deleteDoc(doc(window.db, 'tickets', id));
+                successCount++;
             } else {
-                // Gestione Offline
-                let item;
-                if (type === 'fontane') item = appData.fontane.find(f => f.id == id);
-                else if (type === 'beverini') item = appData.beverini.find(b => b.id == id);
-                else if (type === 'news') item = appData.news.find(n => n.id == id);
+                // LOGICA NORMALE PER FONTANE, BEVERINI E NEWS (Online o Offline queue)
+                if (navigator.onLine) {
+                    await deleteFirebaseData(type, id);
+                } else {
+                    // Gestione Offline
+                    let item;
+                    if (type === 'fontane') item = appData.fontane.find(f => f.id == id);
+                    else if (type === 'beverini') item = appData.beverini.find(b => b.id == id);
+                    else if (type === 'news') item = appData.news.find(n => n.id == id);
 
-                if (item) {
-                    await addToSyncQueue('DELETE', type, item, id);
+                    if (item) {
+                        await addToSyncQueue('DELETE', type, item, id);
+                    }
                 }
+
+                // Aggiorna l'array locale in memoria
+                if (type === 'fontane') appData.fontane = appData.fontane.filter(f => f.id != id);
+                else if (type === 'beverini') appData.beverini = appData.beverini.filter(b => b.id != id);
+                else if (type === 'news') appData.news = appData.news.filter(n => n.id != id);
+
+                successCount++;
             }
-
-            // Aggiorna l'array locale in memoria
-            if (type === 'fontane') appData.fontane = appData.fontane.filter(f => f.id != id);
-            else if (type === 'beverini') appData.beverini = appData.beverini.filter(b => b.id != id);
-            else if (type === 'news') appData.news = appData.news.filter(n => n.id != id);
-
-            successCount++;
         } catch (error) {
             console.error(`Errore eliminazione ID ${id}:`, error);
             failCount++;
         }
     }
 
-    // Salva i cambiamenti nel LocalStorage
-    saveLocalData();
+    // Salva i cambiamenti nel LocalStorage (i ticket non usano il localStorage standard)
+    if (type !== 'tickets') {
+        saveLocalData();
+    }
     
     // Ricarica la tabella specifica per vedere i cambiamenti
     if (type === 'fontane') {
@@ -5162,6 +5171,8 @@ async function deleteSelectedItems(type) {
     } else if (type === 'news') {
         loadAdminNews();
         loadNews();
+    } else if (type === 'tickets') {
+        loadAdminTickets(); // Ricarica tabella ticket
     }
     
     // Aggiorna i contatori nella dashboard
@@ -5500,7 +5511,15 @@ async function inviaSegnalazioneTicket(tipo) {
     }
 }
 
-// --- ADMIN TICKETS ---
+// --- ADMIN TICKETS E STORICO ---
+
+// Variabile per passare dalla vista "Aperti" alla vista "Storico"
+let mostraStoricoTickets = false;
+
+function toggleStoricoTickets() {
+    mostraStoricoTickets = !mostraStoricoTickets;
+    loadAdminTickets(); // Ricarica la tabella con la nuova vista
+}
 
 async function loadAdminTickets() {
     const tbody = document.getElementById('tickets-table-body');
@@ -5508,7 +5527,6 @@ async function loadAdminTickets() {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Caricamento in corso...</td></tr>';
 
     try {
-        // COLLEGAMENTO UFFICIALE A FIREBASE
         const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         const snapshot = await getDocs(collection(window.db, 'tickets'));
         
@@ -5544,34 +5562,107 @@ async function loadAdminTickets() {
         const badgeAttesa = document.getElementById('ticket-attesa');
         if (badgeAttesa) badgeAttesa.textContent = statAttesa;
 
-        let openTicketsList = tickets.filter(t => t.stato === 'aperto');
-        openTicketsList.sort((a, b) => (b.contatore || 1) - (a.contatore || 1));
+        // Filtra Aperti o Storico
+        let filteredTickets = tickets.filter(t => mostraStoricoTickets ? t.stato === 'chiuso' : t.stato === 'aperto');
+        
+        // Ordinamento
+        if (mostraStoricoTickets) {
+            filteredTickets.sort((a, b) => new Date(b.dataChiusura || 0) - new Date(a.dataChiusura || 0));
+        } else {
+            filteredTickets.sort((a, b) => (b.contatore || 1) - (a.contatore || 1));
+        }
 
         tbody.innerHTML = '';
 
-        if (openTicketsList.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Nessun intervento in attesa. Ottimo lavoro!</td></tr>';
+        // TASTIERA DI COMANDO: SELEZIONA TUTTI, ELIMINA MULTIPLO E STORICO
+        const intestazioneRiga = document.createElement('tr');
+        intestazioneRiga.innerHTML = `
+            <td colspan="6" style="padding: 10px; background: #f8fafc; border-bottom: 2px solid #e5e7eb;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        ${currentUserRole === 'admin' ? `
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; color: #475569;">
+                            <input type="checkbox" onchange="toggleSelectAll('tickets', this)" style="transform: scale(1.2);"> Seleziona Tutti
+                        </label>
+                        <button id="btn-delete-sel-tickets" onclick="deleteSelectedItems('tickets')" disabled style="padding: 8px 15px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: not-allowed; opacity: 0.5; touch-action: manipulation;">
+                            <i class="fas fa-trash"></i> Elimina Selezionati (0)
+                        </button>
+                        ` : ''}
+                    </div>
+                    <button onclick="toggleStoricoTickets()" style="padding: 10px 15px; background: ${mostraStoricoTickets ? '#3b82f6' : '#64748b'}; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; touch-action: manipulation;">
+                        <i class="fas ${mostraStoricoTickets ? 'fa-arrow-left' : 'fa-history'}"></i> 
+                        ${mostraStoricoTickets ? 'Torna ai Ticket in Attesa' : 'Mostra Storico Risolti'}
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(intestazioneRiga);
+
+        if (filteredTickets.length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.innerHTML = `<td colspan="6" style="text-align:center; padding:30px; font-style: italic; color: #64748b;">
+                ${mostraStoricoTickets ? 'Nessun ticket presente nello storico.' : 'Nessun intervento in attesa. Ottimo lavoro! 🎉'}
+            </td>`;
+            tbody.appendChild(emptyRow);
             return;
         }
 
-        openTicketsList.forEach(t => {
+        filteredTickets.forEach(t => {
             const row = document.createElement('tr');
             
             let dataMostrata = 'N/A';
-            if (t.ultimaSegnalazione && t.ultimaSegnalazione.toDate) {
+            if (mostraStoricoTickets && t.dataChiusura) {
+                dataMostrata = new Date(t.dataChiusura).toLocaleDateString('it-IT');
+            } else if (t.ultimaSegnalazione && t.ultimaSegnalazione.toDate) {
                 dataMostrata = t.ultimaSegnalazione.toDate().toLocaleDateString('it-IT');
             } else if (t.dataUltimaSegnalazione) {
                 dataMostrata = new Date(t.dataUltimaSegnalazione).toLocaleDateString('it-IT');
             }
             
+            // CHECKBOX MULTIPLA (Solo Admin) inserita accanto alla data
+            let checkboxHtml = '';
+            if (currentUserRole === 'admin') {
+                checkboxHtml = `<input type="checkbox" class="select-item-tickets" value="${t.id}" onchange="updateDeleteButtonState('tickets')" style="transform: scale(1.2); margin-right: 10px;">`;
+            }
+
+            let actionButtons = '';
+            if (mostraStoricoTickets) {
+                actionButtons = `
+                    <button class="delete-btn" onclick="eliminaTicket('${t.id}')" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; width:100%; font-weight:bold;">
+                        <i class="fas fa-trash"></i> Elimina
+                    </button>
+                `;
+            } else {
+                actionButtons = `
+                    <button class="edit-btn" onclick="chiudiTicket('${t.id}')" style="background:#10b981; color:white; border:none; padding:8px 12px; border-radius:6px; margin-bottom:8px; cursor:pointer; width:100%; font-weight:bold;">
+                        <i class="fas fa-wrench"></i> Risolto
+                    </button>
+                    <button class="delete-btn" onclick="eliminaTicket('${t.id}')" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; width:100%; font-weight:bold;">
+                        <i class="fas fa-trash"></i> Elimina
+                    </button>
+                `;
+            }
+
+            let statoColonna = '';
+            if (mostraStoricoTickets) {
+                statoColonna = `
+                    <span style="background:#10b981; color:white; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:bold;">RISOLTO</span>
+                    <div style="font-size: 0.85rem; margin-top: 8px; color: #475569; border-top: 1px dashed #cbd5e1; padding-top: 5px;">
+                        <strong>Nota:</strong> ${t.notaIntervento || 'Nessuna nota'}
+                    </div>
+                `;
+            } else {
+                statoColonna = `<span class="item-status status-broken">IN ATTESA</span>`;
+            }
+
             row.innerHTML = `
-                <td>${dataMostrata}</td>
+                <td style="white-space: nowrap;">${checkboxHtml} ${dataMostrata}</td>
                 <td><strong>#${t.itemId}</strong><br>${t.itemNome}</td>
                 <td>${t.tipo ? t.tipo.toUpperCase() : 'SEGNALAZIONE'}</td>
-                <td><span style="background:#ef4444; color:white; padding:4px 10px; border-radius:12px; font-weight:bold; font-size:1.1rem;">${t.contatore || 1}</span></td>
-                <td><span class="item-status status-broken">IN ATTESA</span></td>
-                <td class="admin-item-actions">
-                    <button class="edit-btn" onclick="chiudiTicket('${t.id}')"><i class="fas fa-wrench"></i> Risolto</button>
+                <td><span style="background:${mostraStoricoTickets ? '#94a3b8' : '#ef4444'}; color:white; padding:4px 12px; border-radius:12px; font-weight:bold; font-size:1.1rem;">${t.contatore || 1}</span></td>
+                <td>${statoColonna}</td>
+                <td class="admin-item-actions" style="vertical-align: middle;">
+                    ${actionButtons}
                 </td>
             `;
             tbody.appendChild(row);
@@ -5593,7 +5684,6 @@ async function chiudiTicket(id) {
     }
 
     try {
-        // COLLEGAMENTO UFFICIALE A FIREBASE
         const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         
         await updateDoc(doc(window.db, 'tickets', id), { 
@@ -5607,5 +5697,23 @@ async function chiudiTicket(id) {
         loadAdminTickets(); 
     } catch (e) { 
         showToast("Errore di aggiornamento", "error"); 
+    }
+}
+
+// ----------------------------------------------------
+// NUOVA FUNZIONE: ELIMINA TICKET (FALSO ALLARME)
+// ----------------------------------------------------
+async function eliminaTicket(id) {
+    if (!confirm("ATTENZIONE: Sei sicuro di voler ELIMINARE questo ticket? Questa azione è irreversibile e il ticket sparirà anche dallo storico.")) return;
+
+    try {
+        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        
+        await deleteDoc(doc(window.db, 'tickets', id));
+        
+        showToast("Ticket eliminato definitivamente.", "success");
+        loadAdminTickets(); 
+    } catch (e) { 
+        showToast("Errore durante l'eliminazione.", "error"); 
     }
 }
