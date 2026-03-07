@@ -1088,7 +1088,7 @@ function logPerformanceMetric(name, duration) {
 let appData = {
     fontane: [],
     beverini: [],
-    news: []
+    news: [],
     tickets: []
 };
 let currentLatLng = null;
