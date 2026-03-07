@@ -206,6 +206,9 @@ function initRemoteControl() {
             // 2. GESTIONE PRIVACY (KILL SWITCH)
             const isTrackingAllowed = data.analyticsEnabled !== false; 
             
+            // *** AGGIUNTO: Salva lo stato precedente di Analytics ***
+            const oldTrackingState = window.Analytics ? window.Analytics.config.trackingEnabled : null;
+            
             // Aggiorna interruttore admin
             const privacyBtn = document.getElementById('global-privacy-toggle');
             const privacyText = document.getElementById('privacy-status-text');
@@ -225,6 +228,34 @@ function initRemoteControl() {
                         privacyText.textContent = "🛡️ PROTEZIONE ATTIVA (No Dati)";
                         privacyText.style.color = "#ef4444";
                     }
+                }
+            }
+            
+            // *** NUOVO: Aggiorna la dashboard Analytics se lo stato è cambiato ***
+            if (oldTrackingState !== null && oldTrackingState !== isTrackingAllowed) {
+                console.log('📊 Stato Analytics cambiato, aggiorno dashboard');
+                
+                // Aggiorna anche l'indicatore nella dashboard Analytics
+                const statusIndicator = document.getElementById('analytics-status-indicator');
+                const statusText = document.getElementById('analytics-status-text');
+                
+                if (statusIndicator && statusText) {
+                    if (isTrackingAllowed) {
+                        statusIndicator.classList.remove('inactive');
+                        statusIndicator.classList.add('active');
+                        statusText.textContent = 'Analytics Attivo';
+                        statusText.className = 'status-active';
+                    } else {
+                        statusIndicator.classList.remove('active');
+                        statusIndicator.classList.add('inactive');
+                        statusText.textContent = 'Analytics Disattivo';
+                        statusText.className = 'status-inactive';
+                    }
+                }
+                
+                // Se la funzione refreshAnalyticsDashboard esiste, chiamala
+                if (typeof refreshAnalyticsDashboard === 'function') {
+                    setTimeout(refreshAnalyticsDashboard, 300);
                 }
             }
         }
@@ -4101,7 +4132,29 @@ function exportAnalyticsData() {
 function refreshAnalyticsDashboard() {
     loadAnalyticsDashboard();
     updatePerformanceMetrics();
-    //showToast('Dashboard analytics aggiornata', 'success');
+    
+    // *** AGGIUNGI QUESTA PARTE ***
+    const globalToggle = document.getElementById('global-privacy-toggle');
+    if (globalToggle) {
+        const isEnabled = globalToggle.checked;
+        const statusIndicator = document.getElementById('analytics-status-indicator');
+        const statusText = document.getElementById('analytics-status-text');
+        
+        if (statusIndicator && statusText) {
+            if (isEnabled) {
+                statusIndicator.classList.remove('inactive');
+                statusIndicator.classList.add('active');
+                statusText.textContent = 'Analytics Attivo';
+                statusText.className = 'status-active';
+            } else {
+                statusIndicator.classList.remove('active');
+                statusIndicator.classList.add('inactive');
+                statusText.textContent = 'Analytics Disattivo';
+                statusText.className = 'status-inactive';
+            }
+        }
+    }
+    // *** FINE PARTE AGGIUNTA ***
     
     if (window.Analytics) {
         window.Analytics.trackEvent('analytics', 'dashboard_refreshed');
