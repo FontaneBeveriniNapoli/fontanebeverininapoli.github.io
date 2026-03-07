@@ -4935,64 +4935,104 @@ function goToAdmin() {
 }
 
 // ==========================================
-// SISTEMA TICKET E ANTI-SPAM (15 GIORNI)
+// SISTEMA TICKET V10 (ANTI-SPAM, VELOCITÀ E RAGGRUPPAMENTO)
 // ==========================================
+
+let isSubmittingTicket = false; // Variabile per bloccare il doppio click veloce
 
 // 1. Funzione che prepara la schermata quando clicchi "Segnala"
 function apriTicket(id, nome, type) {
-    document.getElementById('ticket-item-id').value = id;
-    document.getElementById('ticket-item-name').value = nome;
-    document.getElementById('ticket-item-type').value = type;
-    document.getElementById('ticket-item-display').textContent = `Segnalazione per: ${nome}`;
-    document.getElementById('ticket-problema').value = ""; // Resetta la tendina
+    // Salviamo i dati in variabili globali per usarli al momento dell'invio
+    currentDetailId = id;
+    currentDetailName = nome;
+    currentDetailType = type;
     
+    // Aggiorniamo il titolo del modale
+    const displayEl = document.getElementById('ticket-item-display');
+    if(displayEl) {
+        displayEl.textContent = `Segnalazione per: ${nome}`;
+    }
+    
+    // Mostriamo la schermata con i due bottoni grandi
     showScreen('segnalazioni-screen');
 }
 
-// 2. Funzione che invia il ticket a Firebase e attiva lo scudo
-async function inviaSegnalazioneTicket(event) {
-    event.preventDefault(); // Evita il ricaricamento della pagina
-
-    const id = document.getElementById('ticket-item-id').value;
-    const nome = document.getElementById('ticket-item-name').value;
-    const type = document.getElementById('ticket-item-type').value;
-    const problema = document.getElementById('ticket-problema').value;
-
-    // --- CONTROLLO ANTI-SPAM (15 giorni) ---
-    const spamKey = `ticket_${type}_${id}`;
-    const lastTicketDate = localStorage.getItem(spamKey);
+// 2. Funzione che invia il ticket a Firebase (Istantanea)
+async function inviaSegnalazioneTicket(tipo) {
+    // Se sta già inviando, blocca altri click
+    if (isSubmittingTicket) return;
     
-    if (lastTicketDate) {
-        const giorniPassati = (new Date().getTime() - new Date(lastTicketDate).getTime()) / (1000 * 3600 * 24);
+    // --- CONTROLLO ANTI-SPAM LOCALE (15 giorni) ---
+    const spamKey = `ticket_${currentDetailId}_${tipo}`;
+    const lastSubmission = localStorage.getItem(spamKey);
+    
+    if (lastSubmission) {
+        const giorniPassati = (Date.now() - parseInt(lastSubmission)) / (1000 * 60 * 60 * 24);
         if (giorniPassati < 15) {
-            showToast(`Hai già segnalato questa fontana. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
-            return; // Ferma tutto, non invia niente al server!
+            showToast(`Hai già inviato questa segnalazione. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
+            return;
         }
     }
 
-    // --- SALVATAGGIO SU FIREBASE ---
-    const nuovoTicket = {
-        itemId: id,
-        itemNome: nome,
-        itemType: type,
-        problema: problema,
-        dataSegnalazione: new Date().toISOString(),
-        stato: 'aperto'
-    };
+    isSubmittingTicket = true;
+    
+    // Effetto visivo: "Spegne" leggermente il pulsante mentre invia
+    const btn = document.querySelector(`.report-choice-btn.${tipo === 'guasto' ? 'danger' : 'warning'}`);
+    if (btn) btn.style.opacity = "0.5";
 
     try {
-        const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        const dataRef = collection(window.db, 'tickets'); // Crea una nuova cartella 'tickets' nel database
-        await addDoc(dataRef, nuovoTicket);
+        // --- MODIFICA VELOCITÀ: Chiamata diretta senza 'await import' ---
+        const { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } = window.firebaseFirestore;
+
+        const ticketsRef = collection(window.db, 'tickets');
+        
+        // Cerca se esiste già un ticket APERTO per questa fontana
+        const q = query(ticketsRef, where('itemId', '==', currentDetailId), where('stato', '==', 'aperto'));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            // TICKET GIÀ ESISTENTE -> Raggruppamento (Aggiorna contatore +1)
+            const ticketDoc = querySnapshot.docs[0];
+            const data = ticketDoc.data();
+            const nuovoContatore = (data.contatore || 1) + 1;
+            
+            await updateDoc(doc(window.db, 'tickets', ticketDoc.id), {
+                contatore: nuovoContatore,
+                ultimaSegnalazione: serverTimestamp()
+            });
+            
+            // Popup speciale per segnalazioni multiple
+            showToast("Segnalazione aggiunta! (Il problema è già noto ai tecnici)", "info");
+        } else {
+            // NESSUN TICKET APERTO -> Crea una nuova segnalazione
+            await addDoc(ticketsRef, {
+                itemId: currentDetailId,
+                itemNome: currentDetailName || 'N/A',
+                itemType: currentDetailType || 'N/A',
+                tipo: tipo, // 'guasto' o 'vandalizzato'
+                stato: 'aperto',
+                contatore: 1,
+                dataCreazione: serverTimestamp(),
+                ultimaSegnalazione: serverTimestamp()
+            });
+            
+            // Popup classico verde
+            showToast("Grazie! Segnalazione inviata con successo", "success");
+        }
 
         // --- REGISTRAZIONE ANTI-SPAM LOCALE ---
-        localStorage.setItem(spamKey, new Date().toISOString());
+        localStorage.setItem(spamKey, Date.now().toString());
+        
+        // Torna alla schermata precedente in automatico
+        goBack();
 
-        showToast('Segnalazione inviata con successo! Grazie.', 'success');
-        goBack(); // Torna alla schermata precedente
     } catch (error) {
         console.error("Errore nell'invio del ticket:", error);
-        showToast('Errore di connessione. Riprova più tardi.', 'error');
+        showToast("Errore di connessione. Riprova più tardi.", "error");
+    } finally {
+        // Ripristina il pulsante e sblocca i click
+        isSubmittingTicket = false;
+        if (btn) btn.style.opacity = "1";
     }
 }
 

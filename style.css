@@ -4219,3 +4219,37 @@ html, body {
     overscroll-behavior: none !important;
     touch-action: none; /* Disabilita i trascinamenti fantasma sulla Home */
 }
+/* --- OTTIMIZZAZIONE ADMIN MOBILE & TOCCO ISTANTANEO --- */
+
+/* Rimuove il ritardo di 300ms su tutti i pulsanti */
+button, .report-choice-btn, .action-btn {
+    touch-action: manipulation;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    /* Rende la tabella scorrevole lateralmente senza rompere il layout */
+    .admin-table-container {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 20px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+    }
+
+    .admin-table {
+        min-width: 700px; /* Impedisce alla tabella di schiacciarsi troppo */
+        font-size: 13px;
+    }
+
+    .admin-table th, .admin-table td {
+        padding: 12px 8px;
+    }
+
+    /* Migliora la visibilità dei widget admin su mobile */
+    .admin-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+}
