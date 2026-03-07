@@ -4253,3 +4253,25 @@ button, .report-choice-btn, .action-btn {
         gap: 10px;
     }
 }
+/* ==========================================
+   COLORI PER I POPUP DI CONFERMA (TOAST)
+   ========================================== */
+.toast.success {
+    background-color: #10b981 !important; /* Verde per Conferme/Nuovi */
+    color: white !important;
+}
+
+.toast.info {
+    background-color: #3b82f6 !important; /* Blu per Raggruppamenti/Info */
+    color: white !important;
+}
+
+.toast.warning {
+    background-color: #f59e0b !important; /* Arancione per Avvisi */
+    color: white !important;
+}
+
+.toast.error {
+    background-color: #ef4444 !important; /* Rosso per Errori */
+    color: white !important;
+}

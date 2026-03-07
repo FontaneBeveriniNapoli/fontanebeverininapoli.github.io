@@ -1388,9 +1388,17 @@ function formatDate(dateString) {
 }
 
 // ======================================================
-// GESTIONE MESSAGGI A SCHERMO (TOAST)
+// GESTIONE MESSAGGI A SCHERMO (TOAST) CON SILENZIATORE
 // ======================================================
 function showToast(message, type = 'info', duration = 3000) {
+    // --- SILENZIATORE ANTI-STRESS ---
+    // Blocca i messaggi fastidiosi e ripetitivi della dashboard
+    const messaggiDaBloccare = ["Dashboard", "aggiornata", "caricati", "Analytics"];
+    if (messaggiDaBloccare.some(parola => message.includes(parola))) {
+        return; // Uccide il popup all'istante, non apparirà mai!
+    }
+    // --------------------------------
+
     const toast = document.getElementById('toast');
     if (!toast) return;
     
@@ -1405,17 +1413,6 @@ function showToast(message, type = 'info', duration = 3000) {
     setTimeout(() => {
         toast.classList.remove('show');
     }, duration);
-}
-function logActivity(description) {
-    const timestamp = new Date().toLocaleString('it-IT');
-    activityLog.unshift({ description, timestamp });
-
-    if (activityLog.length > 10) {
-        activityLog = activityLog.slice(0, 10);
-    }
-
-    localStorage.setItem('activityLog', JSON.stringify(activityLog));
-    updateActivityLog();
 }
 
 function updateActivityLog() {
