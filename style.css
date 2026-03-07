@@ -4275,15 +4275,23 @@ button, .report-choice-btn, .action-btn {
     background-color: #ef4444 !important; /* Rosso per Errori */
     color: white !important;
 }
-/* FIX IMPAGINAZIONE PAGINA INFO */
-#info-screen {
-    display: block !important;
-    padding-top: 80px !important; /* Lascia lo spazio esatto per il menu blu in alto */
-    height: 100%;
-    overflow-y: auto;
+/* ==========================================
+   FIX DEFINITIVO PAGINA INFO & CREDITS
+   ========================================== */
+#credits-screen.active {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    background-color: var(--background) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    z-index: 9999 !important;
 }
 
-#info-screen .info-container {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
+#credits-screen .content-area {
+    overflow-y: auto !important;
+    flex: 1 !important;
+    padding-bottom: 50px !important;
 }
