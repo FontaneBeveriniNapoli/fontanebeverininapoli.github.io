@@ -5374,7 +5374,9 @@ function apriTicket(id, nome, type) {
     
     const displayEl = document.getElementById('ticket-item-display');
     if(displayEl) {
-        displayEl.textContent = `Segnalazione per: ${nome}`;
+        // Usa il dizionario per recuperare "Segnalazione per: " o "Report for: "
+        const t = window.translations[currentLanguage];
+        displayEl.textContent = `${t['report_for']}${nome}`;
     }
     showScreen('segnalazioni-screen');
 }

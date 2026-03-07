@@ -56,7 +56,14 @@ window.translations = {
         // --- SMART INSTALL BANNER ---
         'install_title': 'Installa ABC Napoli',
         'install_subtitle': 'Per mappe offline e notifiche',
-        'install_btn': 'Installa' 
+        'install_btn': 'Installa',
+        // --- SEGNALAZIONI (TICKETS) ---
+        'report_title': 'Segnala Problema',
+        'report_for': 'Segnalazione per: ',
+        'report_question': 'Cosa è successo?',
+        'report_broken': 'GUASTO (Non esce acqua)',
+        'report_vandalized': 'VANDALIZZATO',
+        'report_spam_warning': 'Sistema Anti-Spam (15 giorni) attivo.' 
     },
    
     'en': {
@@ -112,6 +119,13 @@ window.translations = {
         // --- SMART INSTALL BANNER ---
         'install_title': 'Install ABC Napoli',
         'install_subtitle': 'For offline maps and notifications',
-        'install_btn': 'Install'
+        'install_btn': 'Install',
+        // --- SEGNALAZIONI (TICKETS) ---
+        'report_title': 'Report a Problem',
+        'report_for': 'Report for: ',
+        'report_question': 'What happened?',
+        'report_broken': 'BROKEN (No water)',
+        'report_vandalized': 'VANDALIZED',
+        'report_spam_warning': 'Anti-Spam System (15 days) active.'
     }
 };
