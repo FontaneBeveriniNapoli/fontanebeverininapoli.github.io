@@ -3950,7 +3950,13 @@ function updateSessionInfo() {
         const statusIndicator = document.getElementById('analytics-status-indicator');
         const statusText = document.getElementById('analytics-status-text');
         
-        if (window.Analytics.config.trackingEnabled) {
+        // *** MODIFICATO: Legge dall'interruttore in configurazione ***
+        const globalToggle = document.getElementById('global-privacy-toggle');
+        
+        // Se l'interruttore esiste, usa quello, altrimenti usa window.Analytics (come fallback)
+        const isEnabled = globalToggle ? globalToggle.checked : window.Analytics.config.trackingEnabled;
+        
+        if (isEnabled) {
             statusIndicator.classList.remove('inactive');
             statusIndicator.classList.add('active');
             statusText.textContent = 'Analytics Attivo';
