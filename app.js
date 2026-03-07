@@ -287,9 +287,20 @@ async function toggleGlobalAnalytics(checkbox) {
         : "🛡️ Stai per DISABILITARE Analytics per tutti.";
 
     if (confirm(msg)) {
+        // 1. Invia il comando di spegnimento al Database (per tutti gli utenti)
         await updateConfig('analyticsEnabled', newState);
+        
+        // 2. Spegne anche il "motore" interno del tuo pannello Admin
+        if (window.Analytics) {
+            window.Analytics.setTrackingEnabled(newState);
+        }
+
+        // 3. FORZA L'AGGIORNAMENTO VISIVO IMMEDIATO (Pallino, Scritte, Colori)
+        updateAnalyticsStatusFromConfig();
+        
         showToast(newState ? "Analytics ATTIVATO" : "Analytics DISATTIVATO", "success");
     } else {
+        // Se l'utente clicca su "Annulla" nel popup, l'interruttore torna come prima
         checkbox.checked = !newState;
     }
 }
