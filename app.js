@@ -1415,6 +1415,42 @@ function showToast(message, type = 'info', duration = 3000) {
     }, duration);
 }
 
+// ======================================================
+// GESTIONE LOG ATTIVITÀ E SEGNALAZIONE ERRORI (FIX CRASH)
+// ======================================================
+
+// 1. Funzione logActivity mancante (evita il blocco al caricamento)
+window.logActivity = async function(action, details = "") {
+    console.log(`[Log Attività] ${action}:`, details);
+    try {
+        // Se l'utente è loggato come operatore/admin, salva l'azione nel database
+        if (window.firebaseFirestore && window.db && typeof currentUserRole !== 'undefined' && currentUserRole !== null) {
+            const { collection, addDoc, serverTimestamp } = window.firebaseFirestore;
+            await addDoc(collection(window.db, 'activity_logs'), {
+                action: action,
+                details: details,
+                user: typeof currentUserEmail !== 'undefined' ? currentUserEmail : 'Sconosciuto',
+                role: currentUserRole,
+                timestamp: serverTimestamp()
+            });
+        }
+    } catch (e) {
+        console.warn("Impossibile salvare il log di attività:", e);
+    }
+};
+
+// 2. Ripara il sistema che invia gli errori all'Analytics
+function logErrorToAnalytics(errorName, errorMessage) {
+    console.error(`[App Error] ${errorName}: ${errorMessage}`);
+    try {
+        if (window.Analytics && typeof window.Analytics.trackEvent === 'function') {
+            window.Analytics.trackEvent('error', errorName, errorMessage);
+        }
+    } catch (e) {
+        console.warn("Errore durante l'invio del log ad Analytics:", e);
+    }
+}
+
 function updateActivityLog() {
     const activityList = document.getElementById('activity-list');
     if (!activityList) return;
