@@ -1264,7 +1264,7 @@ async function loadFirebaseData(type) {
         appData[type] = data;
         saveLocalData();
         
-        showToast(`${data.length} ${type} caricati da Firebase`, 'success');
+        //showToast(`${data.length} ${type} caricati da Firebase`, 'success');
         logActivity(`${data.length} ${type} caricati da Firebase`);
         
         return data;
@@ -1275,21 +1275,43 @@ async function loadFirebaseData(type) {
     }
 }
 
+function trovaNumeroDisponibile(type) {
+    const items = appData[type] || [];
+    // Estraiamo tutti gli ID che sono numeri puri e li ordiniamo
+    const numeriOccupati = items
+        .map(item => parseInt(item.id))
+        .filter(num => !isNaN(num))
+        .sort((a, b) => a - b);
+
+    let nuovoNumero = 1;
+    for (let i = 0; i < numeriOccupati.length; i++) {
+        if (numeriOccupati[i] === nuovoNumero) {
+            nuovoNumero++;
+        } else if (numeriOccupati[i] > nuovoNumero) {
+            break; // Abbiamo trovato un buco nella sequenza!
+        }
+    }
+    return nuovoNumero.toString();
+}
+
+// MODIFICATA: Salva su Firebase usando la numerazione intelligente
 async function saveFirebaseData(type, item, id = null) {
     try {
-        const { doc, setDoc, updateDoc, collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        
+        const { doc, setDoc, updateDoc, collection } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         let savedId;
         const collectionName = COLLECTIONS[type.toUpperCase()];
         
         if (id) {
+            // Se stiamo modificando un elemento esistente, aggiorniamo e basta
             const docRef = doc(window.db, collectionName, id);
             await updateDoc(docRef, item);
             savedId = id;
         } else {
-            const dataRef = collection(window.db, collectionName);
-            const newDoc = await addDoc(dataRef, item);
-            savedId = newDoc.id;
+            // SE È NUOVO: Calcoliamo il numero progressivo pulito!
+            const nuovoId = trovaNumeroDisponibile(type);
+            const docRef = doc(window.db, collectionName, nuovoId);
+            await setDoc(docRef, item); // Usiamo setDoc invece di addDoc per forzare l'ID
+            savedId = nuovoId;
         }
         
         return savedId;
@@ -1353,7 +1375,7 @@ function debounce(func, wait) {
 
 function getStatusText(stato) {
     const statusMap = {
-        'funzionante': 'Funzionante',
+        'funzionante': 'In Servizio',
         'non-funzionante': 'Non Funzionante',
         'manutenzione': 'In Manutenzione'
     };
@@ -1366,15 +1388,24 @@ function formatDate(dateString) {
 }
 
 // ======================================================
-// MODIFICA: Funzione showToast() con output visivo rimosso
+// GESTIONE MESSAGGI A SCHERMO (TOAST)
 // ======================================================
 function showToast(message, type = 'info', duration = 3000) {
-    console.log(`[Toast Disabled] Tipo: ${type}, Messaggio: ${message}`);
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    
+    // Resetta le classi e imposta il colore/tipo
+    toast.className = 'toast ' + type;
+    toast.textContent = message;
+    
+    // Mostra il toast
+    toast.classList.add('show');
+    
+    // Nascondi dopo X secondi
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, duration);
 }
-// ======================================================
-// FINE MODIFICA
-// ======================================================
-
 function logActivity(description) {
     const timestamp = new Date().toLocaleString('it-IT');
     activityLog.unshift({ description, timestamp });
@@ -1404,16 +1435,17 @@ function updateActivityLog() {
 }
 
 function updateDashboardStats() {
+    // Statistiche Fontane
     document.getElementById('total-fontane').textContent = appData.fontane.length;
     document.getElementById('fontane-funzionanti').textContent = appData.fontane.filter(f => f.stato === 'funzionante').length;
-    document.getElementById('fontane-non-funzionanti').textContent = appData.fontane.filter(f => f.stato === 'non-funzionante').length;
     document.getElementById('fontane-manutenzione').textContent = appData.fontane.filter(f => f.stato === 'manutenzione').length;
     
+    // Statistiche Beverini
     document.getElementById('total-beverini').textContent = appData.beverini.length;
     document.getElementById('beverini-funzionanti').textContent = appData.beverini.filter(b => b.stato === 'funzionante').length;
-    document.getElementById('beverini-non-funzionanti').textContent = appData.beverini.filter(b => b.stato === 'non-funzionante').length;
     document.getElementById('beverini-manutenzione').textContent = appData.beverini.filter(b => b.stato === 'manutenzione').length;
     
+    // Statistiche News
     document.getElementById('total-news').textContent = appData.news.length;
 }
 
@@ -1532,6 +1564,7 @@ function showAdminPanel() {
     loadAdminBeverini();
     loadAdminNews();
     updateDashboardStats();
+    loadAdminTickets();
     
     // ✅ CARICA ANALYTICS DASHBOARD
     loadAnalyticsDashboard();
@@ -2111,8 +2144,8 @@ function showDetail(id, type) {
                 <button class="detail-action-btn primary" onclick="navigateTo(${item.latitudine}, ${item.longitudine})">
                     <i class="fas fa-location-arrow"></i> ${t.navigate_btn || 'Naviga'}
                 </button>
-                <button class="detail-action-btn" onclick="openReportScreen('${(getLocalizedText(item, 'nome') || '').replace(/'/g, "\\\\'")}')" style="background: #ef4444; color: white;">
-                    <i class="fas fa-bullhorn"></i> ${t.report_btn || 'Segnala'}
+                <button class="detail-action-btn" onclick="apriTicket('${item.id}', '${(getLocalizedText(item, 'nome') || '').replace(/'/g, "\\\\'").replace(/"/g, '&quot;')}', '${type}')" style="background: #ef4444; color: white;">
+                    <i class="fas fa-exclamation-triangle"></i> ${t.report_btn || 'Segnala'}
                 </button>
             </div>
         </div>
@@ -2299,7 +2332,7 @@ function createMarker(item, type) {
 
     marker.bindPopup(`
         <div class="leaflet-popup-content">
-            <div class="popup-title">${item.nome}</div>
+            <div class="popup-title"><span style="color: var(--primary-color); font-weight: 900; margin-right: 5px;">#${item.id}</span> ${item.nome}</div>
             <p>${item.indirizzo}</p>
             <p>Stato: ${getStatusText(item.stato)}</p>
             <button class="popup-btn" onclick="showDetail('${item.id}', '${type}')">Dettagli</button>
@@ -2813,7 +2846,7 @@ async function loadAdminFontane() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td style="text-align: center;">${checkboxHtml}</td>
-            <td>${fontana.id}</td>
+            <td style="font-weight: bold; color: var(--primary-color);">#${fontana.id}</td>
             <td>${fontana.nome}</td>
             <td>${fontana.indirizzo}</td>
             <td><span class="item-status status-${fontana.stato}">${getStatusText(fontana.stato)}</span></td>
@@ -3001,7 +3034,7 @@ async function loadAdminBeverini() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td style="text-align: center;">${checkboxHtml}</td>
-            <td>${beverino.id}</td>
+            <td style="font-weight: bold; color: var(--primary-color);">#${beverino.id}</td>
             <td>${beverino.nome}</td>
             <td>${beverino.indirizzo}</td>
             <td><span class="item-status status-${beverino.stato}">${getStatusText(beverino.stato)}</span></td>
@@ -3171,7 +3204,7 @@ async function loadAdminNews() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td style="text-align: center;">${checkboxHtml}</td>
-            <td>${news.id}</td>
+            <td style="font-weight: bold; color: var(--primary-color);">#${news.id}</td>
             <td>${news.titolo}</td>
             <td>${formatDate(news.data)}</td>
             <td>${news.categoria}</td>
@@ -3473,108 +3506,113 @@ function handleFileImport(type, files) {
     reader.readAsArrayBuffer(file);
 }
 
+// --- IMPORTAZIONE FONTANE ---
 function importFontane(data) {
     const newFontane = data.map((item) => ({
         nome: item.Nome || item.nome || '',
-        nome_en: item.Nome_EN || item.nome_en || '', // LEGGE EXCEL INGLESE
+        nome_en: item.Nome_EN || item.nome_en || '', 
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
         anno: item.Anno || item.anno || '',
         descrizione: item.Descrizione || item.descrizione || '',
-        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // LEGGE EXCEL INGLESE
+        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', 
         storico: item.Storico || item.storico || '',
-        storico_en: item.Storico_EN || item.storico_en || '', // LEGGE EXCEL INGLESE
+        storico_en: item.Storico_EN || item.storico_en || '', 
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
         last_modified: new Date().toISOString()
     }));
 
-    let importedCount = 0;
-    
-    newFontane.forEach(async (fontana) => {
-        try {
-            const id = await saveFirebaseData('fontane', fontana);
-            appData.fontane.push({ id, ...fontana });
-            importedCount++;
-            
-            if (importedCount === newFontane.length) {
-                saveLocalData();
-                loadAdminFontane();
-                showToast(`${importedCount} fontane importate con successo!`, 'success');
+    // Funzione interna che le salva UNA ALLA VOLTA (Sequenziale)
+    (async () => {
+        let successCount = 0;
+        for (let i = 0; i < newFontane.length; i++) {
+            try {
+                // Aspetta che questa fontana sia salvata prima di passare alla prossima
+                const id = await saveFirebaseData('fontane', newFontane[i]);
+                appData.fontane.push({ id, ...newFontane[i] });
+                successCount++;
+            } catch (error) {
+                console.error('Errore import fontana:', error);
             }
-        } catch (error) {
-            console.error('Errore import fontana:', error);
         }
-    });
+        if (successCount > 0) {
+            saveLocalData();
+            loadAdminFontane();
+            showToast(`${successCount} fontane importate con successo!`, 'success');
+        }
+    })();
 
     return newFontane.length;
 }
 
+// --- IMPORTAZIONE BEVERINI ---
 function importBeverini(data) {
     const newBeverini = data.map((item) => ({
         nome: item.Nome || item.nome || '',
-        nome_en: item.Nome_EN || item.nome_en || '', // LEGGE EXCEL INGLESE
+        nome_en: item.Nome_EN || item.nome_en || '',
         indirizzo: item.Indirizzo || item.indirizzo || '',
         stato: item.Stato || item.stato || 'funzionante',
         descrizione: item.Descrizione || item.descrizione || '',
-        descrizione_en: item.Descrizione_EN || item.descrizione_en || '', // LEGGE EXCEL INGLESE
+        descrizione_en: item.Descrizione_EN || item.descrizione_en || '',
         latitudine: parseFloat(item.Latitudine) || parseFloat(item.latitudine) || 0,
         longitudine: parseFloat(item.Longitudine) || parseFloat(item.longitudine) || 0,
         immagine: item.Immagine || item.immagine || '',
         last_modified: new Date().toISOString()
     }));
 
-    let importedCount = 0;
-    
-    newBeverini.forEach(async (beverino) => {
-        try {
-            const id = await saveFirebaseData('beverini', beverino);
-            appData.beverini.push({ id, ...beverino });
-            importedCount++;
-            
-            if (importedCount === newBeverini.length) {
-                saveLocalData();
-                loadAdminBeverini();
-                showToast(`${importedCount} beverini importati con successo!`, 'success');
+    (async () => {
+        let successCount = 0;
+        for (let i = 0; i < newBeverini.length; i++) {
+            try {
+                const id = await saveFirebaseData('beverini', newBeverini[i]);
+                appData.beverini.push({ id, ...newBeverini[i] });
+                successCount++;
+            } catch (error) {
+                console.error('Errore import beverino:', error);
             }
-        } catch (error) {
-            console.error('Errore import beverino:', error);
         }
-    });
+        if (successCount > 0) {
+            saveLocalData();
+            loadAdminBeverini();
+            showToast(`${successCount} beverini importati con successo!`, 'success');
+        }
+    })();
 
     return newBeverini.length;
 }
 
+// --- IMPORTAZIONE NEWS ---
 function importNews(data) {
     const newNews = data.map((item) => ({
         titolo: item.Titolo || item.titolo || '',
-        titolo_en: item.Titolo_EN || item.titolo_en || '', // LEGGE EXCEL INGLESE
+        titolo_en: item.Titolo_EN || item.titolo_en || '',
         contenuto: item.Contenuto || item.contenuto || '',
-        contenuto_en: item.Contenuto_EN || item.contenuto_en || '', // LEGGE EXCEL INGLESE
+        contenuto_en: item.Contenuto_EN || item.contenuto_en || '',
         data: item.Data || item.data || new Date().toISOString().split('T')[0],
         categoria: item.Categoria || item.categoria || '',
         fonte: item.Fonte || item.fonte || '',
         last_modified: new Date().toISOString()
     }));
 
-    let importedCount = 0;
-    
-    newNews.forEach(async (news) => {
-        try {
-            const id = await saveFirebaseData('news', news);
-            appData.news.push({ id, ...news });
-            importedCount++;
-            
-            if (importedCount === newNews.length) {
-                saveLocalData();
-                loadAdminNews();
-                showToast(`${importedCount} news importate con successo!`, 'success');
+    (async () => {
+        let successCount = 0;
+        for (let i = 0; i < newNews.length; i++) {
+            try {
+                const id = await saveFirebaseData('news', newNews[i]);
+                appData.news.push({ id, ...newNews[i] });
+                successCount++;
+            } catch (error) {
+                console.error('Errore import news:', error);
             }
-        } catch (error) {
-            console.error('Errore import news:', error);
         }
-    });
+        if (successCount > 0) {
+            saveLocalData();
+            loadAdminNews();
+            showToast(`${successCount} news importate con successo!`, 'success');
+        }
+    })();
 
     return newNews.length;
 }
@@ -4030,7 +4068,7 @@ function exportAnalyticsData() {
 function refreshAnalyticsDashboard() {
     loadAnalyticsDashboard();
     updatePerformanceMetrics();
-    showToast('Dashboard analytics aggiornata', 'success');
+    //showToast('Dashboard analytics aggiornata', 'success');
     
     if (window.Analytics) {
         window.Analytics.trackEvent('analytics', 'dashboard_refreshed');
@@ -4896,32 +4934,66 @@ function goToAdmin() {
     }
 }
 
-// FUNZIONE CHE PREPARA L'EMAIL
-function inviaSegnalazione(event) {
-    event.preventDefault();
+// ==========================================
+// SISTEMA TICKET E ANTI-SPAM (15 GIORNI)
+// ==========================================
 
-    const tipo = document.getElementById('report-type').value;
-    const descrizione = document.getElementById('report-desc').value;
+// 1. Funzione che prepara la schermata quando clicchi "Segnala"
+function apriTicket(id, nome, type) {
+    document.getElementById('ticket-item-id').value = id;
+    document.getElementById('ticket-item-name').value = nome;
+    document.getElementById('ticket-item-type').value = type;
+    document.getElementById('ticket-item-display').textContent = `Segnalazione per: ${nome}`;
+    document.getElementById('ticket-problema').value = ""; // Resetta la tendina
     
-    // INDIRIZZO EMAIL UFFICIALE
-    const emailDestinatario = "fontane.beverini@abc.napoli.it"; 
-    
-    const oggetto = encodeURIComponent(`Segnalazione App ABC: ${tipo}`);
-    
-    // Costruiamo il corpo della mail in modo ordinato
-    const corpo = encodeURIComponent(
-        `Gentile Assistenza ABC Napoli,\n\n` +
-        `Vorrei segnalare il seguente problema:\n` +
-        `TIPO: ${tipo}\n\n` +
-        `DESCRIZIONE E POSIZIONE:\n${descrizione}\n\n` +
-        `---\nInviato dall'App ABC Napoli F&B`
-    );
+    showScreen('segnalazioni-screen');
+}
 
-    // Apre l'app di posta predefinita
-    window.location.href = `mailto:${emailDestinatario}?subject=${oggetto}&body=${corpo}`;
+// 2. Funzione che invia il ticket a Firebase e attiva lo scudo
+async function inviaSegnalazioneTicket(event) {
+    event.preventDefault(); // Evita il ricaricamento della pagina
+
+    const id = document.getElementById('ticket-item-id').value;
+    const nome = document.getElementById('ticket-item-name').value;
+    const type = document.getElementById('ticket-item-type').value;
+    const problema = document.getElementById('ticket-problema').value;
+
+    // --- CONTROLLO ANTI-SPAM (15 giorni) ---
+    const spamKey = `ticket_${type}_${id}`;
+    const lastTicketDate = localStorage.getItem(spamKey);
     
-    // Opzionale: svuota il campo descrizione dopo l'invio
-    // document.getElementById('report-desc').value = ''; 
+    if (lastTicketDate) {
+        const giorniPassati = (new Date().getTime() - new Date(lastTicketDate).getTime()) / (1000 * 3600 * 24);
+        if (giorniPassati < 15) {
+            showToast(`Hai già segnalato questa fontana. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
+            return; // Ferma tutto, non invia niente al server!
+        }
+    }
+
+    // --- SALVATAGGIO SU FIREBASE ---
+    const nuovoTicket = {
+        itemId: id,
+        itemNome: nome,
+        itemType: type,
+        problema: problema,
+        dataSegnalazione: new Date().toISOString(),
+        stato: 'aperto'
+    };
+
+    try {
+        const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const dataRef = collection(window.db, 'tickets'); // Crea una nuova cartella 'tickets' nel database
+        await addDoc(dataRef, nuovoTicket);
+
+        // --- REGISTRAZIONE ANTI-SPAM LOCALE ---
+        localStorage.setItem(spamKey, new Date().toISOString());
+
+        showToast('Segnalazione inviata con successo! Grazie.', 'success');
+        goBack(); // Torna alla schermata precedente
+    } catch (error) {
+        console.error("Errore nell'invio del ticket:", error);
+        showToast('Errore di connessione. Riprova più tardi.', 'error');
+    }
 }
 
 // ==========================================
@@ -5306,5 +5378,199 @@ function shareAppLink() {
         navigator.clipboard.writeText(shareData.url).then(() => {
             showToast('Link copiato negli appunti!', 'success');
         });
+    }
+}
+// ==========================================
+// GESTIONE TICKETS E ANTI-SPAM (V10 - PROFESSIONALE)
+// ==========================================
+
+let isSubmittingTicket = false; // Variabile per il blocco istantaneo (Debounce)
+
+function apriTicket(id, nome, type) {
+    document.getElementById('ticket-item-id').value = id;
+    document.getElementById('ticket-item-name').value = nome;
+    document.getElementById('ticket-item-type').value = type;
+    document.getElementById('ticket-item-display').textContent = `Segnalazione per: ${nome}`;
+    showScreen('segnalazioni-screen');
+}
+
+async function inviaSegnalazioneTicket(problema) {
+    // 1. BLOCCO ISTANTANEO (Evita il doppio click accidentale)
+    if (isSubmittingTicket) return;
+    isSubmittingTicket = true;
+
+    const id = document.getElementById('ticket-item-id').value;
+    const nome = document.getElementById('ticket-item-name').value;
+    const type = document.getElementById('ticket-item-type').value;
+
+    // 2. BLOCCO LOCALE 15 GIORNI (Cooldown per singolo telefono)
+    const spamKey = `ticket_${type}_${id}`;
+    const lastTicketDate = localStorage.getItem(spamKey);
+    
+    if (lastTicketDate) {
+        const giorniPassati = (new Date().getTime() - new Date(lastTicketDate).getTime()) / (1000 * 3600 * 24);
+        if (giorniPassati < 15) {
+            showToast(`Hai già segnalato questo problema. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
+            isSubmittingTicket = false;
+            return;
+        }
+    }
+
+    try {
+        const { collection, getDocs, query, where, addDoc, updateDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const ticketsRef = collection(window.db, 'tickets');
+        
+        // 3. LOGICA FIREBASE: Cerchiamo se c'è già un ticket APERTO per questa fontana
+        const q = query(ticketsRef, where("itemId", "==", id), where("stato", "==", "aperto"));
+        const snapshot = await getDocs(q);
+
+        const dataCorrente = new Date().toISOString();
+
+        if (snapshot.empty) {
+            // NESSUN TICKET APERTO: Ne creiamo uno nuovo (Contatore a 1)
+            await addDoc(ticketsRef, {
+                itemId: id,
+                itemNome: nome,
+                itemType: type,
+                problema: problema, // Salviamo "Guasto idrico" o "Vandalizzato"
+                dataPrimaSegnalazione: dataCorrente,
+                dataUltimaSegnalazione: dataCorrente,
+                contatore: 1,
+                stato: 'aperto'
+            });
+            showToast('Segnalazione inviata con successo!', 'success'); // Toast Verde
+        } else {
+            // C'È GIÀ UN TICKET: Non creiamo doppioni, aggiungiamo +1 e aggiorniamo la data
+            const ticketDoc = snapshot.docs[0];
+            const ticketData = ticketDoc.data();
+            
+            await updateDoc(doc(window.db, 'tickets', ticketDoc.id), {
+                contatore: (ticketData.contatore || 1) + 1,
+                dataUltimaSegnalazione: dataCorrente
+            });
+            showToast('Segnalazione aggiunta a un ticket già esistente.', 'info'); // Toast Azzurro
+        }
+
+        // Attiviamo lo scudo di 15 giorni sul telefono
+        localStorage.setItem(spamKey, dataCorrente);
+        
+        // Aspettiamo 1 secondo prima di tornare indietro per far leggere il toast all'utente
+        setTimeout(() => {
+            isSubmittingTicket = false;
+            goBack();
+        }, 1200);
+
+    } catch (error) {
+        console.error("Errore invio:", error);
+        showToast('Errore di connessione. Riprova.', 'error');
+        isSubmittingTicket = false;
+    }
+}
+
+// --- ADMIN TICKETS ---
+
+async function loadAdminTickets() {
+    const tbody = document.getElementById('tickets-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Caricamento in corso...</td></tr>';
+
+    try {
+        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const snapshot = await getDocs(collection(window.db, 'tickets'));
+        
+        let tickets = [];
+        let statReali = 0;
+        let statSegnalazioni = 0;
+        let statRisolti = 0;
+        let statAttesa = 0;
+
+        snapshot.forEach(doc => {
+            const t = doc.data();
+            tickets.push({ id: doc.id, ...t });
+            
+            // Calcolo Statistiche Dashboard (I 4 Riquadri)
+            statReali++; // Ogni documento su Firebase è un intervento reale
+            statSegnalazioni += (t.contatore || 1); // Somma matematica di tutti i click degli utenti
+            
+            if (t.stato === 'aperto') {
+                statAttesa++;
+            } else {
+                statRisolti++;
+            }
+        });
+
+        // Aggiorna i riquadri HTML in cima alla pagina Admin
+        const badgeReali = document.getElementById('ticket-reali');
+        if (badgeReali) badgeReali.textContent = statReali;
+        
+        const badgeSegnalazioni = document.getElementById('ticket-segnalazioni');
+        if (badgeSegnalazioni) badgeSegnalazioni.textContent = statSegnalazioni;
+        
+        const badgeRisolti = document.getElementById('ticket-risolti');
+        if (badgeRisolti) badgeRisolti.textContent = statRisolti;
+        
+        const badgeAttesa = document.getElementById('ticket-attesa');
+        if (badgeAttesa) badgeAttesa.textContent = statAttesa;
+
+        // Estraiamo solo i ticket aperti e LI ORDINIAMO PER PRIORITÀ (Contatore più alto = in cima)
+        let openTicketsList = tickets.filter(t => t.stato === 'aperto');
+        openTicketsList.sort((a, b) => (b.contatore || 1) - (a.contatore || 1));
+
+        tbody.innerHTML = '';
+
+        if (openTicketsList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Nessun intervento in attesa. Ottimo lavoro!</td></tr>';
+            return;
+        }
+
+        openTicketsList.forEach(t => {
+            const row = document.createElement('tr');
+            // Usiamo l'ultima data di segnalazione per capire quanto è recente
+            const dataFormat = new Date(t.dataUltimaSegnalazione || t.dataPrimaSegnalazione).toLocaleDateString('it-IT');
+            
+            row.innerHTML = `
+                <td>${dataFormat}</td>
+                <td><strong>#${t.itemId}</strong><br>${t.itemNome}</td>
+                <td>${t.problema}</td>
+                <td><span style="background:#ef4444; color:white; padding:4px 10px; border-radius:12px; font-weight:bold; font-size:1.1rem;">${t.contatore || 1}</span></td>
+                <td><span class="item-status status-broken">IN ATTESA</span></td>
+                <td class="admin-item-actions">
+                    <button class="edit-btn" onclick="chiudiTicket('${t.id}')"><i class="fas fa-wrench"></i> Risolto</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error("Errore Admin:", error);
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Errore server (permessi o connessione).</td></tr>';
+    }
+}
+
+async function chiudiTicket(id) {
+    // 5. CHIUSURA OBBLIGATORIA CON NOTA E STORICO
+    const nota = prompt("Inserisci la nota di intervento per chiudere questo ticket (OBBLIGATORIO):");
+    
+    if (nota === null) return; // L'operatore ha cliccato Annulla sul prompt
+    if (nota.trim() === "") {
+        alert("ERRORE: La nota di intervento è obbligatoria per segnare il ticket come risolto.");
+        return; // Blocca la chiusura se la nota è vuota
+    }
+
+    try {
+        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        
+        // Aggiorna il database chiudendo il ticket e salvando i dati dell'operatore
+        await updateDoc(doc(window.db, 'tickets', id), { 
+            stato: 'chiuso',
+            notaIntervento: nota,
+            operatore: currentUserRole || 'Admin', // Salva chi ha fatto l'operazione
+            dataChiusura: new Date().toISOString()
+        });
+        
+        showToast("Ticket risolto e archiviato nello storico!", "success");
+        loadAdminTickets(); // Ricarica la tabella e i riquadri
+    } catch (e) { 
+        showToast("Errore di aggiornamento", "error"); 
     }
 }
