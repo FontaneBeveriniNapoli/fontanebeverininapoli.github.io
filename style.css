@@ -4275,23 +4275,3 @@ button, .report-choice-btn, .action-btn {
     background-color: #ef4444 !important; /* Rosso per Errori */
     color: white !important;
 }
-/* ==========================================
-   FIX DEFINITIVO PAGINA INFO & CREDITS
-   ========================================== */
-#credits-screen.active {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100dvh !important;
-    background-color: var(--background) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    z-index: 9999 !important;
-}
-
-#credits-screen .content-area {
-    overflow-y: auto !important;
-    flex: 1 !important;
-    padding-bottom: 50px !important;
-}
