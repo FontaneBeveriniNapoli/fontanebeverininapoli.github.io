@@ -1089,6 +1089,7 @@ let appData = {
     fontane: [],
     beverini: [],
     news: []
+    tickets: []
 };
 let currentLatLng = null;
 let screenHistory = ['home-screen'];
@@ -3490,6 +3491,56 @@ function exportDataToExcel(type) {
                     'Fonte': item.fonte || ''
                 }));
                 break;
+
+             // ---> AGGIUNGI DA QUI IN POI <---
+             case 'tickets':
+                 if (!appData.tickets || appData.tickets.length === 0) {
+                     showToast('Nessun ticket da esportare o pagina non caricata', 'warning');
+                     return;
+                 }
+
+                 // 1. Dati per il foglio "Da Risolvere"
+                 const ticketAperti = appData.tickets.filter(t => t.stato === 'aperto').map(item => ({
+                     'ID Elemento': item.itemId || '',
+                     'Nome Punto Acqua': item.itemNome || '',
+                     'Tipo Problema': item.tipo ? item.tipo.toUpperCase() : 'SEGNALAZIONE',
+                     'N. Richieste Utenti': item.contatore || 1,
+                     'Data Ultima Segnalazione': (item.ultimaSegnalazione && item.ultimaSegnalazione.toDate) ? item.ultimaSegnalazione.toDate().toLocaleDateString('it-IT') : 'N/A',
+                     'Stato': 'IN ATTESA DI INTERVENTO'
+                 }));
+
+                 // 2. Dati per il foglio "Storico Risolti"
+                 const ticketChiusi = appData.tickets.filter(t => t.stato === 'chiuso').map(item => ({
+                     'ID Elemento': item.itemId || '',
+                     'Nome Punto Acqua': item.itemNome || '',
+                     'Tipo Problema': item.tipo ? item.tipo.toUpperCase() : 'SEGNALAZIONE',
+                     'N. Richieste Totali': item.contatore || 1,
+                     'Data Risoluzione': item.dataChiusura ? new Date(item.dataChiusura).toLocaleDateString('it-IT') : 'N/A',
+                     'Operatore (Chi l\'ha risolto)': item.operatore || 'Sconosciuto',
+                     'Motivo / Nota Intervento': item.notaIntervento || '',
+                     'Stato': 'RISOLTO E ARCHIVIATO'
+                 }));
+
+                 // 3. Creazione del file Excel a doppio foglio
+                 const wbTickets = XLSX.utils.book_new();
+            
+                 if (ticketAperti.length > 0) {
+                     const wsAperti = XLSX.utils.json_to_sheet(ticketAperti);
+                     XLSX.utils.book_append_sheet(wbTickets, wsAperti, 'Da Risolvere');
+                 }
+                 if (ticketChiusi.length > 0) {
+                     const wsChiusi = XLSX.utils.json_to_sheet(ticketChiusi);
+                     XLSX.utils.book_append_sheet(wbTickets, wsChiusi, 'Storico Risolti');
+                 }
+
+                 // 4. Download del file
+                 const dateStr = new Date().toISOString().split('T')[0];
+                 XLSX.writeFile(wbTickets, `Report_Interventi_${dateStr}.xlsx`);
+            
+                 showToast('Report Ticket esportato in Excel con successo!', 'success');
+                 logActivity('Esportazione Report Ticket in Excel');
+                 return; // Usciamo dalla funzione qui per non intaccare le altre esportazioni
+        // ---> FINE PARTE DA AGGIUNGERE <---
         }
 
         const ws = XLSX.utils.json_to_sheet(excelData);
@@ -5613,6 +5664,9 @@ async function loadAdminTickets() {
         
         const badgeAttesa = document.getElementById('ticket-attesa');
         if (badgeAttesa) badgeAttesa.textContent = statAttesa;
+        
+        // ---> AGGIUNGI QUESTA RIGA QUI <---
+        appData.tickets = tickets;
 
         // Filtra Aperti o Storico
         let filteredTickets = tickets.filter(t => mostraStoricoTickets ? t.stato === 'chiuso' : t.stato === 'aperto');
