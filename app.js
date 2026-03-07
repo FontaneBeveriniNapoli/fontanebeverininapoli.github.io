@@ -5576,11 +5576,13 @@ async function loadAdminTickets() {
                 `;
             }
 
+            // GRAFICA PER L'EMAIL OPERATORE (Solo nello storico)
             let statoColonna = '';
             if (mostraStoricoTickets) {
                 statoColonna = `
                     <span style="background:#10b981; color:white; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:bold;">RISOLTO</span>
                     <div style="font-size: 0.85rem; margin-top: 8px; color: #475569; border-top: 1px dashed #cbd5e1; padding-top: 5px;">
+                        <strong style="color: #3b82f6;"><i class="fas fa-user-check"></i> By:</strong> ${t.operatore || 'Sconosciuto'}<br>
                         <strong>Nota:</strong> ${t.notaIntervento || 'Nessuna nota'}
                     </div>
                 `;
@@ -5619,10 +5621,13 @@ async function chiudiTicket(id) {
     try {
         const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         
+        // RECUPERA L'EMAIL REALE DELL'UTENTE
+        const userEmail = window.auth && window.auth.currentUser ? window.auth.currentUser.email : 'Admin Locale';
+        
         await updateDoc(doc(window.db, 'tickets', id), { 
             stato: 'chiuso',
             notaIntervento: nota,
-            operatore: currentUserRole || 'Admin', 
+            operatore: userEmail, // <--- Salva nel database l'indirizzo email vero
             dataChiusura: new Date().toISOString()
         });
         
