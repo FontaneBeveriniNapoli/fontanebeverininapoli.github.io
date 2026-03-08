@@ -488,7 +488,7 @@ body {
 /* Stile per il pulsante admin icona sola */
 .admin-icon-btn-container {
     position: absolute;
-    top: 20px;
+    top: 30px;
     right: 20px;
     z-index: 1000;
 }
