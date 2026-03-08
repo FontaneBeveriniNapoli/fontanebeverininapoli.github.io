@@ -5828,3 +5828,33 @@ async function eliminaTicket(id) {
         showToast("Errore durante l'eliminazione.", "error"); 
     }
 }
+// ==========================================
+// QUOTA TRACKER FIREBASE (Stima Consumi)
+// ==========================================
+function aggiornaQuotaFirebase(sessioniOggi) {
+    const LETTURE_PER_AVVIO = 195; // 25 fontane + 170 beverini
+    const LIMITE_GIORNALIERO = 50000;
+    
+    let sessioni = parseInt(sessioniOggi) || 0;
+    let lettureStimate = sessioni * LETTURE_PER_AVVIO;
+    let percentuale = (lettureStimate / LIMITE_GIORNALIERO) * 100;
+    let percentualeVisiva = percentuale > 100 ? 100 : percentuale;
+
+    const valueEl = document.getElementById('firebase-quota-value');
+    const textEl = document.getElementById('firebase-quota-text');
+    const barra = document.getElementById('firebase-quota-fill');
+    
+    if(valueEl && textEl && barra) {
+        valueEl.textContent = percentuale.toFixed(1) + '%';
+        textEl.textContent = lettureStimate.toLocaleString('it-IT') + ' / 50.000';
+        barra.style.width = percentualeVisiva + '%';
+        
+        if (percentuale < 50) {
+            barra.style.background = '#10b981'; valueEl.style.color = '#10b981'; // Verde
+        } else if (percentuale < 80) {
+            barra.style.background = '#f59e0b'; valueEl.style.color = '#f59e0b'; // Giallo
+        } else {
+            barra.style.background = '#ef4444'; valueEl.style.color = '#ef4444'; // Rosso
+        }
+    }
+}

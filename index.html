@@ -626,9 +626,23 @@
                         <div class="analytics-stat-label">Errori Oggi</div>
                     </div>
                 </div>
-                
-                <div class="analytics-charts-section">
-                    <div class="analytics-chart-container">
+                <div class="analytics-stat-card" style="border-top: 4px solid #f59e0b; position: relative;">
+                        <div class="analytics-stat-icon" style="background: #fef3c7; color: #d97706;">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="analytics-stat-value" id="firebase-quota-value">0%</div>
+                        <div class="analytics-stat-label">Consumo Letture (Oggi)</div>
+                        
+                        <div class="sync-progress-bar" style="margin-top: 15px; display: block; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
+                            <div id="firebase-quota-fill" style="width: 0%; height: 100%; background: #10b981; transition: width 0.5s ease, background-color 0.5s ease;"></div>
+                        </div>
+                        
+                        <div style="font-size: 0.75rem; color: #6b7280; margin-top: 8px; font-weight: 600;" id="firebase-quota-text">
+                            0 / 50.000 (Stima)
+                        </div>
+                    </div>
+                    </div> <div class="analytics-charts-section">         
+                        <div class="analytics-chart-container">
                         <h4>Attività Utenti (Ultimi 7 giorni)</h4>
                         <canvas id="activity-chart"></canvas>
                         <div class="performance-metrics">
@@ -1301,6 +1315,7 @@
         function refreshAnalyticsDashboard() {
             if (window.Analytics) {
                 const summary = window.Analytics.getAnalyticsSummary();
+                aggiornaQuotaFirebase(summary.sessions.today || 0);
                 document.getElementById('analytics-session-count').textContent = summary.sessions.today || '0';
                 document.getElementById('analytics-events-count').textContent = summary.events.today || '0';
                 document.getElementById('analytics-pageviews-count').textContent = summary.pageViews.today || '0';
