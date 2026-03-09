@@ -23,6 +23,21 @@
 })();
 
 // ==========================================
+// FASE 3: IMPRONTA HARDWARE (FINGERPRINTJS)
+// ==========================================
+let deviceFingerprint = "sconosciuto";
+
+// Carica la libreria in background in modo invisibile e leggero
+import('https://openfpcdn.io/fingerprintjs/v4')
+    .then(FingerprintJS => FingerprintJS.load())
+    .then(fp => fp.get())
+    .then(result => { 
+        deviceFingerprint = result.visitorId; 
+        console.log("🛡️ Impronta Hardware generata:", deviceFingerprint);
+    })
+    .catch(error => console.warn("Errore generazione impronta:", error));
+
+// ==========================================
 // SISTEMA MULTILINGUA - AGGIUNTA INIZIALE
 // ==========================================
 
@@ -5605,10 +5620,15 @@ function shareAppLink() {
 
 let isSubmittingTicket = false;
 
+let ticketOpenTime = 0;
+
 function apriTicket(id, nome, type) {
     currentDetailId = id;
     currentDetailName = nome;
     currentDetailType = type;
+    
+    // ⏱️ FASE 3: Faccio partire il cronometro invisibile!
+    ticketOpenTime = Date.now();
     
     const displayEl = document.getElementById('ticket-item-display');
     if(displayEl) {
@@ -5621,49 +5641,79 @@ function apriTicket(id, nome, type) {
 
 async function inviaSegnalazioneTicket(tipo) {
     if (isSubmittingTicket) return;
+
+    // ==========================================
+    // 🪤 FASE 3: LA TRAPPOLA (HONEYPOT + TIME TRAP)
+    // ==========================================
+    const timeElapsed = Date.now() - ticketOpenTime;
+    const honeypot = document.getElementById('website_url_contact'); 
     
-    // BLOCCO LOCALE 15 GIORNI
-    const spamKey = `ticket_${currentDetailId}_${tipo}`;
-    const lastSubmission = localStorage.getItem(spamKey);
-    
-    if (lastSubmission) {
-        const giorniPassati = (Date.now() - parseInt(lastSubmission)) / (1000 * 60 * 60 * 24);
-        if (giorniPassati < 15) {
-            showToast(`Hai già inviato questa segnalazione. Riprova tra ${Math.ceil(15 - giorniPassati)} giorni.`, 'error');
-            return;
-        }
+    // Se è un bot veloce o riempie il campo invisibile
+    if (timeElapsed < 2000 || (honeypot && honeypot.value.trim() !== '')) {
+        console.warn("🛡️ BOT BLOCCATO (Shadow Ban) - Motivo: Honeypot o Velocità");
+        isSubmittingTicket = true;
+        simulaFintoSuccesso(tipo);
+        return; 
     }
+    // ==========================================
 
     isSubmittingTicket = true;
-
-    // FEEDBACK VISIVO IMMEDIATO: Il bottone mostra che sta caricando
     const btn = tipo === 'Guasto idrico' ? document.getElementById('btn-guasto') : document.getElementById('btn-vandalo');
     const testoOriginale = btn ? btn.innerHTML : '';
-
     if (btn) {
         btn.style.opacity = "0.7";
         btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Attendere...`;
     }
 
     try {
-        // COLLEGAMENTO UFFICIALE A FIREBASE
         const { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-
         const ticketsRef = collection(window.db, 'tickets');
+
+        // ==========================================
+        // 🧱 FASE 3: MURO HARDWARE E LIMITE MAX 3 AL GIORNO
+        // ==========================================
+        if (deviceFingerprint !== "sconosciuto") {
+            const qSpam = query(ticketsRef, where('hardwareId', '==', deviceFingerprint));
+            const spamSnapshot = await getDocs(qSpam);
+            
+            let ticketOggi = 0;
+            const oggi = new Date().toDateString();
+            
+            spamSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.dataCreazione) {
+                    // Controlla se la data del ticket coincide con oggi
+                    const dataTicket = data.dataCreazione.toDate().toDateString();
+                    if (dataTicket === oggi) ticketOggi++;
+                }
+            });
+
+            // SE HA SUPERATO I 3 TICKET OGGI, SHADOW BAN!
+            if (ticketOggi >= 3) {
+                console.warn(`🛡️ UTENTE BLOCCATO (Shadow Ban) - Motivo: Superato limite 3 ticket/giorno. Impronta: ${deviceFingerprint}`);
+                // Registriamo l'attacco nel log attività
+                if (typeof logActivity === 'function') logActivity(`Attacco Spam Bloccato. Impronta: ${deviceFingerprint}`);
+                
+                simulaFintoSuccesso(tipo);
+                return; // Interrompiamo l'invio vero e proprio
+            }
+        }
+        // ==========================================
+
+        // INVIO REALE A FIREBASE
         const q = query(ticketsRef, where('itemId', '==', currentDetailId), where('stato', '==', 'aperto'));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
             const ticketDoc = querySnapshot.docs[0];
             const data = ticketDoc.data();
-            const nuovoContatore = (data.contatore || 1) + 1;
-            
             await updateDoc(doc(window.db, 'tickets', ticketDoc.id), {
-                contatore: nuovoContatore,
+                contatore: (data.contatore || 1) + 1,
                 ultimaSegnalazione: serverTimestamp()
             });
             showToast("Segnalazione aggiunta! (Il problema è già noto ai tecnici)", "info");
         } else {
+            // Salviamo il ticket con l'impronta hardware allegata
             await addDoc(ticketsRef, {
                 itemId: currentDetailId,
                 itemNome: currentDetailName || 'N/A',
@@ -5671,26 +5721,43 @@ async function inviaSegnalazioneTicket(tipo) {
                 tipo: tipo,
                 stato: 'aperto',
                 contatore: 1,
+                hardwareId: deviceFingerprint, // <--- ECCO LA FIRMA INVISIBILE
                 dataCreazione: serverTimestamp(),
                 ultimaSegnalazione: serverTimestamp()
             });
             showToast("Grazie! Segnalazione inviata con successo", "success");
         }
 
-        localStorage.setItem(spamKey, Date.now().toString());
         goBack();
-
     } catch (error) {
         console.error("Errore nell'invio del ticket:", error);
         showToast("Errore di connessione. Riprova più tardi.", "error");
     } finally {
         isSubmittingTicket = false;
-        // Ripristiniamo il bottone alla normalità in modo pulito
         if (btn) {
             btn.style.opacity = "1";
             btn.innerHTML = testoOriginale;
         }
     }
+}
+
+// Funzione Helper per non ripetere il codice del finto successo
+function simulaFintoSuccesso(tipo) {
+    const btn = tipo === 'Guasto idrico' ? document.getElementById('btn-guasto') : document.getElementById('btn-vandalo');
+    const testoOriginale = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.style.opacity = "0.7";
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Attendere...`;
+    }
+    setTimeout(() => {
+        showToast("Grazie! Segnalazione inviata con successo", "success");
+        if (btn) {
+            btn.style.opacity = "1";
+            btn.innerHTML = testoOriginale;
+        }
+        isSubmittingTicket = false;
+        goBack();
+    }, 800);
 }
 
 // --- ADMIN TICKETS E STORICO ---

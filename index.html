@@ -1131,7 +1131,11 @@
                     <input type="hidden" id="ticket-item-type">
 
                     <p style="text-align: center; font-weight: bold; color: #333; margin-bottom: 15px;" data-i18n="report_question">Cosa è successo?</p>
-            
+                    
+                    <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0;" aria-hidden="true">
+                        <label for="website_url_contact">Lascia vuoto questo campo se sei umano:</label>
+                        <input type="text" id="website_url_contact" name="website_url_contact" tabindex="-1" autocomplete="off">
+                    </div>
                     <div style="display: flex; flex-direction: column; gap: 15px;">
                         <button type="button" id="btn-guasto" onclick="inviaSegnalazioneTicket('Guasto idrico')" style="width: 100%; padding: 20px; background-color: #3b82f6; color: white; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);">
                             <i class="fas fa-tint-slash" style="font-size: 1.5rem;"></i> <span data-i18n="report_broken">GUASTO (Non esce acqua)</span>
