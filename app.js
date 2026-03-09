@@ -1,4 +1,28 @@
 // ==========================================
+// AZIONE 6: PULIZIA CACHE VECCHIA (30 GIORNI)
+// ==========================================
+(function pulisciCacheVecchia() {
+    const CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 giorni in millisecondi
+    const lastSync = localStorage.getItem('fontaneBeveriniLastSync');
+    
+    if (lastSync) {
+        const now = Date.now();
+        const cacheTime = new Date(lastSync).getTime();
+        
+        // Se la differenza tra oggi e l'ultimo sync è maggiore di 30 giorni
+        if (now - cacheTime > CACHE_EXPIRY) {
+            console.log('⚠️ Cache scaduta (più di 30 giorni). Pulizia in corso per forzare il download dei nuovi elementi...');
+            
+            // Svuotiamo la memoria locale
+            localStorage.removeItem('fontaneBeveriniData');
+            localStorage.removeItem('fontaneBeveriniLastSync');
+        } else {
+            console.log('✅ Cache locale ancora valida (meno di 30 giorni).');
+        }
+    }
+})();
+
+// ==========================================
 // SISTEMA MULTILINGUA - AGGIUNTA INIZIALE
 // ==========================================
 
@@ -1525,6 +1549,53 @@ function updateDashboardStats() {
     document.getElementById('total-news').textContent = appData.news.length;
 }
 
+// ==========================================
+// FASE 2: SISTEMA DI SICUREZZA PANNELLO ADMIN
+// ==========================================
+let adminTimeoutInattivita;
+
+function resetAdminTimeout() {
+    if (!isAdminAuthenticated) return;
+    clearTimeout(adminTimeoutInattivita);
+    // Imposta il logout automatico dopo 15 minuti (900.000 millisecondi)
+    adminTimeoutInattivita = setTimeout(() => {
+        alert("⏳ Sessione scaduta per inattività (15 minuti).\nLogout di sicurezza eseguito in automatico.");
+        logoutAdmin();
+    }, 900000);
+}
+
+function attivaScudiAdmin() {
+    // 1. Avvia il Timeout di inattività (ascolta mouse e tastiera)
+    document.addEventListener('mousemove', resetAdminTimeout);
+    document.addEventListener('keypress', resetAdminTimeout);
+    document.addEventListener('touchstart', resetAdminTimeout);
+    resetAdminTimeout(); // Fa partire il cronometro
+
+    // 2. Genera il Watermark (Firma Anti-Screenshot)
+    let watermark = document.getElementById('admin-security-watermark');
+    if (!watermark) {
+        watermark = document.createElement('div');
+        watermark.id = 'admin-security-watermark';
+        // Stile invisibile ma presente
+        watermark.style.position = 'fixed';
+        watermark.style.bottom = '5px';
+        watermark.style.right = '5px';
+        watermark.style.fontSize = '10px';
+        watermark.style.color = 'rgba(0,0,0,0.15)'; // Super trasparente
+        watermark.style.pointerEvents = 'none'; // Non disturba i click
+        watermark.style.zIndex = '9999';
+        
+        // Recupera l'email di chi è loggato (se disponibile) e aggiunge la data
+        const utente = (window.auth && window.auth.currentUser) ? window.auth.currentUser.email : 'Accesso Tracciato';
+        const orario = new Date().toLocaleString('it-IT');
+        watermark.textContent = `ID: ${utente} - ${orario}`;
+        
+        // Lo appiccica sul pannello Admin
+        const pannello = document.getElementById('admin-panel');
+        if (pannello) pannello.appendChild(watermark);
+    }
+}
+
 // Admin Authentication
 function openAdminPanel() {
     if (isAdminAuthenticated) {
@@ -1535,6 +1606,9 @@ function openAdminPanel() {
 }
 
 function showAdminAuth() {
+    // --- FASE 2: CONTRATTO PSICOLOGICO ---
+    alert("⚠️ ATTENZIONE: AREA DI SICUREZZA ⚠️\n\nStai per accedere al Pannello di Controllo.\nTutte le operazioni, le modifiche e gli accessi sono strettamente monitorati e registrati nel database di sistema.\n\nProcedendo, accetti le condizioni di utilizzo e ti assumi la responsabilità delle tue azioni.");
+    
     document.getElementById('admin-auth').style.display = 'flex';
     document.getElementById('admin-password').focus();
 }
@@ -1651,6 +1725,11 @@ function showAdminPanel() {
         activityLog = JSON.parse(savedLog);
         updateActivityLog();
     }
+
+    // ==========================================
+    // FASE 2: ATTIVAZIONE SCUDI (Watermark + Timeout)
+    // ==========================================
+    attivaScudiAdmin();
 }
 
 function closeAdminPanel() {
