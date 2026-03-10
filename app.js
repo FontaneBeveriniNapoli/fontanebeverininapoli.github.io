@@ -297,6 +297,11 @@ function initRemoteControl() {
                     setTimeout(refreshAnalyticsDashboard, 300);
                 }
             }
+            // 3. GESTIONE KILL SWITCH SEGNALAZIONI (NUOVO)
+            window.isReportsEnabled = data.segnalazioniAttive !== false; // Default: true (attivo)
+            const reportsBtn = document.getElementById('global-reports-toggle');
+            if (reportsBtn) reportsBtn.checked = window.isReportsEnabled;
+
         }
     });
 }
@@ -340,6 +345,23 @@ async function toggleGlobalAnalytics(checkbox) {
         showToast(newState ? "Analytics ATTIVATO" : "Analytics DISATTIVATO", "success");
     } else {
         // Se l'utente clicca su "Annulla" nel popup, l'interruttore torna come prima
+        checkbox.checked = !newState;
+    }
+}
+
+// Toggle Kill Switch Segnalazioni (NUOVO)
+async function toggleGlobalReports(checkbox) {
+    if (currentUserRole !== 'admin') { checkbox.checked = !checkbox.checked; return; }
+    
+    const newState = checkbox.checked;
+    const msg = newState 
+        ? "🟢 RIATTIVARE le segnalazioni per i cittadini?" 
+        : "🔴 EMERGENZA: Bloccare le segnalazioni per finto traffico intenso?";
+
+    if (confirm(msg)) {
+        await updateConfig('segnalazioniAttive', newState);
+        showToast(newState ? "Segnalazioni ATTIVATE" : "Segnalazioni BLOCCATE", "success");
+    } else {
         checkbox.checked = !newState;
     }
 }
@@ -1501,23 +1523,43 @@ function showToast(message, type = 'info', duration = 3000) {
 // GESTIONE LOG ATTIVITÀ E SEGNALAZIONE ERRORI (FIX CRASH)
 // ======================================================
 
-// 1. Funzione logActivity mancante (evita il blocco al caricamento)
+// 1. Funzione logActivity SUPREMA (Dashboard + Firebase)
 window.logActivity = async function(action, details = "") {
     console.log(`[Log Attività] ${action}:`, details);
+
+    // --- A. AGGIORNA LA TUA DASHBOARD VISIVA ---
+    const timestamp = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    const testoLog = details ? `${action} - ${details}` : action;
+    
+    // Aggiunge la nuova azione in cima alla lista
+    activityLog.unshift({ description: testoLog, timestamp: timestamp });
+    
+    // Tiene solo le ultime 50 operazioni per non appesantire il telefono
+    if (activityLog.length > 50) activityLog.pop();
+    
+    // Salva nel telefono e aggiorna la grafica
+    localStorage.setItem('activityLog', JSON.stringify(activityLog));
+    if (typeof updateActivityLog === 'function') updateActivityLog();
+
+    // --- B. SALVA SUL SERVER (FIREBASE) ---
     try {
-        // Se l'utente è loggato come operatore/admin, salva l'azione nel database
-        if (window.firebaseFirestore && window.db && typeof currentUserRole !== 'undefined' && currentUserRole !== null) {
+        if (window.firebaseFirestore && window.db) {
             const { collection, addDoc, serverTimestamp } = window.firebaseFirestore;
+            
+            // Capisce se chi agisce è un admin o un utente anonimo (come uno spammer)
+            const role = (typeof currentUserRole !== 'undefined' && currentUserRole !== null) ? currentUserRole : 'sistema_sicurezza';
+            const user = (typeof currentUserEmail !== 'undefined' && currentUserEmail !== null) ? currentUserEmail : 'Utente Anonimo';
+
             await addDoc(collection(window.db, 'activity_logs'), {
                 action: action,
                 details: details,
-                user: typeof currentUserEmail !== 'undefined' ? currentUserEmail : 'Sconosciuto',
-                role: currentUserRole,
+                user: user,
+                role: role,
                 timestamp: serverTimestamp()
             });
         }
     } catch (e) {
-        console.warn("Impossibile salvare il log di attività:", e);
+        console.warn("Firebase rifiuta il log (normale se l'utente non è loggato):", e);
     }
 };
 
@@ -5623,6 +5665,12 @@ let isSubmittingTicket = false;
 let ticketOpenTime = 0;
 
 function apriTicket(id, nome, type) {
+    // 🔴 KILL SWITCH: Controllo emergenza traffico
+    if (window.isReportsEnabled === false) {
+        showToast("⚠️ Traffico intenso. Riprova più tardi.", "warning", 4000);
+        return; // Blocca tutto e non apre la schermata!
+    }
+
     currentDetailId = id;
     currentDetailName = nome;
     currentDetailType = type;

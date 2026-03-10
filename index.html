@@ -889,10 +889,21 @@
                             <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
                             <style>input:checked + .slider {background-color: #3b82f6;}</style>
                         </label>
+                    </div> <div class="config-item" style="display: flex; justify-content: space-between; align-items: center; padding-top: 15px; margin-top: 15px; border-top: 1px dashed #fecdd3;">
+                        <div>
+                            <label style="font-weight: bold; color: #b45309; font-size: 1rem;">
+                                <i class="fas fa-exclamation-triangle"></i> Emergenza Segnalazioni
+                            </label>
+                            <p style="font-size: 0.85rem; color: #92400e; margin-top: 4px;">
+                                Se spento, blocca i ticket per traffico intenso.
+                            </p>
+                        </div>
+                        <label class="switch" style="position: relative; display: inline-block; width: 60px; height: 34px;">
+                            <input type="checkbox" id="global-reports-toggle" checked onchange="toggleGlobalReports(this)">
+                            <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
+                        </label>
                     </div>
-                </div>
-
-                <div class="backup-section">
+                    </div> <div class="backup-section">
                     <h4>Sicurezza Account</h4>
                     <button class="admin-btn secondary" onclick="logoutAdmin()">
                         <i class="fas fa-sign-out-alt"></i> Logout Amministratore
