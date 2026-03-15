@@ -1770,8 +1770,8 @@ async function checkAdminAuth() {
 
 function showAdminPanel() {
     // --- PONTE DATI PER ADMIN (FIX LISTE VUOTE) ---
-    // Se l'app non ha scaricato nulla (perché il Radar ha risparmiato), 
-    // carichiamo i dati locali per popolare le tabelle admin.
+    // Se l'app non ha scaricato nulla dal server (perché il Radar ha risparmiato), 
+    // carichiamo i dati locali o dallo Starter Pack per popolare le tabelle.
     if (!appData.fontane || appData.fontane.length === 0) {
         console.log("🛠️ Admin: Recupero dati locali per le tabelle...");
         const localData = loadLocalData();
@@ -1781,18 +1781,13 @@ function showAdminPanel() {
 
     document.getElementById('admin-panel').style.display = 'flex';
     
-    // Nascondi sezioni sensibili se non è admin
+    // Gestione visibilità sezioni per ruolo
     const restrictedSections = document.querySelectorAll('.import-export-section, .backup-section, .analytics-actions-section');
-    
     restrictedSections.forEach(section => {
-        if (currentUserRole === 'admin') {
-            section.style.display = 'block';
-        } else {
-            section.style.display = 'none';
-        }
+        section.style.display = (currentUserRole === 'admin') ? 'block' : 'none';
     });
 
-    // Carica le tabelle usando i dati che ora abbiamo nel "ponte"
+    // Caricamento tabelle istantaneo
     loadAdminFontane();
     loadAdminBeverini();
     loadAdminNews();
@@ -3021,9 +3016,11 @@ async function loadAdminFontane() {
     const tbody = document.getElementById('fontane-table-body');
     if (!tbody) return;
     
+    // Se la memoria è vuota, prova un ultimo recupero locale
+    if (appData.fontane.length === 0) loadLocalData();
+
     tbody.innerHTML = '';
     
-    // Ordina per ID decrescente (i più recenti in alto)
     const sortedFontane = [...appData.fontane].sort((a, b) => {
         const idA = parseInt(a.id.replace(/\D/g, '')) || 0;
         const idB = parseInt(b.id.replace(/\D/g, '')) || 0;
@@ -3031,12 +3028,10 @@ async function loadAdminFontane() {
     });
 
     sortedFontane.forEach(fontana => {
-        // Pulsante singolo elimina (solo Admin)
         const deleteButton = currentUserRole === 'admin' 
             ? `<button class="delete-btn" onclick="deleteFontana('${fontana.id}')">Elimina</button>` 
             : '';
             
-        // NUOVO: Checkbox selezione multipla (SOLO ADMIN)
         const checkboxHtml = currentUserRole === 'admin'
             ? `<input type="checkbox" class="select-item-fontane" value="${fontana.id}" onchange="updateDeleteButtonState('fontane')">`
             : ''; 
@@ -3055,8 +3050,6 @@ async function loadAdminFontane() {
         `;
         tbody.appendChild(row);
     });
-    
-    // Resetta lo stato del pulsante elimina multiplo
     updateDeleteButtonState('fontane');
 }
 
@@ -3211,8 +3204,12 @@ async function loadAdminBeverini() {
     const tbody = document.getElementById('beverini-table-body');
     if (!tbody) return;
     
+    // Se la memoria è vuota, recupera i dati locali (già pronti grazie al Radar o allo Starter Pack)
+    if (appData.beverini.length === 0) loadLocalData();
+
     tbody.innerHTML = '';
     
+    // Ordina per ID decrescente per avere i più recenti in alto
     const sortedBeverini = [...appData.beverini].sort((a, b) => {
         const idA = parseInt(a.id.replace(/\D/g, '')) || 0;
         const idB = parseInt(b.id.replace(/\D/g, '')) || 0;
@@ -3224,7 +3221,6 @@ async function loadAdminBeverini() {
             ? `<button class="delete-btn" onclick="deleteBeverino('${beverino.id}')">Elimina</button>` 
             : '';
 
-        // Checkbox SOLO ADMIN
         const checkboxHtml = currentUserRole === 'admin'
             ? `<input type="checkbox" class="select-item-beverini" value="${beverino.id}" onchange="updateDeleteButtonState('beverini')">`
             : '';
@@ -3243,6 +3239,7 @@ async function loadAdminBeverini() {
         `;
         tbody.appendChild(row);
     });
+    // Aggiorna lo stato dei pulsanti di eliminazione multipla
     updateDeleteButtonState('beverini');
 }
 
@@ -3379,14 +3376,14 @@ async function deleteBeverino(id) {
     }
 }
 
-// News Admin
 async function loadAdminNews() {
     const tbody = document.getElementById('news-table-body');
     if (!tbody) return;
     
+    if (appData.news.length === 0) loadLocalData();
+
     tbody.innerHTML = '';
     
-    // Ordina news per data (più recenti in alto)
     const sortedNews = [...appData.news].sort((a, b) => new Date(b.data) - new Date(a.data));
 
     sortedNews.forEach(news => {
@@ -3394,7 +3391,6 @@ async function loadAdminNews() {
             ? `<button class="delete-btn" onclick="deleteNews('${news.id}')">Elimina</button>` 
             : '';
 
-        // Checkbox SOLO ADMIN
         const checkboxHtml = currentUserRole === 'admin'
             ? `<input type="checkbox" class="select-item-news" value="${news.id}" onchange="updateDeleteButtonState('news')">`
             : '';
