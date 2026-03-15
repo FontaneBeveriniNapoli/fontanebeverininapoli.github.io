@@ -4840,17 +4840,21 @@ function renderNewsItems(container, news) {
     });
 }
 
-
+// ============================================
+// INIZIALIZZAZIONE LOGICHE DI SISTEMA (FIX)
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Gestione Tasto Indietro
     setupBackButtonHandler();
     
-    // >>> NUOVO: Richiesta Permessi Notifiche <<<
+    // 2. Richiesta Permessi Notifiche
     if ('Notification' in window && Notification.permission !== 'granted') {
         Notification.requestPermission().then(permission => {
             if (permission === 'granted') console.log('Notifiche attivate!');
         });
     }
 
-    // >>> NUOVO: Pulizia Badge dopo 24 ore <<<
+    // 3. Pulizia Badge dopo 24 ore
     const lastHighlightTime = localStorage.getItem('last_highlight_time');
     const now = Date.now();
     if (lastHighlightTime && (now - parseInt(lastHighlightTime)) > 24 * 60 * 60 * 1000) {
@@ -4858,19 +4862,18 @@ function renderNewsItems(container, news) {
         localStorage.setItem('last_highlight_time', now.toString());
     }
     if (!lastHighlightTime) localStorage.setItem('last_highlight_time', now.toString());
-    // >>> FINE NUOVO <<<
     
+    // 4. Avvio Service Worker e Radar
     if ('serviceWorker' in navigator) {
-        setTimeout(() => {
-            registerServiceWorker();
-        }, 1000);
+        setTimeout(() => { registerServiceWorker(); }, 1000);
     }
     
     setTimeout(async () => {
-        // Il Radar entra in azione al posto dello scaricamento cieco
+        // Il Radar entra in azione per il controllo versione
         await controllaAggiornamentiRadar();
     }, 1000);
-    
+
+    // 5. Eventi di Interfaccia e Admin
     document.getElementById('admin-password').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') checkAdminAuth();
     });
@@ -4882,12 +4885,6 @@ function renderNewsItems(container, news) {
     window.addEventListener('online', checkOnlineStatus);
     window.addEventListener('offline', checkOnlineStatus);
     
-    document.addEventListener('error', function(e) {
-        if (e.target.tagName === 'IMG') {
-            // Fallback gestito nei template
-        }
-    }, true);
-    
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && document.getElementById('admin-panel').style.display === 'flex') {
             closeAdminPanel();
@@ -4897,26 +4894,20 @@ function renderNewsItems(container, news) {
     document.getElementById('admin-panel').addEventListener('click', function(e) {
         if (e.target === this) closeAdminPanel();
     });
-    
+
+    // 6. Altre inizializzazioni
     initializeOfflineSync();
-    setTimeout(() => {
-        setupLazyLoading();
-    }, 1000);
+    setTimeout(() => { setupLazyLoading(); }, 1000);
     
-    logActivity('Applicazione avviata');
-// --- GESTIONE COOKIE & INSTALLAZIONE ---
+    // 7. Gestione Cookie & Installazione
     setTimeout(() => {
-        // 1. Controlla se l'utente ha già deciso per i cookie
         const cookieStatus = checkCookieConsent();
-        
-        // 2. Se checkCookieConsent() restituisce TRUE (ha già scelto),
-        // allora prova a mostrare il banner di installazione
         if (cookieStatus === true) {
             showSmartInstallBanner();
         }
-        // Se restituisce FALSE, non fare nulla: ci penserà il banner privacy
-        // a lanciare l'installazione quando l'utente cliccherà "Accetta".
-    }, 2000)
+    }, 2000);
+
+    logActivity('Applicazione avviata');
 });
 
 // ===== SPLASH SCREEN MANAGEMENT (VERSIONE CON PROGRESS BAR) =====
