@@ -6012,6 +6012,7 @@ function aggiornaQuotaFirebase(sessioniOggi) {
         }
     }
 }
+
 // --- SISTEMA DI PUBBLICAZIONE AGGIORNAMENTI ---
 async function publishDataUpdates() {
     if (currentUserRole !== 'admin') {
@@ -6044,6 +6045,7 @@ async function publishDataUpdates() {
         showToast("❌ Errore durante la pubblicazione", "error");
     }
 }
+
 // --- GENERATORE STARTER PACK (dati_iniziali.js) ---
 async function downloadStarterPackJS() {
     if (currentUserRole !== 'admin') {
