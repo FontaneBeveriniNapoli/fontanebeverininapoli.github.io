@@ -1605,18 +1605,20 @@ function updateActivityLog() {
 }
 
 function updateDashboardStats() {
-    // Statistiche Fontane
-    document.getElementById('total-fontane').textContent = appData.fontane.length;
-    document.getElementById('fontane-funzionanti').textContent = appData.fontane.filter(f => f.stato === 'funzionante').length;
-    document.getElementById('fontane-manutenzione').textContent = appData.fontane.filter(f => f.stato === 'manutenzione').length;
+    // Conta gli elementi negli array globali aggiornati dal Radar/Starter Pack
+    const fontaneCount = (appData.fontane || []).length;
+    const beveriniCount = (appData.beverini || []).length;
+    const newsCount = (appData.news || []).length;
+
+    // Aggiorna i testi nel pannello admin (assicurati che gli ID coincidano con il tuo HTML)
+    if(document.getElementById('admin-fontane-count')) 
+        document.getElementById('admin-fontane-count').textContent = fontaneCount;
+    if(document.getElementById('admin-beverini-count')) 
+        document.getElementById('admin-beverini-count').textContent = beveriniCount;
+    if(document.getElementById('admin-news-count')) 
+        document.getElementById('admin-news-count').textContent = newsCount;
     
-    // Statistiche Beverini
-    document.getElementById('total-beverini').textContent = appData.beverini.length;
-    document.getElementById('beverini-funzionanti').textContent = appData.beverini.filter(b => b.stato === 'funzionante').length;
-    document.getElementById('beverini-manutenzione').textContent = appData.beverini.filter(b => b.stato === 'manutenzione').length;
-    
-    // Statistiche News
-    document.getElementById('total-news').textContent = appData.news.length;
+    console.log(`📊 Dashboard aggiornata: Fontane: ${fontaneCount}, Beverini: ${beveriniCount}, News: ${newsCount}`);
 }
 
 // ==========================================
@@ -1959,7 +1961,6 @@ async function loadNews() {
     if (appData.news && appData.news.length > 0) {
         renderNewsItems(newsList, appData.news);
     } else {
-        // Se la memoria è vuota, prova a leggere dal database locale (Cache)
         const localData = loadLocalData('news');
         if (localData && localData.length > 0) {
             appData.news = localData;
@@ -1967,10 +1968,9 @@ async function loadNews() {
         }
     }
     
-    // 2. Controllo di sicurezza: se siamo online, forziamo il download se la lista è ancora vuota
+    // 2. Se siamo online e la lista è ancora vuota, forza il download
     if (navigator.onLine) {
         try {
-            // Se non abbiamo news o sono passate molte ore, scarica da Firebase
             const freshNews = await loadFirebaseData('news');
             if (freshNews && freshNews.length > 0) {
                 appData.news = freshNews;
@@ -1983,7 +1983,6 @@ async function loadNews() {
         }
     }
 }
-
 function getFilteredItems(type) {
     const items = appData[type];
     const filter = currentFilter[type];
