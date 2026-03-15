@@ -1955,10 +1955,32 @@ async function loadNews() {
     const newsList = document.getElementById('news-list');
     if (!newsList) return;
 
-    const localData = loadLocalData('news');
-    if (localData && localData.length > 0) {
-        appData['news'] = localData;
-        renderNewsItems(newsList, appData['news']);
+    // 1. Prova subito con i dati in memoria (Istantaneo)
+    if (appData.news && appData.news.length > 0) {
+        renderNewsItems(newsList, appData.news);
+    } else {
+        // Se la memoria è vuota, prova a leggere dal database locale (Cache)
+        const localData = loadLocalData('news');
+        if (localData && localData.length > 0) {
+            appData.news = localData;
+            renderNewsItems(newsList, appData.news);
+        }
+    }
+    
+    // 2. Controllo di sicurezza: se siamo online, forziamo il download se la lista è ancora vuota
+    if (navigator.onLine) {
+        try {
+            // Se non abbiamo news o sono passate molte ore, scarica da Firebase
+            const freshNews = await loadFirebaseData('news');
+            if (freshNews && freshNews.length > 0) {
+                appData.news = freshNews;
+                renderNewsItems(newsList, appData.news);
+                // Aggiorna anche i contatori nel pannello admin se è aperto
+                if (typeof updateDashboardStats === 'function') updateDashboardStats();
+            }
+        } catch (error) {
+            console.error("Errore nel recupero news da Firebase:", error);
+        }
     }
 }
 
