@@ -1453,25 +1453,23 @@ function loadLocalData(type = null) {
     try {
         const savedData = localStorage.getItem('fontaneBeveriniData');
         
-        // 🛡️ SCUDO 1: Se la memoria è vuota, usa lo Starter Pack (Costo Zero)
-        if (!savedData && window.STARTER_DATA) {
-            console.log("📦 Caricamento dati iniziali dallo Starter Pack");
-            appData = {
-                fontane: window.STARTER_DATA.fontane || [],
-                beverini: window.STARTER_DATA.beverini || [],
-                news: [], // Le news le caricherà il radar
-                tickets: []
-            };
-            saveLocalData(); // Salva subito nel telefono
-            return type ? appData[type] : appData;
-        }
-
         if (savedData) {
             const parsedData = JSON.parse(savedData);
+            
+            // Aggiorna appData globale con tutto quello che c'è in memoria
+            appData.fontane = parsedData.fontane || [];
+            appData.beverini = parsedData.beverini || [];
+            appData.news = parsedData.news || []; // <-- FONDAMENTALE PER LE NEWS
+
             if (type) {
-                return parsedData[type] || [];
+                return appData[type] || [];
             }
-            appData = parsedData;
+        } else if (window.STARTER_DATA) {
+            // Se la memoria è vuota (primo avvio), usa lo Starter Pack
+            appData.fontane = window.STARTER_DATA.fontane || [];
+            appData.beverini = window.STARTER_DATA.beverini || [];
+            appData.news = []; 
+            return type ? appData[type] : appData;
         }
     } catch (error) {
         console.error('Errore nel caricamento locale:', error);
