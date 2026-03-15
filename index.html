@@ -58,7 +58,7 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getAnalytics, setAnalyticsCollectionEnabled } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
         
@@ -91,6 +91,8 @@
         window.setDoc = setDoc;
         window.onSnapshot = onSnapshot;
         window.setAnalyticsCollectionEnabled = setAnalyticsCollectionEnabled;
+        window.collection = collection;
+        window.getDocs = getDocs;
         
         console.log('Firebase e Analytics inizializzati (Europa)');
     </script>
@@ -255,7 +257,7 @@
                     </div>
                 </div>
             </div>
-
+           
             <div class="admin-tab-content" id="fontane-admin">
                 <div class="import-export-section">
                     <h4>Import/Export Fontane</h4>
@@ -909,11 +911,22 @@
                         <i class="fas fa-sign-out-alt"></i> Logout Amministratore
                     </button>
                 </div>
-                
+
+                <div class="import-export-section" style="border: 2px solid #10b981; background: #ecfdf5; margin-bottom: 20px;">
+                    <h4 style="color: #047857;"><i class="fas fa-rocket"></i> Pubblicazione Dati</h4>
+                    <p style="font-size: 0.85rem; color: #065f46; margin-bottom: 15px;">Premi questo pulsante dopo aver modificato o aggiunto fontane/beverini per inviare i nuovi dati a tutti i cittadini.</p>
+                    <button class="admin-btn" style="background-color: #10b981; color: white; width: 100%; font-size: 1.1rem; padding: 12px;" onclick="publishDataUpdates()">
+                        <i class="fas fa-upload"></i> Pubblica Aggiornamenti
+                    </button>
+                </div>                
                 <div class="import-export-section">
                     <h4>Export Dati Completo</h4>
                     <button class="admin-btn primary" onclick="exportAllDataToExcel()">
                         <i class="fas fa-file-excel"></i> Esporta Tutto in Excel
+                    </button>
+
+                    <button class="admin-btn secondary" style="margin-top: 10px; width: 100%; background-color: #f8fafc; color: #334155; border: 1px solid #cbd5e1;" onclick="downloadStarterPackJS()">
+                        <i class="fas fa-file-code"></i> Scarica Starter Pack (JS)
                     </button>
                 </div>
             </div>

@@ -1448,9 +1448,24 @@ function saveLocalData() {
     }
 }
 
+// Local Storage functions
 function loadLocalData(type = null) {
     try {
         const savedData = localStorage.getItem('fontaneBeveriniData');
+        
+        // 🛡️ SCUDO 1: Se la memoria è vuota, usa lo Starter Pack (Costo Zero)
+        if (!savedData && window.STARTER_DATA) {
+            console.log("📦 Caricamento dati iniziali dallo Starter Pack");
+            appData = {
+                fontane: window.STARTER_DATA.fontane || [],
+                beverini: window.STARTER_DATA.beverini || [],
+                news: [], // Le news le caricherà il radar
+                tickets: []
+            };
+            saveLocalData(); // Salva subito nel telefono
+            return type ? appData[type] : appData;
+        }
+
         if (savedData) {
             const parsedData = JSON.parse(savedData);
             if (type) {
@@ -1914,25 +1929,12 @@ async function loadFontane() {
     const fontaneList = document.getElementById('fontane-list');
     if (!fontaneList) return;
 
-    // 1. MOSTRA SUBITO I DATI LOCALI (Risolve il caricamento infinito)
     const localData = loadLocalData('fontane');
     if (localData && localData.length > 0) {
         appData['fontane'] = localData; 
         renderGridItems(fontaneList, getFilteredItems('fontane'), 'fontana');
     } else {
-        // Mostra il caricamento SOLO se l'app è vuota (es. primo avvio in assoluto)
         showSkeletonLoader(fontaneList);
-    }
-
-    // 2. AGGIORNA IN BACKGROUND SE SEI ONLINE
-    if (navigator.onLine) {
-        try {
-            await loadFirebaseData('fontane');
-            renderGridItems(fontaneList, getFilteredItems('fontane'), 'fontana');
-        } catch (error) {
-            console.log("Offline o errore: mantengo i dati locali per le fontane.");
-            // Ho tolto il toast di errore qui per non infastidire l'utente se la rete cade un attimo
-        }
     }
 }
 
@@ -1940,24 +1942,12 @@ async function loadBeverini() {
     const beveriniList = document.getElementById('beverini-list');
     if (!beveriniList) return;
 
-    // 1. MOSTRA SUBITO I DATI LOCALI (Niente blocco offline)
     const localData = loadLocalData('beverini');
     if (localData && localData.length > 0) {
         appData['beverini'] = localData;
         renderCompactItems(beveriniList, getFilteredItems('beverini'), 'beverino');
     } else {
-        // Usa la tua funzione specifica per i beverini se non ci sono dati
         showSkeletonLoaderCompact(beveriniList);
-    }
-
-    // 2. AGGIORNA IN BACKGROUND SE SEI ONLINE
-    if (navigator.onLine) {
-        try {
-            await loadFirebaseData('beverini');
-            renderCompactItems(beveriniList, getFilteredItems('beverini'), 'beverino');
-        } catch (error) {
-            console.log("Offline o errore: mantengo i dati locali per i beverini.");
-        }
     }
 }
 
@@ -1965,21 +1955,10 @@ async function loadNews() {
     const newsList = document.getElementById('news-list');
     if (!newsList) return;
 
-    // 1. MOSTRA SUBITO I DATI LOCALI (Evita il blocco offline)
     const localData = loadLocalData('news');
     if (localData && localData.length > 0) {
         appData['news'] = localData;
         renderNewsItems(newsList, appData['news']);
-    }
-
-    // 2. AGGIORNA IN BACKGROUND SE SEI ONLINE
-    if (navigator.onLine) {
-        try {
-            await loadFirebaseData('news');
-            renderNewsItems(newsList, appData['news']);
-        } catch (error) {
-            console.log("Offline o errore: mantengo i dati locali per le news.");
-        }
     }
 }
 
@@ -4861,16 +4840,7 @@ function renderNewsItems(container, news) {
     });
 }
 
-// ============================================
-// Initialize App (MODIFICATO CON NOTIFICHE)
-// ============================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadLocalData();
-    checkOnlineStatus();
-    showScreen('home-screen');
-    handleUrlParameters();
-    
     setupBackButtonHandler();
     
     // >>> NUOVO: Richiesta Permessi Notifiche <<<
@@ -4897,18 +4867,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     setTimeout(async () => {
-        try {
-            await loadFirebaseData('fontane');
-            await loadFirebaseData('beverini');
-            await loadFirebaseData('news');
-            
-            if (document.getElementById('fontane-list').innerHTML.includes('Caricamento')) loadFontane();
-            if (document.getElementById('beverini-list').innerHTML.includes('Caricamento')) loadBeverini();
-            if (document.getElementById('news-list').innerHTML.includes('Caricamento')) loadNews();
-            
-        } catch (error) {
-            showToast('Utilizzo dati locali', 'info');
-        }
+        // Il Radar entra in azione al posto dello scaricamento cieco
+        await controllaAggiornamentiRadar();
     }, 1000);
     
     document.getElementById('admin-password').addEventListener('keypress', function(e) {
@@ -6050,5 +6010,91 @@ function aggiornaQuotaFirebase(sessioniOggi) {
         } else {
             barra.style.background = '#ef4444'; valueEl.style.color = '#ef4444'; // Rosso
         }
+    }
+}
+// --- SISTEMA DI PUBBLICAZIONE AGGIORNAMENTI ---
+async function publishDataUpdates() {
+    if (currentUserRole !== 'admin') {
+        showToast("Accesso negato", "error");
+        return;
+    }
+    
+    if (!confirm("🚀 Vuoi pubblicare tutti gli aggiornamenti?\n\nQuesto cambierà la versione del database e obbligherà tutte le app dei cittadini a scaricare i nuovi dati al prossimo avvio.")) {
+        return;
+    }
+
+    try {
+        const configRef = window.doc(window.db, "config", "general_settings");
+        const docSnap = await window.getDoc(configRef);
+        
+        let currentVersion = 0;
+        if (docSnap.exists() && docSnap.data().dataVersion !== undefined) {
+            currentVersion = docSnap.data().dataVersion;
+        }
+        
+        const newVersion = currentVersion + 1;
+        
+        // Aggiorna il numero di versione su Firebase
+        await updateConfig('dataVersion', newVersion);
+        
+        showToast(`✅ Dati pubblicati con successo! (Versione ${newVersion})`, "success");
+        
+    } catch (error) {
+        console.error("Errore durante la pubblicazione:", error);
+        showToast("❌ Errore durante la pubblicazione", "error");
+    }
+}
+// --- GENERATORE STARTER PACK (dati_iniziali.js) ---
+async function downloadStarterPackJS() {
+    if (currentUserRole !== 'admin') {
+        showToast("Accesso negato", "error");
+        return;
+    }
+
+    try {
+        showToast("⏳ Estrazione dati in corso...", "info");
+        
+        // 1. Scarica tutte le fontane aggiornate
+        const fontaneSnap = await window.getDocs(window.collection(window.db, "fontane"));
+        const fontaneList = [];
+        fontaneSnap.forEach(doc => fontaneList.push({ id: doc.id, ...doc.data() }));
+        
+        // 2. Scarica tutti i beverini aggiornati
+        const beveriniSnap = await window.getDocs(window.collection(window.db, "beverini"));
+        const beveriniList = [];
+        beveriniSnap.forEach(doc => beveriniList.push({ id: doc.id, ...doc.data() }));
+
+        // 3. Formatta i dati come codice JavaScript perfetto
+        const jsContent = `// File generato automaticamente dal Pannello Admin
+// Data di generazione: ${new Date().toLocaleString('it-IT')}
+// Questo file contiene i dati pre-caricati per azzerare i costi Firebase al lancio.
+
+const STARTER_DATA = {
+    fontane: ${JSON.stringify(fontaneList, null, 4)},
+    beverini: ${JSON.stringify(beveriniList, null, 4)}
+};
+
+// Rende i dati disponibili a tutta l'app
+window.STARTER_DATA = STARTER_DATA;
+`;
+
+        // 4. Crea il file scaricabile
+        const blob = new Blob([jsContent], { type: "text/javascript" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "dati_iniziali.js";
+        document.body.appendChild(a);
+        a.click();
+        
+        // Pulizia
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast("✅ File dati_iniziali.js scaricato!", "success");
+
+    } catch (error) {
+        console.error("Errore generazione Starter Pack:", error);
+        showToast("❌ Errore durante la generazione", "error");
     }
 }

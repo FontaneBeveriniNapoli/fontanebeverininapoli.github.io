@@ -1,4 +1,3 @@
-// Web Worker per elaborazione Excel
 self.onmessage = function(e) {
     const { type, data } = e.data;
     
