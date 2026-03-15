@@ -1,3 +1,4 @@
+// Web Worker per geocoding
 self.onmessage = function(e) {
     const { type, lat, lng } = e.data;
     
