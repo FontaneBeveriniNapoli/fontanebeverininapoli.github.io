@@ -5986,7 +5986,7 @@ async function eliminaTicket(id) {
 // QUOTA TRACKER FIREBASE (Stima Consumi)
 // ==========================================
 function aggiornaQuotaFirebase(sessioniOggi) {
-    const LETTURE_PER_AVVIO = 195; // 25 fontane + 170 beverini
+    const LETTURE_PER_AVVIO = 1; // 🎯 IL MIRACOLO: Abbassato da 195 a 1 lettura per il Radar!
     const LIMITE_GIORNALIERO = 50000;
     
     let sessioni = parseInt(sessioniOggi) || 0;
