@@ -1769,9 +1769,19 @@ async function checkAdminAuth() {
 }
 
 function showAdminPanel() {
+    // --- PONTE DATI PER ADMIN (FIX LISTE VUOTE) ---
+    // Se l'app non ha scaricato nulla (perché il Radar ha risparmiato), 
+    // carichiamo i dati locali per popolare le tabelle admin.
+    if (!appData.fontane || appData.fontane.length === 0) {
+        console.log("🛠️ Admin: Recupero dati locali per le tabelle...");
+        const localData = loadLocalData();
+        if (localData) appData = localData;
+    }
+    // ----------------------------------------------
+
     document.getElementById('admin-panel').style.display = 'flex';
     
-    // NUOVO: Nascondi sezioni sensibili se non è admin
+    // Nascondi sezioni sensibili se non è admin
     const restrictedSections = document.querySelectorAll('.import-export-section, .backup-section, .analytics-actions-section');
     
     restrictedSections.forEach(section => {
@@ -1782,13 +1792,13 @@ function showAdminPanel() {
         }
     });
 
+    // Carica le tabelle usando i dati che ora abbiamo nel "ponte"
     loadAdminFontane();
     loadAdminBeverini();
     loadAdminNews();
     updateDashboardStats();
     loadAdminTickets();
     
-    // ✅ CARICA ANALYTICS DASHBOARD
     loadAnalyticsDashboard();
     updatePerformanceMetrics();
     
@@ -1798,9 +1808,6 @@ function showAdminPanel() {
         updateActivityLog();
     }
 
-    // ==========================================
-    // FASE 2: ATTIVAZIONE SCUDI (Watermark + Timeout)
-    // ==========================================
     attivaScudiAdmin();
 }
 
