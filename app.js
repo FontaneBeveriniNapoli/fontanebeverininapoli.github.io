@@ -1605,18 +1605,20 @@ function updateActivityLog() {
 }
 
 function updateDashboardStats() {
-    // Conta gli elementi negli array globali aggiornati dal Radar/Starter Pack
+    // 1. Conta gli elementi negli array globali
     const fontaneCount = (appData.fontane || []).length;
     const beveriniCount = (appData.beverini || []).length;
     const newsCount = (appData.news || []).length;
 
-    // Aggiorna i testi nel pannello admin (assicurati che gli ID coincidano con il tuo HTML)
-    if(document.getElementById('admin-fontane-count')) 
-        document.getElementById('admin-fontane-count').textContent = fontaneCount;
-    if(document.getElementById('admin-beverini-count')) 
-        document.getElementById('admin-beverini-count').textContent = beveriniCount;
-    if(document.getElementById('admin-news-count')) 
-        document.getElementById('admin-news-count').textContent = newsCount;
+    // 2. Aggiorna i testi nel pannello admin usando i TUOI ID esatti
+    if(document.getElementById('total-fontane')) 
+        document.getElementById('total-fontane').textContent = fontaneCount;
+    
+    if(document.getElementById('total-beverini')) 
+        document.getElementById('total-beverini').textContent = beveriniCount;
+    
+    if(document.getElementById('total-news')) 
+        document.getElementById('total-news').textContent = newsCount;
     
     console.log(`📊 Dashboard aggiornata: Fontane: ${fontaneCount}, Beverini: ${beveriniCount}, News: ${newsCount}`);
 }
@@ -1758,6 +1760,11 @@ async function checkAdminAuth() {
             showAdminPanel();
         } else {
              document.getElementById('admin-panel').style.display = 'flex';
+        }
+        
+        // 👉 ECCO IL COMANDO DI SPARO: AGGIORNA I CONTATORI AL VOLO
+        if (typeof updateDashboardStats === 'function') {
+            updateDashboardStats();
         }
         
     } catch (error) {
