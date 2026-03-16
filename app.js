@@ -3190,24 +3190,26 @@ async function saveFontana(e) {
 async function syncDeltaData() {
     console.log("🔄 Avvio Sincronizzazione Intelligente (Delta)...");
 
-    // 1. Legge quando è stato l'ultimo download (se è la prima volta, usa '0')
+    // 1. FONDAMENTALE: Carica la base dati (Starter Pack o Cache) PRIMA di aggiungere le modifiche
+    if (typeof loadLocalData === 'function') {
+        loadLocalData(); 
+    }
+
     const lastSyncTimeStr = localStorage.getItem('last_sync_time') || '1970-01-01T00:00:00.000Z';
-    const lastSyncTime = new Date(lastSyncTimeStr);
 
     try {
+        // 2. Importiamo gli strumenti Firebase "al volo" (così non andiamo in errore)
+        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+
         let newDataFound = false;
-        
-        // 2. Controllo le Collezioni: Chiedo a Firebase SOLO cosa è cambiato dopo lastSyncTime
         const collectionsToCheck = ['fontane', 'beverini', 'news'];
         
         for (const colName of collectionsToCheck) {
-            // Creo una query filtrata: "Dammi documenti con last_modified MAGGIORE di lastSyncTime"
-            const colRef = window.collection(window.db, colName);
-            // Attenzione: Firebase richiede un indice composito se usi where() con orderBy(). 
-            // Se non l'hai impostato, la console del browser ti darà un link per crearlo cliccandoci sopra!
-            const q = window.query(colRef, window.where("last_modified", ">", lastSyncTimeStr)); 
+            const colRef = collection(window.db, colName);
+            // Crea il "Bisturi": Dammi solo chi è stato modificato di recente
+            const q = query(colRef, where("last_modified", ">", lastSyncTimeStr)); 
             
-            const querySnapshot = await window.getDocs(q);
+            const querySnapshot = await getDocs(q);
             
             if (!querySnapshot.empty) {
                 newDataFound = true;
@@ -3216,33 +3218,30 @@ async function syncDeltaData() {
                 querySnapshot.forEach((doc) => {
                     const data = { id: doc.id, ...doc.data() };
                     
-                    // 3. Fonde i dati nuovi con quelli vecchi in memoria
-                    const existingIndex = appData[colName].findIndex(item => item.id === doc.id);
+                    // 3. Fonde i dati: Se esiste lo aggiorna, altrimenti lo aggiunge
+                    const existingIndex = appData[colName].findIndex(item => item.id == doc.id);
                     if (existingIndex !== -1) {
-                        // Aggiorna l'esistente
-                        appData[colName][existingIndex] = data;
+                        appData[colName][existingIndex] = data; // Aggiorna
                     } else {
-                        // Aggiunge il nuovo
-                        appData[colName].push(data);
+                        appData[colName].push(data); // Aggiunge nuovo
                     }
                 });
             }
         }
 
-        // 4. Se ha trovato qualcosa di nuovo, salva e aggiorna lo schermo
+        // 4. Salva il "frankenstein" (Dati vecchi + Dati nuovi) e aggiorna lo schermo
         if (newDataFound) {
             saveLocalData(); 
-            // Ricarica le visualizzazioni
-            loadFontane();
-            loadBeverini();
-            loadNews();
-            updateDashboardStats();
+            if (typeof loadFontane === 'function') loadFontane();
+            if (typeof loadBeverini === 'function') loadBeverini();
+            if (typeof loadNews === 'function') loadNews();
+            if (typeof updateDashboardStats === 'function') updateDashboardStats();
             showToast('Dati sincronizzati con successo', 'success');
         } else {
             console.log("✅ L'app era già aggiornata all'ultima versione.");
         }
 
-        // 5. Salva l'ora esatta in cui ha finito questo controllo
+        // 5. Salva l'ora esatta di fine operazione
         localStorage.setItem('last_sync_time', new Date().toISOString());
 
     } catch (error) {
