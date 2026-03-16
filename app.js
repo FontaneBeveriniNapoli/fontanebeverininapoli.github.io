@@ -3186,6 +3186,69 @@ async function saveFontana(e) {
         await handleError('saveFontana', error, 'Errore nel salvataggio della fontana');
     }
 }
+// --- SISTEMA DI SINCRONIZZAZIONE DELTA (Risparmio Dati) ---
+async function syncDeltaData() {
+    console.log("🔄 Avvio Sincronizzazione Intelligente (Delta)...");
+
+    // 1. Legge quando è stato l'ultimo download (se è la prima volta, usa '0')
+    const lastSyncTimeStr = localStorage.getItem('last_sync_time') || '1970-01-01T00:00:00.000Z';
+    const lastSyncTime = new Date(lastSyncTimeStr);
+
+    try {
+        let newDataFound = false;
+        
+        // 2. Controllo le Collezioni: Chiedo a Firebase SOLO cosa è cambiato dopo lastSyncTime
+        const collectionsToCheck = ['fontane', 'beverini', 'news'];
+        
+        for (const colName of collectionsToCheck) {
+            // Creo una query filtrata: "Dammi documenti con last_modified MAGGIORE di lastSyncTime"
+            const colRef = window.collection(window.db, colName);
+            // Attenzione: Firebase richiede un indice composito se usi where() con orderBy(). 
+            // Se non l'hai impostato, la console del browser ti darà un link per crearlo cliccandoci sopra!
+            const q = window.query(colRef, window.where("last_modified", ">", lastSyncTimeStr)); 
+            
+            const querySnapshot = await window.getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                newDataFound = true;
+                console.log(`📥 Scaricati ${querySnapshot.size} aggiornamenti per: ${colName}`);
+                
+                querySnapshot.forEach((doc) => {
+                    const data = { id: doc.id, ...doc.data() };
+                    
+                    // 3. Fonde i dati nuovi con quelli vecchi in memoria
+                    const existingIndex = appData[colName].findIndex(item => item.id === doc.id);
+                    if (existingIndex !== -1) {
+                        // Aggiorna l'esistente
+                        appData[colName][existingIndex] = data;
+                    } else {
+                        // Aggiunge il nuovo
+                        appData[colName].push(data);
+                    }
+                });
+            }
+        }
+
+        // 4. Se ha trovato qualcosa di nuovo, salva e aggiorna lo schermo
+        if (newDataFound) {
+            saveLocalData(); 
+            // Ricarica le visualizzazioni
+            loadFontane();
+            loadBeverini();
+            loadNews();
+            updateDashboardStats();
+            showToast('Dati sincronizzati con successo', 'success');
+        } else {
+            console.log("✅ L'app era già aggiornata all'ultima versione.");
+        }
+
+        // 5. Salva l'ora esatta in cui ha finito questo controllo
+        localStorage.setItem('last_sync_time', new Date().toISOString());
+
+    } catch (error) {
+        console.error("❌ Errore nella sincronizzazione Delta:", error);
+    }
+}
 
 function resetFontanaForm() {
     document.getElementById('fontana-form').reset();
@@ -4894,12 +4957,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 4. Avvio Service Worker e Radar
     if ('serviceWorker' in navigator) {
-        setTimeout(() => { registerServiceWorker(); }, 1000);
+        setTimeout(() => { registerServiceWorker();
+        }, 1000);
     }
     
     setTimeout(async () => {
-        // Il Radar entra in azione per il controllo versione
-        await controllaAggiornamentiRadar();
+        // Il NUOVO Motore Delta entra in azione per scaricare SOLO le modifiche
+        if (typeof syncDeltaData === 'function') {
+            await syncDeltaData();
+        }
     }, 1000);
 
     // 5. Eventi di Interfaccia e Admin
