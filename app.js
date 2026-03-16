@@ -1605,21 +1605,36 @@ function updateActivityLog() {
 }
 
 function updateDashboardStats() {
-    // 1. Conta gli elementi negli array globali
-    const fontaneCount = (appData.fontane || []).length;
-    const beveriniCount = (appData.beverini || []).length;
-    const newsCount = (appData.news || []).length;
+    // 1. Array globali
+    const fontane = appData.fontane || [];
+    const beverini = appData.beverini || [];
+    const news = appData.news || [];
 
-    // 2. Aggiorna i testi nel pannello admin usando i TUOI ID esatti
-    if(document.getElementById('total-fontane')) 
-        document.getElementById('total-fontane').textContent = fontaneCount;
+    // 2. Calcolo Totali
+    const fontaneCount = fontane.length;
+    const beveriniCount = beverini.length;
+    const newsCount = news.length;
+
+    // 3. Calcolo Sotto-categorie (Filtra per stato)
+    // Nota: "non-funzionante" e "manutenzione" li raggruppiamo sotto "In Manutenzione"
+    const fontaneFunzionanti = fontane.filter(f => f.stato === 'funzionante').length;
+    const fontaneManutenzione = fontane.filter(f => f.stato === 'manutenzione' || f.stato === 'non-funzionante').length;
+
+    const beveriniFunzionanti = beverini.filter(b => b.stato === 'funzionante').length;
+    const beveriniManutenzione = beverini.filter(b => b.stato === 'manutenzione' || b.stato === 'non-funzionante').length;
+
+    // 4. Aggiorna l'HTML (Totali)
+    if(document.getElementById('total-fontane')) document.getElementById('total-fontane').textContent = fontaneCount;
+    if(document.getElementById('total-beverini')) document.getElementById('total-beverini').textContent = beveriniCount;
+    if(document.getElementById('total-news')) document.getElementById('total-news').textContent = newsCount;
+
+    // 5. Aggiorna l'HTML (Sotto-categorie: In Servizio / In Manutenzione)
+    if(document.getElementById('fontane-funzionanti')) document.getElementById('fontane-funzionanti').textContent = fontaneFunzionanti;
+    if(document.getElementById('fontane-manutenzione')) document.getElementById('fontane-manutenzione').textContent = fontaneManutenzione;
     
-    if(document.getElementById('total-beverini')) 
-        document.getElementById('total-beverini').textContent = beveriniCount;
-    
-    if(document.getElementById('total-news')) 
-        document.getElementById('total-news').textContent = newsCount;
-    
+    if(document.getElementById('beverini-funzionanti')) document.getElementById('beverini-funzionanti').textContent = beveriniFunzionanti;
+    if(document.getElementById('beverini-manutenzione')) document.getElementById('beverini-manutenzione').textContent = beveriniManutenzione;
+
     console.log(`📊 Dashboard aggiornata: Fontane: ${fontaneCount}, Beverini: ${beveriniCount}, News: ${newsCount}`);
 }
 
