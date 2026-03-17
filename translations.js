@@ -87,7 +87,9 @@ window.translations = {
         'rank_3': 'Custode delle Acque 💧',
         'rank_4': 'Maestro Pozzaro 🗝️',
         'rank_5': 'Re Nettuno di Napoli 🔱',
-        'quiz_score_text': 'Hai fatto {score} punti su {total}!'
+        'quiz_score_text': 'Hai fatto {score} punti su {total}!',
+        'quiz_correct_toast': 'Giusto! 🎉',
+        'quiz_wrong_toast': 'Sbagliato! 😢'
     },
    
     'en': {
@@ -174,6 +176,8 @@ window.translations = {
         'rank_3': 'Water Guardian 💧',
         'rank_4': 'Master Well-Keeper 🗝️',
         'rank_5': 'King Neptune of Naples 🔱',
-        'quiz_score_text': 'You scored {score} out of {total}!'
+        'quiz_score_text': 'You scored {score} out of {total}!',
+        'quiz_correct_toast': 'Correct! 🎉',
+        'quiz_wrong_toast': 'Wrong! 😢'
     }
 };

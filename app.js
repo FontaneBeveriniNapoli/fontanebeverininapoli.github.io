@@ -6336,17 +6336,22 @@ function controllaRisposta(selezionata, btnElement) {
     
     const corretta = domandeMiste[quizCorrente].corretta;
     
+    // 🌍 Recupera le traduzioni per i messaggi a comparsa
+    const t = window.translations[currentLanguage] || window.translations['it'];
+    const msgGiusto = t['quiz_correct_toast'] || "Giusto! 🎉";
+    const msgSbagliato = t['quiz_wrong_toast'] || "Sbagliato! 😢";
+    
     if (selezionata === corretta) {
         btnElement.style.background = '#10b981'; 
         btnElement.style.color = 'white';
         punteggioQuiz++;
-        showToast("Giusto! 🎉", "success", 1500);
+        showToast(msgGiusto, "success", 1500);
     } else {
         btnElement.style.background = '#ef4444'; 
         btnElement.style.color = 'white';
         bottoni[corretta].style.background = '#10b981'; 
         bottoni[corretta].style.color = 'white';
-        showToast("Sbagliato! 😢", "error", 1500);
+        showToast(msgSbagliato, "error", 1500);
     }
     
     setTimeout(() => {
