@@ -6274,34 +6274,33 @@ function startQuiz() {
 }
 
 function preparaDomande() {
-    domandeMiste = [...QUIZ_STATIC_DATA]; // Prende quelle dal file quiz_data.js
+    // 🌍 Pesca le domande nella lingua corretta (default 'it' se manca 'en')
+    const dataPerLingua = QUIZ_STATIC_DATA[currentLanguage] || QUIZ_STATIC_DATA['it'];
+    domandeMiste = [...dataPerLingua]; 
     
-    // --- IL GENERATORE DINAMICO ---
-    // Inventa domande leggendo i tuoi dati reali!
+    // --- IL GENERATORE DINAMICO (Tradotto) ---
     if (appData.fontane && appData.fontane.length >= 4) {
-        // Prendi 5 fontane a caso per farci delle domande
         let fontaneScelte = [...appData.fontane].sort(() => 0.5 - Math.random()).slice(0, 5);
         
         fontaneScelte.forEach(f => {
             if (f.nome && f.indirizzo) {
-                // Recupera 3 indirizzi SBAGLIATI a caso
                 let indirizziSbagliati = appData.fontane
                     .filter(alt => alt.indirizzo !== f.indirizzo && alt.indirizzo)
                     .sort(() => 0.5 - Math.random())
                     .slice(0, 3)
                     .map(alt => alt.indirizzo);
                 
-                // Unisce la risposta giusta a quelle sbagliate
                 let tutteLeRisposte = [f.indirizzo, ...indirizziSbagliati];
-                
-                // Mescola le 4 risposte
                 tutteLeRisposte.sort(() => 0.5 - Math.random());
-                
-                // Trova l'indice della risposta corretta dopo averle mescolate
                 let indiceCorretta = tutteLeRisposte.indexOf(f.indirizzo);
                 
+                // 🌍 Traduce la domanda dinamica
+                const domandaTesto = currentLanguage === 'en' 
+                    ? `Where exactly is the "${getLocalizedText(f, 'nome')}" located?`
+                    : `Dove si trova esattamente la "${f.nome}"?`;
+
                 domandeMiste.push({
-                    domanda: `Dove si trova esattamente la "${f.nome}"?`,
+                    domanda: domandaTesto,
                     risposte: tutteLeRisposte,
                     corretta: indiceCorretta
                 });
@@ -6309,10 +6308,7 @@ function preparaDomande() {
         });
     }
 
-    // Mescola tutto il mazzo di domande (fisse + dinamiche)
     domandeMiste.sort(() => 0.5 - Math.random());
-    
-    // Tiene solo le prime 10 per una partita veloce
     domandeMiste = domandeMiste.slice(0, 10); 
 }
 
