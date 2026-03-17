@@ -61,6 +61,9 @@ function toggleLanguage() {
     if (typeof loadBeverini === 'function') loadBeverini();
     if (typeof loadNews === 'function') loadNews();
     
+    // 👉 AGGIUNGI QUESTA RIGA PER AGGIORNARE IL GRADO DEL QUIZ IN TEMPO REALE!
+    if (typeof aggiornaStatisticheIntro === 'function') aggiornaStatisticheIntro();
+    
     // 4. Se c'è una scheda aperta, ricaricala tradotta!
     const activeScreen = document.querySelector('.screen.active');
     if (activeScreen && (activeScreen.id.includes('detail'))) {
@@ -6222,18 +6225,20 @@ function aggiornaStatisticheIntro() {
         percent = Math.round((quizStats.esatte / total) * 100);
     }
 
-    // Aggiorna i numeri sullo schermo
     if(document.getElementById('stat-correct')) document.getElementById('stat-correct').textContent = quizStats.esatte;
     if(document.getElementById('stat-wrong')) document.getElementById('stat-wrong').textContent = quizStats.errate;
     if(document.getElementById('stat-percent')) document.getElementById('stat-percent').textContent = percent + '%';
 
-    // Sistema di Livelli/Gradi (Gamification)
-    let rank = "Turista Smarrito 🚶‍♂️";
-    if (quizStats.esatte >= 10) rank = "Apprendista Fontaniere 🚰";
-    if (quizStats.esatte >= 30) rank = "Esploratore dei Vicoli 🗺️";
-    if (quizStats.esatte >= 60) rank = "Custode delle Acque 💧";
-    if (quizStats.esatte >= 100) rank = "Maestro Pozzaro 🗝️";
-    if (quizStats.esatte >= 200) rank = "Re Nettuno di Napoli 🔱";
+    // 🌍 SCOPRE LA LINGUA ATTUALE DELL'APP IN MODO CORRETTO
+    const t = window.translations[currentLanguage] || window.translations['it'];
+
+    // Sistema di Livelli/Gradi BILINGUE
+    let rank = t['rank_0'] || "Turista Smarrito 🚶‍♂️";
+    if (quizStats.esatte >= 10) rank = t['rank_1'];
+    if (quizStats.esatte >= 30) rank = t['rank_2'];
+    if (quizStats.esatte >= 60) rank = t['rank_3'];
+    if (quizStats.esatte >= 100) rank = t['rank_4'];
+    if (quizStats.esatte >= 200) rank = t['rank_5'];
 
     if(document.getElementById('quiz-rank-title')) document.getElementById('quiz-rank-title').textContent = rank;
 }
@@ -6362,16 +6367,14 @@ function mostraRisultato() {
     document.getElementById('quiz-game').style.display = 'none';
     document.getElementById('quiz-result').style.display = 'block';
     
-    // 1. Calcola e Salva le statistiche in memoria in modo permanente!
     const errateRound = domandeMiste.length - punteggioQuiz;
     quizStats.esatte += punteggioQuiz;
     quizStats.errate += errateRound;
     quizStats.partiteGiocate += 1;
     
     localStorage.setItem('abc_quiz_stats', JSON.stringify(quizStats));
-    aggiornaStatisticheIntro(); // Prepara la grafica aggiornata per quando torna alla home del gioco
+    aggiornaStatisticheIntro(); 
 
-    // 2. Mostra la coppa di fine partita
     const icona = document.getElementById('quiz-result-icon');
     if(punteggioQuiz === domandeMiste.length) {
         icona.className = "fas fa-crown"; 
@@ -6381,5 +6384,12 @@ function mostraRisultato() {
         icona.className = "fas fa-book-reader"; 
     }
     
-    document.getElementById('quiz-score-text').textContent = `Hai fatto ${punteggioQuiz} punti su ${domandeMiste.length}!`;
+    // 🌍 TRADUCE LA FRASE DEL PUNTEGGIO
+    const t = window.translations[currentLanguage] || window.translations['it'];
+    
+    let scoreText = t['quiz_score_text'] || `Hai fatto {score} punti su {total}!`;
+    // Sostituisce le parole magiche {score} e {total} con i numeri veri
+    scoreText = scoreText.replace('{score}', punteggioQuiz).replace('{total}', domandeMiste.length);
+    
+    document.getElementById('quiz-score-text').textContent = scoreText;
 }

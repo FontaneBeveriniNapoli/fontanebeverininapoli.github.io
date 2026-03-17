@@ -53,17 +53,41 @@ window.translations = {
         'qr_subtitle': 'Inquadra il codice con la fotocamera per installare ABC Napoli.',
         'share_link_btn': 'Invia Link',
         'btn_close': 'Chiudi',
+        
         // --- SMART INSTALL BANNER ---
         'install_title': 'Installa ABC Napoli',
         'install_subtitle': 'Per mappe offline e notifiche',
         'install_btn': 'Installa',
+        
         // --- SEGNALAZIONI (TICKETS) ---
         'report_title': 'Segnala Problema',
         'report_for': 'Segnalazione per: ',
         'report_question': 'Cosa è successo?',
         'report_broken': 'GUASTO (Non esce acqua)',
         'report_vandalized': 'VANDALIZZATO',
-        'report_spam_warning': 'Sistema Anti-Spam (15 giorni) attivo.' 
+        'report_spam_warning': 'Sistema Anti-Spam (15 giorni) attivo.',
+
+        // --- SALA GIOCHI (QUIZ) ---
+        'btn_game': 'Passatempo Offline',
+        'quiz_title': 'Quiz Offline 💧',
+        'quiz_intro_title': 'Il Quiz del Turista',
+        'quiz_intro_desc': 'Mettiti alla prova su Napoli e sull\'acqua!',
+        'quiz_rank_label': 'Il tuo Grado Attuale',
+        'quiz_correct': 'ESATTE',
+        'quiz_wrong': 'ERRATE',
+        'quiz_accuracy': 'PRECISIONE',
+        'quiz_start_btn': 'INIZIA PARTITA',
+        'quiz_question_label': 'Domanda',
+        'quiz_of_label': 'di',
+        'quiz_completed': 'Completato!',
+        'quiz_back_btn': 'TORNA ALLA TESSERA',
+        'rank_0': 'Turista Smarrito 🚶‍♂️',
+        'rank_1': 'Apprendista Fontaniere 🚰',
+        'rank_2': 'Esploratore dei Vicoli 🗺️',
+        'rank_3': 'Custode delle Acque 💧',
+        'rank_4': 'Maestro Pozzaro 🗝️',
+        'rank_5': 'Re Nettuno di Napoli 🔱',
+        'quiz_score_text': 'Hai fatto {score} punti su {total}!'
     },
    
     'en': {
@@ -116,16 +140,40 @@ window.translations = {
         'qr_subtitle': 'Scan this code with your camera to install ABC Napoli.',
         'share_link_btn': 'Send Link',
         'btn_close': 'Close',
+        
         // --- SMART INSTALL BANNER ---
         'install_title': 'Install ABC Napoli',
         'install_subtitle': 'For offline maps and notifications',
         'install_btn': 'Install',
+        
         // --- SEGNALAZIONI (TICKETS) ---
         'report_title': 'Report a Problem',
         'report_for': 'Report for: ',
         'report_question': 'What happened?',
         'report_broken': 'BROKEN (No water)',
         'report_vandalized': 'VANDALIZED',
-        'report_spam_warning': 'Anti-Spam System (15 days) active.'
+        'report_spam_warning': 'Anti-Spam System (15 days) active.',
+
+        // --- SALA GIOCHI (QUIZ) ---
+        'btn_game': 'Offline Game',
+        'quiz_title': 'Offline Quiz 💧',
+        'quiz_intro_title': 'The Tourist Quiz',
+        'quiz_intro_desc': 'Test your knowledge about Naples and water!',
+        'quiz_rank_label': 'Your Current Rank',
+        'quiz_correct': 'CORRECT',
+        'quiz_wrong': 'WRONG',
+        'quiz_accuracy': 'ACCURACY',
+        'quiz_start_btn': 'START GAME',
+        'quiz_question_label': 'Question',
+        'quiz_of_label': 'of',
+        'quiz_completed': 'Completed!',
+        'quiz_back_btn': 'BACK TO STATS',
+        'rank_0': 'Lost Tourist 🚶‍♂️',
+        'rank_1': 'Apprentice Fountain Keeper 🚰',
+        'rank_2': 'Alley Explorer 🗺️',
+        'rank_3': 'Water Guardian 💧',
+        'rank_4': 'Master Well-Keeper 🗝️',
+        'rank_5': 'King Neptune of Naples 🔱',
+        'quiz_score_text': 'You scored {score} out of {total}!'
     }
 };
