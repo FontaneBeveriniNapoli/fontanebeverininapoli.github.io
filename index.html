@@ -1340,7 +1340,7 @@
                     <span id="lang-label">Switch to English</span>
                 </button> 
 
-                <button class="modal-btn primary" onclick="openGiocoScreen()" style="background: #8b5cf6; margin-bottom: 10px;">
+                <button class="modal-btn primary" onclick="setTimeout(openGiocoScreen, 50)" style="background: #8b5cf6; margin-bottom: 10px; position: relative; z-index: 10000; cursor: pointer; touch-action: manipulation;">
                     <i class="fas fa-gamepad"></i> <span data-i18n="btn_game">Passatempo Offline</span>
                 </button>               
                 
@@ -1369,9 +1369,9 @@
 
     <script src="./dati_iniziali.js"></script>
 
-    <script src="./quiz_data.js"></script>
+    <script src="./quiz_data.js?v=6"></script>
     
-    <script src="./app.js?v=3"></script>
+    <script src="./app.js?v=6"></script>
     
     <script src="./analytics.js" defer></script>
     
