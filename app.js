@@ -6200,3 +6200,186 @@ window.STARTER_DATA = STARTER_DATA;
         showToast("❌ Errore durante la generazione", "error");
     }
 }
+// ==========================================
+// MINIGIOCO OFFLINE: IL MOTORE INTELLIGENTE CON CARRIERA
+// ==========================================
+
+let domandeMiste = [];
+let quizCorrente = 0;
+let punteggioQuiz = 0;
+
+// --- SALVATAGGIO STATISTICHE E CARRIERA ---
+let quizStats = JSON.parse(localStorage.getItem('abc_quiz_stats')) || {
+    esatte: 0,
+    errate: 0,
+    partiteGiocate: 0
+};
+
+function aggiornaStatisticheIntro() {
+    const total = quizStats.esatte + quizStats.errate;
+    let percent = 0;
+    if (total > 0) {
+        percent = Math.round((quizStats.esatte / total) * 100);
+    }
+
+    // Aggiorna i numeri sullo schermo
+    if(document.getElementById('stat-correct')) document.getElementById('stat-correct').textContent = quizStats.esatte;
+    if(document.getElementById('stat-wrong')) document.getElementById('stat-wrong').textContent = quizStats.errate;
+    if(document.getElementById('stat-percent')) document.getElementById('stat-percent').textContent = percent + '%';
+
+    // Sistema di Livelli/Gradi (Gamification)
+    let rank = "Turista Smarrito 🚶‍♂️";
+    if (quizStats.esatte >= 10) rank = "Apprendista Fontaniere 🚰";
+    if (quizStats.esatte >= 30) rank = "Esploratore dei Vicoli 🗺️";
+    if (quizStats.esatte >= 60) rank = "Custode delle Acque 💧";
+    if (quizStats.esatte >= 100) rank = "Maestro Pozzaro 🗝️";
+    if (quizStats.esatte >= 200) rank = "Re Nettuno di Napoli 🔱";
+
+    if(document.getElementById('quiz-rank-title')) document.getElementById('quiz-rank-title').textContent = rank;
+}
+
+function openGiocoScreen() {
+    const menu = document.getElementById('top-menu-modal');
+    if (menu) menu.style.display = 'none';
+    
+    // CARICA I PUNTEGGI SALVATI APPENA APRE IL GIOCO
+    aggiornaStatisticheIntro(); 
+    
+    document.getElementById('quiz-intro').style.display = 'block';
+    document.getElementById('quiz-game').style.display = 'none';
+    document.getElementById('quiz-result').style.display = 'none';
+    
+    showScreen('gioco-screen');
+}
+
+function startQuiz() {
+    quizCorrente = 0;
+    punteggioQuiz = 0;
+    
+    // 1. Genera le domande! (Fisse + Dinamiche inventate al momento)
+    preparaDomande();
+    
+    document.getElementById('quiz-intro').style.display = 'none';
+    document.getElementById('quiz-result').style.display = 'none';
+    document.getElementById('quiz-game').style.display = 'block';
+    // Mostriamo sempre un massimo di 10 domande a partita per non annoiare
+    document.getElementById('quiz-total-num').textContent = Math.min(10, domandeMiste.length);
+    
+    caricaDomanda();
+}
+
+function preparaDomande() {
+    domandeMiste = [...QUIZ_STATIC_DATA]; // Prende quelle dal file quiz_data.js
+    
+    // --- IL GENERATORE DINAMICO ---
+    // Inventa domande leggendo i tuoi dati reali!
+    if (appData.fontane && appData.fontane.length >= 4) {
+        // Prendi 5 fontane a caso per farci delle domande
+        let fontaneScelte = [...appData.fontane].sort(() => 0.5 - Math.random()).slice(0, 5);
+        
+        fontaneScelte.forEach(f => {
+            if (f.nome && f.indirizzo) {
+                // Recupera 3 indirizzi SBAGLIATI a caso
+                let indirizziSbagliati = appData.fontane
+                    .filter(alt => alt.indirizzo !== f.indirizzo && alt.indirizzo)
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, 3)
+                    .map(alt => alt.indirizzo);
+                
+                // Unisce la risposta giusta a quelle sbagliate
+                let tutteLeRisposte = [f.indirizzo, ...indirizziSbagliati];
+                
+                // Mescola le 4 risposte
+                tutteLeRisposte.sort(() => 0.5 - Math.random());
+                
+                // Trova l'indice della risposta corretta dopo averle mescolate
+                let indiceCorretta = tutteLeRisposte.indexOf(f.indirizzo);
+                
+                domandeMiste.push({
+                    domanda: `Dove si trova esattamente la "${f.nome}"?`,
+                    risposte: tutteLeRisposte,
+                    corretta: indiceCorretta
+                });
+            }
+        });
+    }
+
+    // Mescola tutto il mazzo di domande (fisse + dinamiche)
+    domandeMiste.sort(() => 0.5 - Math.random());
+    
+    // Tiene solo le prime 10 per una partita veloce
+    domandeMiste = domandeMiste.slice(0, 10); 
+}
+
+function caricaDomanda() {
+    const dati = domandeMiste[quizCorrente];
+    document.getElementById('quiz-current-num').textContent = quizCorrente + 1;
+    document.getElementById('quiz-question').textContent = dati.domanda;
+    
+    const optionsContainer = document.getElementById('quiz-options');
+    optionsContainer.innerHTML = ''; 
+    
+    dati.risposte.forEach((risposta, index) => {
+        const btn = document.createElement('button');
+        btn.textContent = risposta;
+        btn.style.cssText = "padding: 15px; border-radius: 12px; border: 2px solid #bae6fd; background: #f0f9ff; color: #0c4a6e; font-size: 1.1rem; cursor: pointer; text-align: left; transition: all 0.2s;";
+        
+        btn.onclick = () => controllaRisposta(index, btn);
+        optionsContainer.appendChild(btn);
+    });
+}
+
+function controllaRisposta(selezionata, btnElement) {
+    const bottoni = document.getElementById('quiz-options').querySelectorAll('button');
+    bottoni.forEach(b => b.style.pointerEvents = 'none'); // Blocca doppi click
+    
+    const corretta = domandeMiste[quizCorrente].corretta;
+    
+    if (selezionata === corretta) {
+        btnElement.style.background = '#10b981'; 
+        btnElement.style.color = 'white';
+        punteggioQuiz++;
+        showToast("Giusto! 🎉", "success", 1500);
+    } else {
+        btnElement.style.background = '#ef4444'; 
+        btnElement.style.color = 'white';
+        bottoni[corretta].style.background = '#10b981'; 
+        bottoni[corretta].style.color = 'white';
+        showToast("Sbagliato! 😢", "error", 1500);
+    }
+    
+    setTimeout(() => {
+        quizCorrente++;
+        if (quizCorrente < domandeMiste.length) {
+            caricaDomanda();
+        } else {
+            mostraRisultato();
+        }
+    }, 1500);
+}
+
+function mostraRisultato() {
+    document.getElementById('quiz-game').style.display = 'none';
+    document.getElementById('quiz-result').style.display = 'block';
+    
+    // 1. Calcola e Salva le statistiche in memoria in modo permanente!
+    const errateRound = domandeMiste.length - punteggioQuiz;
+    quizStats.esatte += punteggioQuiz;
+    quizStats.errate += errateRound;
+    quizStats.partiteGiocate += 1;
+    
+    localStorage.setItem('abc_quiz_stats', JSON.stringify(quizStats));
+    aggiornaStatisticheIntro(); // Prepara la grafica aggiornata per quando torna alla home del gioco
+
+    // 2. Mostra la coppa di fine partita
+    const icona = document.getElementById('quiz-result-icon');
+    if(punteggioQuiz === domandeMiste.length) {
+        icona.className = "fas fa-crown"; 
+    } else if (punteggioQuiz >= domandeMiste.length / 2) {
+        icona.className = "fas fa-medal"; 
+    } else {
+        icona.className = "fas fa-book-reader"; 
+    }
+    
+    document.getElementById('quiz-score-text').textContent = `Hai fatto ${punteggioQuiz} punti su ${domandeMiste.length}!`;
+}

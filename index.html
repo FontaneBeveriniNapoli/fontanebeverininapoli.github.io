@@ -1175,7 +1175,66 @@
                     </p>
                 </div>
             </div>
-        </div>           
+        </div> 
+
+        <div id="gioco-screen" class="screen">
+            <div class="app-header" style="background: linear-gradient(135deg, #0284c7, #38bdf8);">
+                <button class="back-btn" onclick="goBack()" style="color: white;">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="screen-title" style="color: white; font-size: 1.4rem;">Quiz Offline 💧</div>
+            </div>
+
+            <div class="content-area" style="padding: 20px; text-align: center; background-color: #f0f9ff; display: flex; flex-direction: column; justify-content: center; min-height: 80vh;">
+                
+                <div id="quiz-intro">
+                    <i class="fas fa-gamepad" style="font-size: 4rem; color: #0284c7; margin-bottom: 20px;"></i>
+                    <h2 style="color: #0c4a6e; margin-bottom: 5px;">Il Quiz del Turista</h2>
+                    <p style="color: #0369a1; margin-bottom: 20px; font-size: 1.1rem;">Mettiti alla prova su Napoli e sull'acqua!</p>
+                    
+                    <div id="quiz-stats-card" style="background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; text-align: left;">
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <span style="font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Il tuo Grado Attuale</span><br>
+                            <strong id="quiz-rank-title" style="font-size: 1.5rem; color: #8b5cf6;">Turista Smarrito 🚶‍♂️</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+                            <div style="text-align: center; width: 33%;">
+                                <span style="font-size: 1.3rem; font-weight: bold; color: #10b981;" id="stat-correct">0</span><br>
+                                <span style="font-size: 0.8rem; color: #64748b; font-weight: bold;">ESATTE</span>
+                            </div>
+                            <div style="text-align: center; width: 33%; border-left: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9;">
+                                <span style="font-size: 1.3rem; font-weight: bold; color: #ef4444;" id="stat-wrong">0</span><br>
+                                <span style="font-size: 0.8rem; color: #64748b; font-weight: bold;">ERRATE</span>
+                            </div>
+                            <div style="text-align: center; width: 33%;">
+                                <span style="font-size: 1.3rem; font-weight: bold; color: #0284c7;" id="stat-percent">0%</span><br>
+                                <span style="font-size: 0.8rem; color: #64748b; font-weight: bold;">PRECISIONE</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="startQuiz()" style="background: #0284c7; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(2, 132, 199, 0.3); width: 100%; transition: transform 0.2s;">
+                        <i class="fas fa-play"></i> INIZIA PARTITA
+                    </button>
+                </div>
+
+                <div id="quiz-game" style="display: none; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+                    <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 10px; font-weight: bold;">Domanda <span id="quiz-current-num">1</span> di <span id="quiz-total-num">5</span></div>
+                    <h3 id="quiz-question" style="color: #1e293b; margin-bottom: 25px; font-size: 1.3rem;">Domanda qui</h3>
+                    <div id="quiz-options" style="display: flex; flex-direction: column; gap: 12px;">
+                        </div>
+                </div>
+
+                <div id="quiz-result" style="display: none;">
+                    <i id="quiz-result-icon" class="fas fa-trophy" style="font-size: 5rem; color: #fbbf24; margin-bottom: 20px;"></i>
+                    <h2 style="color: #0c4a6e; margin-bottom: 10px;">Completato!</h2>
+                    <p id="quiz-score-text" style="font-size: 1.5rem; font-weight: bold; color: #0284c7; margin-bottom: 30px;">Hai fatto 0 punti su 5!</p>
+                <button onclick="openGiocoScreen()" style="background: #10b981; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1.2rem; font-weight: bold; cursor: pointer;">
+                    <i class="fas fa-check"></i> TORNA ALLA TESSERA
+                </button>
+                </div>
+            </div>
+        </div>          
          
 
         <div id="credits-screen" class="screen">
@@ -1279,7 +1338,11 @@
                 <button class="modal-btn lang-switch" onclick="toggleLanguage()">
                     <span id="lang-flag">🇬🇧</span> 
                     <span id="lang-label">Switch to English</span>
-                </button>                
+                </button> 
+
+                <button class="modal-btn primary" onclick="openGiocoScreen()" style="background: #8b5cf6; margin-bottom: 10px;">
+                    <i class="fas fa-gamepad"></i> <span data-i18n="btn_game">Passatempo Offline</span>
+                </button>               
                 
                 <button class="modal-btn primary" onclick="openCreditsScreen()" style="background: #3b82f6;">
                     <i class="fas fa-info-circle"></i> <span data-i18n="info_btn">Info & Crediti</span>
@@ -1305,6 +1368,8 @@
     <script src="./translations.js"></script>
 
     <script src="./dati_iniziali.js"></script>
+
+    <script src="./quiz_data.js"></script>
     
     <script src="./app.js?v=3"></script>
     
