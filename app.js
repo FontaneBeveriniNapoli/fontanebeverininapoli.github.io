@@ -6279,23 +6279,34 @@ function preparaDomande() {
     const datiOriginali = QUIZ_STATIC_DATA[currentLanguage] || QUIZ_STATIC_DATA['it'];
     const dataPerLingua = JSON.parse(JSON.stringify(datiOriginali)); 
     
-    // 🧠 MEMORIA: Controlliamo a che punto è arrivato il giocatore in questa lingua
-    let progressKey = 'quizProgress_' + currentLanguage;
-    let startIdx = parseInt(localStorage.getItem(progressKey)) || 0;
+    // 🧠 MEMORIA: Creiamo un "Mazzo" con i numeri delle domande non ancora giocate
+    let progressKey = 'quizUnplayed_' + currentLanguage;
+    let unplayed = JSON.parse(localStorage.getItem(progressKey));
     
     let domandeScelte = [];
 
-    // --- FASE 1: STRADA A (Domande fisse in sequenza) ---
-    if (startIdx < dataPerLingua.length) {
-        // Prende le prossime 10 domande fisse che l'utente non ha mai visto
-        domandeScelte = dataPerLingua.slice(startIdx, startIdx + 10);
+    // Se il giocatore è nuovo (o ha finito il gioco in passato), creiamo il mazzo intero
+    if (!unplayed) {
+        unplayed = dataPerLingua.map((_, index) => index); 
+    }
+
+    // --- FASE 1: PESCA DAL MAZZO (Senza ripetizioni) ---
+    if (unplayed.length > 0) {
         
-        // Aggiorna la memoria del telefono per la prossima partita
-        localStorage.setItem(progressKey, startIdx + 10);
+        unplayed.sort(() => 0.5 - Math.random()); // Shakeriamo il mazzo!
+        
+        let quantePescate = Math.min(10, unplayed.length); // Ne prende 10 (o meno, se il mazzo sta finendo)
+        
+        for (let i = 0; i < quantePescate; i++) {
+            let indiceScelto = unplayed.pop(); // Tira fuori la carta e la rimuove dal mazzo
+            domandeScelte.push(dataPerLingua[indiceScelto]);
+        }
+        
+        // Salviamo il mazzo aggiornato (con le carte in meno) nel telefono
+        localStorage.setItem(progressKey, JSON.stringify(unplayed));
         
     } else {
-        // --- FASE 2: FINE GIOCO (Tutto casuale + Dinamiche) ---
-        // Se ha finito tutte le fisse, sblocca la modalità "Sopravvivenza"
+        // --- FASE 2: MAZZO ESAURITO! (Modalità Sopravvivenza: tutto a caso + Dinamiche) ---
         let poolTotale = [...dataPerLingua];
         
         // Aggiunge le domande inventate al momento sulle fontane
@@ -6323,22 +6334,22 @@ function preparaDomande() {
             });
         }
         
-        // Mescola tutto il pentolone e ne pesca 10 a caso
+        // Mescola l'intero calderone e ne pesca 10 completamente a caso
         poolTotale.sort(() => 0.5 - Math.random());
         domandeScelte = poolTotale.slice(0, 10);
     }
 
-    // 🔀 SHAKER 1: Mescoliamo l'ordine delle 10 domande scelte (per non farle sembrare un elenco telefonico)
+    // 🔀 SHAKER 1: Mescoliamo l'ordine delle 10 domande scelte
     domandeScelte.sort(() => 0.5 - Math.random());
 
-    // 🔀 SHAKER 2: Mescoliamo le RISPOSTE (il fix per il Tasto 2)
+    // 🔀 SHAKER 2: Mescoliamo le RISPOSTE (il fix anti-baro per il Tasto 2)
     domandeScelte.forEach(d => {
-        let testoCorretta = d.risposte[d.corretta]; // Memorizza il testo esatto
-        d.risposte.sort(() => 0.5 - Math.random()); // Mescola le 4 opzioni a caso
-        d.corretta = d.risposte.indexOf(testoCorretta); // Trova la nuova posizione
+        let testoCorretta = d.risposte[d.corretta]; 
+        d.risposte.sort(() => 0.5 - Math.random()); 
+        d.corretta = d.risposte.indexOf(testoCorretta); 
     });
 
-    // Carichiamo le domande pronte nel motore del gioco
+    // Carichiamo le armi nel motore del gioco
     domandeMiste = domandeScelte;
 }
 
