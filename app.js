@@ -6267,6 +6267,7 @@ function startQuiz() {
     document.getElementById('quiz-intro').style.display = 'none';
     document.getElementById('quiz-result').style.display = 'none';
     document.getElementById('quiz-game').style.display = 'block';
+    
     // Mostriamo sempre un massimo di 10 domande a partita per non annoiare
     document.getElementById('quiz-total-num').textContent = Math.min(10, domandeMiste.length);
     
@@ -6274,42 +6275,71 @@ function startQuiz() {
 }
 
 function preparaDomande() {
-    // 🌍 Pesca le domande nella lingua corretta (default 'it' se manca 'en')
-    const dataPerLingua = QUIZ_STATIC_DATA[currentLanguage] || QUIZ_STATIC_DATA['it'];
-    domandeMiste = [...dataPerLingua]; 
+    // 🌍 Pesca le domande nella lingua corretta con "Copia Profonda"
+    const datiOriginali = QUIZ_STATIC_DATA[currentLanguage] || QUIZ_STATIC_DATA['it'];
+    const dataPerLingua = JSON.parse(JSON.stringify(datiOriginali)); 
     
-    // --- IL GENERATORE DINAMICO (Tradotto) ---
-    if (appData.fontane && appData.fontane.length >= 4) {
-        let fontaneScelte = [...appData.fontane].sort(() => 0.5 - Math.random()).slice(0, 5);
-        
-        fontaneScelte.forEach(f => {
-            if (f.nome && f.indirizzo) {
-                let indirizziSbagliati = appData.fontane
-                    .filter(alt => alt.indirizzo !== f.indirizzo && alt.indirizzo)
-                    .sort(() => 0.5 - Math.random())
-                    .slice(0, 3)
-                    .map(alt => alt.indirizzo);
-                
-                let tutteLeRisposte = [f.indirizzo, ...indirizziSbagliati];
-                tutteLeRisposte.sort(() => 0.5 - Math.random());
-                let indiceCorretta = tutteLeRisposte.indexOf(f.indirizzo);
-                
-                // 🌍 Traduce la domanda dinamica
-                const domandaTesto = currentLanguage === 'en' 
-                    ? `Where exactly is the "${getLocalizedText(f, 'nome')}" located?`
-                    : `Dove si trova esattamente la "${f.nome}"?`;
+    // 🧠 MEMORIA: Controlliamo a che punto è arrivato il giocatore in questa lingua
+    let progressKey = 'quizProgress_' + currentLanguage;
+    let startIdx = parseInt(localStorage.getItem(progressKey)) || 0;
+    
+    let domandeScelte = [];
 
-                domandeMiste.push({
-                    domanda: domandaTesto,
-                    risposte: tutteLeRisposte,
-                    corretta: indiceCorretta
-                });
-            }
-        });
+    // --- FASE 1: STRADA A (Domande fisse in sequenza) ---
+    if (startIdx < dataPerLingua.length) {
+        // Prende le prossime 10 domande fisse che l'utente non ha mai visto
+        domandeScelte = dataPerLingua.slice(startIdx, startIdx + 10);
+        
+        // Aggiorna la memoria del telefono per la prossima partita
+        localStorage.setItem(progressKey, startIdx + 10);
+        
+    } else {
+        // --- FASE 2: FINE GIOCO (Tutto casuale + Dinamiche) ---
+        // Se ha finito tutte le fisse, sblocca la modalità "Sopravvivenza"
+        let poolTotale = [...dataPerLingua];
+        
+        // Aggiunge le domande inventate al momento sulle fontane
+        if (appData.fontane && appData.fontane.length >= 4) {
+            let fontaneScelte = [...appData.fontane].sort(() => 0.5 - Math.random()).slice(0, 5);
+            fontaneScelte.forEach(f => {
+                if (f.nome && f.indirizzo) {
+                    let indirizziSbagliati = appData.fontane
+                        .filter(alt => alt.indirizzo !== f.indirizzo && alt.indirizzo)
+                        .sort(() => 0.5 - Math.random())
+                        .slice(0, 3)
+                        .map(alt => alt.indirizzo);
+                    
+                    let tutteLeRisposte = [f.indirizzo, ...indirizziSbagliati];
+                    const domandaTesto = currentLanguage === 'en' 
+                        ? `Where exactly is the "${getLocalizedText(f, 'nome')}" located?`
+                        : `Dove si trova esattamente la "${f.nome}"?`;
+
+                    poolTotale.push({
+                        domanda: domandaTesto,
+                        risposte: tutteLeRisposte,
+                        corretta: 0
+                    });
+                }
+            });
+        }
+        
+        // Mescola tutto il pentolone e ne pesca 10 a caso
+        poolTotale.sort(() => 0.5 - Math.random());
+        domandeScelte = poolTotale.slice(0, 10);
     }
 
-    domandeMiste.sort(() => 0.5 - Math.random());
-    domandeMiste = domandeMiste.slice(0, 10); 
+    // 🔀 SHAKER 1: Mescoliamo l'ordine delle 10 domande scelte (per non farle sembrare un elenco telefonico)
+    domandeScelte.sort(() => 0.5 - Math.random());
+
+    // 🔀 SHAKER 2: Mescoliamo le RISPOSTE (il fix per il Tasto 2)
+    domandeScelte.forEach(d => {
+        let testoCorretta = d.risposte[d.corretta]; // Memorizza il testo esatto
+        d.risposte.sort(() => 0.5 - Math.random()); // Mescola le 4 opzioni a caso
+        d.corretta = d.risposte.indexOf(testoCorretta); // Trova la nuova posizione
+    });
+
+    // Carichiamo le domande pronte nel motore del gioco
+    domandeMiste = domandeScelte;
 }
 
 function caricaDomanda() {
