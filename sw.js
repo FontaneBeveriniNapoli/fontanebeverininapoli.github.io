@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fontane-beverini-v7.1.9-EUROPA'; // RICORDA DI CAMBIARE LA VERSIONE!
+const CACHE_NAME = 'fontane-beverini-v7.2.0-EUROPA'; // RICORDA DI CAMBIARE LA VERSIONE!
 const STATIC_CACHE = 'static-v3';
 const DYNAMIC_CACHE = 'dynamic-v2';
 
@@ -12,8 +12,8 @@ const STATIC_ASSETS = [
   './manifest.json',
   './images/logo-app.png',
   './images/logo-comune.png',
-  './images/sfondo-home.jpg',         
-  './images/sfondo-home-mobile.jpg',  
+  './images/sfondo-home.jpg',
+  './images/sfondo-home-mobile.jpg',
   './images/default-beverino.jpg',
   './images/icona-avvio-144.png',
   './images/icona-avvio-192.png',
@@ -23,7 +23,7 @@ const STATIC_ASSETS = [
   './images/favicon.ico',
   './images/favicon-16x16.png',
   './images/favicon-32x32.png',
-  
+
   // ---> ASSET ESTERNI CORRETTI AGGIUNTI QUI <---
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
@@ -39,7 +39,7 @@ const STATIC_ASSETS = [
 // Install Service Worker
 self.addEventListener('install', event => {
   console.log('[Service Worker] Installazione in corso...');
-  
+
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then(cache => {
@@ -55,10 +55,10 @@ self.addEventListener('install', event => {
             })
             .catch(error => {
               console.warn(`[Service Worker] Errore caching ${url}:`, error.message);
-              return Promise.resolve(); 
+              return Promise.resolve();
             });
         });
-        
+
         return Promise.all(cachePromises);
       })
       .then(() => {
@@ -67,7 +67,7 @@ self.addEventListener('install', event => {
       })
       .catch(error => {
         console.error('[Service Worker] Errore installazione:', error);
-        return self.skipWaiting(); 
+        return self.skipWaiting();
       })
   );
 });
@@ -75,7 +75,7 @@ self.addEventListener('install', event => {
 // Activate Service Worker
 self.addEventListener('activate', event => {
   console.log('[Service Worker] Attivazione...');
-  
+
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -88,42 +88,42 @@ self.addEventListener('activate', event => {
         })
       );
     })
-    .then(() => {
-      console.log('[Service Worker] Attivazione completata');
-      return self.clients.claim();
-    })
-    .catch(error => {
-      console.error('[Service Worker] Errore attivazione:', error);
-    })
+      .then(() => {
+        console.log('[Service Worker] Attivazione completata');
+        return self.clients.claim();
+      })
+      .catch(error => {
+        console.error('[Service Worker] Errore attivazione:', error);
+      })
   );
 });
 
 // Fetch Strategy
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  
+
   const url = new URL(event.request.url);
-  
-  if (url.protocol === 'chrome-extension:' || 
-      url.protocol === 'chrome:' || 
-      url.protocol === 'about:' ||
-      url.protocol === 'data:' ||
-      url.protocol === 'blob:' ||
-      url.protocol === 'file:') {
+
+  if (url.protocol === 'chrome-extension:' ||
+    url.protocol === 'chrome:' ||
+    url.protocol === 'about:' ||
+    url.protocol === 'data:' ||
+    url.protocol === 'blob:' ||
+    url.protocol === 'file:') {
     return;
   }
-  
+
   if (url.href.includes('firebase') ||
-      url.href.includes('nominatim') ||
-      url.href.includes('gstatic.com') ||
-      url.href.includes('googleapis.com') ||
-      url.href.includes('/analytics') ||
-      url.href.includes('/firestore')) {
+    url.href.includes('nominatim') ||
+    url.href.includes('gstatic.com') ||
+    url.href.includes('googleapis.com') ||
+    url.href.includes('/analytics') ||
+    url.href.includes('/firestore')) {
     return fetch(event.request);
   }
-  
-  if (url.href.includes('tile.openstreetmap.org') || 
-      url.href.includes('raw.githubusercontent.com')) {
+
+  if (url.href.includes('tile.openstreetmap.org') ||
+    url.href.includes('raw.githubusercontent.com')) {
     event.respondWith(
       caches.match(event.request)
         .then(cachedResponse => {
@@ -135,10 +135,10 @@ self.addEventListener('fetch', event => {
                     .then(cache => cache.put(event.request, response));
                 }
               })
-              .catch(() => {}); 
+              .catch(() => { });
             return cachedResponse;
           }
-          
+
           return fetch(event.request)
             .then(response => {
               if (response.ok) {
@@ -152,24 +152,24 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
-  
+
   event.respondWith(
     caches.match(event.request)
       .then(cachedResponse => {
         if (cachedResponse) {
           return cachedResponse;
         }
-        
+
         return fetch(event.request)
           .then(response => {
             if (!response.ok) {
-              if (event.request.url.includes('index.html') || 
-                  event.request.headers.get('accept')?.includes('text/html')) {
+              if (event.request.url.includes('index.html') ||
+                event.request.headers.get('accept')?.includes('text/html')) {
                 return caches.match('./index.html');
               }
               return response;
             }
-            
+
             const responseToCache = response.clone();
             caches.open(DYNAMIC_CACHE)
               .then(cache => {
@@ -178,16 +178,16 @@ self.addEventListener('fetch', event => {
                 }
               })
               .catch(err => console.warn('[SW] Cache put error:', err));
-            
+
             return response;
           })
           .catch(error => {
             console.warn('[Service Worker] Fetch fallback:', error.message);
-            
+
             if (event.request.headers.get('accept')?.includes('text/html')) {
               return caches.match('./index.html');
             }
-            
+
             if (event.request.destination === 'image') {
               if (event.request.url.includes('default-beverino.jpg')) {
                 return caches.match('./images/sfondo-home.jpg');
@@ -196,11 +196,11 @@ self.addEventListener('fetch', event => {
             }
 
             if (event.request.destination === 'script') {
-                 return new Response('/* Offline script placeholder */', {
-                    headers: { 'Content-Type': 'application/javascript' }
-                 });
+              return new Response('/* Offline script placeholder */', {
+                headers: { 'Content-Type': 'application/javascript' }
+              });
             }
-            
+
             return new Response('Modalità offline attiva. Riprova quando la connessione sarà disponibile.', {
               status: 503,
               headers: { 'Content-Type': 'text/plain; charset=utf-8' }
@@ -213,7 +213,7 @@ self.addEventListener('fetch', event => {
 // Background Sync
 self.addEventListener('sync', event => {
   console.log('[Service Worker] Sync event:', event.tag);
-  
+
   if (event.tag === 'sync-data') {
     event.waitUntil(
       syncOfflineData().catch(error => {
@@ -226,25 +226,25 @@ self.addEventListener('sync', event => {
 
 async function syncOfflineData() {
   console.log('[Service Worker] Tentativo sincronizzazione dati offline...');
-  
+
   try {
     const clients = await self.clients.matchAll();
-    
+
     if (clients.length === 0) {
       console.log('[Service Worker] Nessun client attivo per la sincronizzazione');
       return Promise.resolve();
     }
-    
+
     const syncPromises = clients.map(client => {
       return client.postMessage({
         type: 'SYNC_OFFLINE_DATA',
         timestamp: new Date().toISOString()
       });
     });
-    
+
     await Promise.all(syncPromises);
     console.log('[Service Worker] Messaggio sync inviato a', clients.length, 'client(s)');
-    
+
     return Promise.resolve();
   } catch (error) {
     console.error('[Service Worker] Errore durante sync:', error);
@@ -255,7 +255,7 @@ async function syncOfflineData() {
 // Handle messages
 self.addEventListener('message', event => {
   const { data, ports } = event;
-  
+
   if (data && data.type) {
     if (data.type === 'CLEAR_CACHE') {
       caches.keys()
@@ -275,7 +275,7 @@ self.addEventListener('message', event => {
           }
         });
     }
-    
+
     if (data.type === 'CHECK_UPDATE') {
       self.registration.update()
         .then(() => {
