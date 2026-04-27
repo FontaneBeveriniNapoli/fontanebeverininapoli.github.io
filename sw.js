@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fontane-beverini-v8.0.0-EUROPA'; // 🔥 TARGA AGGIORNATA: Questo farà scattare il Popup!
+const CACHE_NAME = 'fontane-beverini-v8.0.1-EUROPA'; // 🔥 TARGA AGGIORNATA: Questo farà scattare il Popup!
 const STATIC_CACHE = 'static-v3';
 const DYNAMIC_CACHE = 'dynamic-v2';
 
@@ -125,7 +125,7 @@ self.addEventListener('fetch', event => {
   // 🔥 QUI AVVIENE LA MAGIA DELLA MEMORIA VISIVA: Aggiunto i.ibb.co
   if (url.href.includes('tile.openstreetmap.org') ||
     url.href.includes('raw.githubusercontent.com') ||
-    url.href.includes('i.ibb.co')) { 
+    url.href.includes('i.ibb.co')) {
     event.respondWith(
       caches.match(event.request)
         .then(cachedResponse => {

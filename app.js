@@ -2497,28 +2497,28 @@ function closeNavigationModal() {
     currentLatLng = null;
 }
 
-// Map Functions (Versione Ottimizzata Alta Fluidità)
+// Map Functions (Versione Bilanciata Desktop/Mobile)
 function initMappa() {
     if (!map) {
-        // Inizializza mappa con direttive di altissima fluidità
+        // Inizializza mappa: ripristinato il tap intelligente per non bloccare i PC
         map = L.map('map', {
-            zoomControl: false, // Disabilita zoom standard
-            tap: false, // ⚡ Uccide il ritardo di 300ms al tocco (causa principale della macchinosità)
-            wheelPxPerZoomLevel: 120 // Rende lo zoom meccanico più morbido
+            zoomControl: false, 
+            tap: !L.Browser.mobile, // ⚡ FIX: Disattiva il ritardo su mobile, ma lascia libero il mouse su PC!
+            wheelPxPerZoomLevel: 120 
         }).setView([40.8518, 14.2681], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19,
-            updateWhenIdle: true, // ⚡ Sospende il download della mappa mentre apri un marker (evita micro-scatti)
+            updateWhenIdle: true, 
             keepBuffer: 2
         }).addTo(map);
 
-        // 1. Gruppo CLUSTER per i BEVERINI (Ottimizzato)
+        // 1. Gruppo CLUSTER per i BEVERINI
         clusterGroup = L.markerClusterGroup({
             showCoverageOnHover: false,
             maxClusterRadius: 40,
-            chunkedLoading: true // ⚡ Spezzetta il calcolo per non bloccare il processore del telefono
+            chunkedLoading: false // ⚡ FIX: Rimosso per evitare che su PC alcuni marker si addormentino
         });
         map.addLayer(clusterGroup);
 
@@ -2526,7 +2526,7 @@ function initMappa() {
         fontaneLayer = L.layerGroup();
         map.addLayer(fontaneLayer);
 
-        // Aggiungi controlli (incluso lo zoom personalizzato)
+        // Aggiungi controlli
         addMapControls();
         setupSearchAutocomplete();
     }
@@ -2541,7 +2541,7 @@ function initMappa() {
         appData.fontane.forEach(fontana => {
             if (isValidCoordinate(fontana.latitudine, fontana.longitudine)) {
                 const marker = createMarker(fontana, 'fontana');
-                marker.setZIndexOffset(1000); 
+                marker.setZIndexOffset(500); // ⚡ FIX: Abbassato da 1000 a 500 per non "soffocare" i beverini vicini
                 const markerId = `fontana-${fontana.id}`;
                 markers.set(markerId, marker);
                 fontaneLayer.addLayer(marker); 
@@ -2561,7 +2561,7 @@ function initMappa() {
         });
     }
 
-   // Adatta zoom usando la funzione sicura
+   // Adatta zoom
     fitMapToMarkers();
     
     requestUserLocation(true);
