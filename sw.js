@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fontane-beverini-v7.2.0-EUROPA'; // RICORDA DI CAMBIARE LA VERSIONE!
+const CACHE_NAME = 'fontane-beverini-v8.0.0-EUROPA'; // 🔥 TARGA AGGIORNATA: Questo farà scattare il Popup!
 const STATIC_CACHE = 'static-v3';
 const DYNAMIC_CACHE = 'dynamic-v2';
 
@@ -80,8 +80,8 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          // Pulisce le vecchie versioni
-          if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+          // Pulisce le vecchie versioni (elimina il bunker vecchio)
+          if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE && cacheName !== CACHE_NAME) {
             console.log('[Service Worker] Cancellazione vecchia cache:', cacheName);
             return caches.delete(cacheName);
           }
@@ -122,15 +122,18 @@ self.addEventListener('fetch', event => {
     return fetch(event.request);
   }
 
+  // 🔥 QUI AVVIENE LA MAGIA DELLA MEMORIA VISIVA: Aggiunto i.ibb.co
   if (url.href.includes('tile.openstreetmap.org') ||
-    url.href.includes('raw.githubusercontent.com')) {
+    url.href.includes('raw.githubusercontent.com') ||
+    url.href.includes('i.ibb.co')) { 
     event.respondWith(
       caches.match(event.request)
         .then(cachedResponse => {
           if (cachedResponse) {
+            // Aggiorna in background se c'è rete, ma mostra subito la cache
             fetch(event.request)
               .then(response => {
-                if (response.ok) {
+                if (response.ok || response.type === 'opaque') {
                   caches.open(DYNAMIC_CACHE)
                     .then(cache => cache.put(event.request, response));
                 }
@@ -139,9 +142,10 @@ self.addEventListener('fetch', event => {
             return cachedResponse;
           }
 
+          // Se non è in cache, scarica e salva
           return fetch(event.request)
             .then(response => {
-              if (response.ok) {
+              if (response.ok || response.type === 'opaque') { // Accetta anche opaque per le foto esterne
                 const clone = response.clone();
                 caches.open(DYNAMIC_CACHE)
                   .then(cache => cache.put(event.request, clone));

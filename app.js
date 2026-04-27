@@ -2497,24 +2497,28 @@ function closeNavigationModal() {
     currentLatLng = null;
 }
 
-// Map Functions
+// Map Functions (Versione Ottimizzata Alta Fluidità)
 function initMappa() {
     if (!map) {
-        // Inizializza mappa (zoomControl: false è importante!)
+        // Inizializza mappa con direttive di altissima fluidità
         map = L.map('map', {
             zoomControl: false, // Disabilita zoom standard
-            tap: !L.Browser.mobile // Fix per iOS
+            tap: false, // ⚡ Uccide il ritardo di 300ms al tocco (causa principale della macchinosità)
+            wheelPxPerZoomLevel: 120 // Rende lo zoom meccanico più morbido
         }).setView([40.8518, 14.2681], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
+            maxZoom: 19,
+            updateWhenIdle: true, // ⚡ Sospende il download della mappa mentre apri un marker (evita micro-scatti)
+            keepBuffer: 2
         }).addTo(map);
 
-        // 1. Gruppo CLUSTER per i BEVERINI
+        // 1. Gruppo CLUSTER per i BEVERINI (Ottimizzato)
         clusterGroup = L.markerClusterGroup({
             showCoverageOnHover: false,
-            maxClusterRadius: 40
+            maxClusterRadius: 40,
+            chunkedLoading: true // ⚡ Spezzetta il calcolo per non bloccare il processore del telefono
         });
         map.addLayer(clusterGroup);
 
@@ -2527,7 +2531,7 @@ function initMappa() {
         setupSearchAutocomplete();
     }
 
-    // Pulisci i layer
+    // Pulisci i layer prima di ridisegnare
     clusterGroup.clearLayers();
     if (fontaneLayer) fontaneLayer.clearLayers();
     markers.clear();
@@ -2567,6 +2571,7 @@ function createMarker(item, type) {
     const icon = getIconForType(type);
     const marker = L.marker([item.latitudine, item.longitudine], { icon });
 
+    // ⚡ autoPanPadding impedisce alla mappa di "sbatacchiare" contro i bordi dello schermo
     marker.bindPopup(`
         <div class="leaflet-popup-content">
             <div class="popup-title"><span style="color: var(--primary-color); font-weight: 900; margin-right: 5px;">#${item.id}</span> ${item.nome}</div>
@@ -2575,7 +2580,7 @@ function createMarker(item, type) {
             <button class="popup-btn" onclick="showDetail('${item.id}', '${type}')">Dettagli</button>
             <button class="popup-btn" onclick="navigateTo(${item.latitudine}, ${item.longitudine})" style="margin-top: 5px; background: var(--primary-green);">Naviga</button>
         </div>
-    `);
+    `, { autoPanPadding: [20, 20] });
 
     return marker;
 }
@@ -3204,28 +3209,42 @@ async function saveFontana(e) {
         await handleError('saveFontana', error, 'Errore nel salvataggio della fontana');
     }
 }
-// --- SISTEMA DI SINCRONIZZAZIONE DELTA (Risparmio Dati) ---
+// --- SISTEMA DI SINCRONIZZAZIONE DELTA (Risparmio Dati V2 - Motore Intelligente) ---
 async function syncDeltaData() {
-    console.log("🔄 Avvio Sincronizzazione Intelligente (Delta)...");
+    console.log("🔄 Avvio Sincronizzazione Intelligente (Delta V2)...");
 
-    // 1. FONDAMENTALE: Carica la base dati (Starter Pack o Cache) PRIMA di aggiungere le modifiche
+    // 1. Carica la base dati locale in memoria
     if (typeof loadLocalData === 'function') {
         loadLocalData(); 
     }
 
-    const lastSyncTimeStr = localStorage.getItem('last_sync_time') || '1970-01-01T00:00:00.000Z';
+    // 2. Calcola dinamicamente la data più recente (maxLocalDate) dai dati reali in memoria
+    let maxLocalDate = '1970-01-01T00:00:00.000Z';
+    const collectionsToCheck = ['fontane', 'beverini', 'news'];
+
+    collectionsToCheck.forEach(col => {
+        if (appData[col] && appData[col].length > 0) {
+            appData[col].forEach(item => {
+                if (item.last_modified && item.last_modified > maxLocalDate) {
+                    maxLocalDate = item.last_modified;
+                }
+            });
+        }
+    });
+
+    console.log(`⏱️ Ultima data in memoria calcolata dal motore: ${maxLocalDate}`);
 
     try {
-        // 2. Importiamo gli strumenti Firebase "al volo" (così non andiamo in errore)
+        // 3. Importiamo gli strumenti Firebase
         const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
 
         let newDataFound = false;
-        const collectionsToCheck = ['fontane', 'beverini', 'news'];
         
+        // 4. Per ogni collezione, chiediamo a Firebase SOLO i record modificati DOPO la nostra maxLocalDate
         for (const colName of collectionsToCheck) {
             const colRef = collection(window.db, colName);
-            // Crea il "Bisturi": Dammi solo chi è stato modificato di recente
-            const q = query(colRef, where("last_modified", ">", lastSyncTimeStr)); 
+            // Il "Bisturi": Dammi solo gli elementi più recenti della mia memoria locale
+            const q = query(colRef, where("last_modified", ">", maxLocalDate)); 
             
             const querySnapshot = await getDocs(q);
             
@@ -3236,7 +3255,7 @@ async function syncDeltaData() {
                 querySnapshot.forEach((doc) => {
                     const data = { id: doc.id, ...doc.data() };
                     
-                    // 3. Fonde i dati: Se esiste lo aggiorna, altrimenti lo aggiunge
+                    // Fonde i dati: Se esiste lo aggiorna, altrimenti lo aggiunge
                     const existingIndex = appData[colName].findIndex(item => item.id == doc.id);
                     if (existingIndex !== -1) {
                         appData[colName][existingIndex] = data; // Aggiorna
@@ -3247,7 +3266,7 @@ async function syncDeltaData() {
             }
         }
 
-        // 4. Salva il "frankenstein" (Dati vecchi + Dati nuovi) e aggiorna lo schermo
+        // 5. Salva i dati fusi in locale e aggiorna l'interfaccia
         if (newDataFound) {
             saveLocalData(); 
             if (typeof loadFontane === 'function') loadFontane();
@@ -3256,11 +3275,8 @@ async function syncDeltaData() {
             if (typeof updateDashboardStats === 'function') updateDashboardStats();
             showToast('Dati sincronizzati con successo', 'success');
         } else {
-            console.log("✅ L'app era già aggiornata all'ultima versione.");
+            console.log("✅ L'app è già aggiornata (Nessun download eseguito, Costo: 0 letture).");
         }
-
-        // 5. Salva l'ora esatta di fine operazione
-        localStorage.setItem('last_sync_time', new Date().toISOString());
 
     } catch (error) {
         console.error("❌ Errore nella sincronizzazione Delta:", error);
