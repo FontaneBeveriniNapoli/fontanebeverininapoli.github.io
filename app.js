@@ -6466,7 +6466,7 @@ document.addEventListener('DOMContentLoaded', () => {
         _dbg_target.addEventListener('click', () => {
             _dbg_clicks++;
             if (_dbg_clicks === 10) {
-                alert("© 2026 Gruppo di Lavoro\nTutti i diritti riservati.\n\nIdeazione: Gruppo di Lavoro\nSviluppo: Dott. in Filosofia ed Etica Salvatore De Rosa");
+                alert("© 2026 Gruppo di Lavoro\nTutti i diritti riservati.\n\nIdeazione: Gruppo di Lavoro\nSviluppo: Dott. Salvatore De Rosa\n(Dottore in Filosofia ed Etica)");
                 _dbg_clicks = 0;
             }
             setTimeout(() => { _dbg_clicks = 0; }, 3000);
