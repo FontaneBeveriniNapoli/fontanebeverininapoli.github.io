@@ -6450,3 +6450,26 @@ function mostraRisultato() {
     
     document.getElementById('quiz-score-text').textContent = scoreText;
 }
+// ==========================================
+// SYSTEM INTEGRITY & AUTHOR SIGNATURE
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Firma in Console (Visibile con F12)
+    console.log("%c © 2026 Gruppo di Lavoro - ABC Napoli F&B ", "background: #3b82f6; color: white; padding: 4px; border-radius: 3px;");
+    console.log("%c Sviluppo Software: Dott. in Filosofia ed Etica Salvatore De Rosa ", "font-size: 10px; color: #64748b; font-style: italic;");
+
+    // 2. Easter Egg: 10 click sul logo
+    let _dbg_clicks = 0;
+    const _dbg_target = document.querySelector('.logo-container') || document.querySelector('.home-title');
+    
+    if (_dbg_target) {
+        _dbg_target.addEventListener('click', () => {
+            _dbg_clicks++;
+            if (_dbg_clicks === 10) {
+                alert("© 2026 Gruppo di Lavoro\nTutti i diritti riservati.\n\nIdeazione: Gruppo di Lavoro\nSviluppo: Dott. in Filosofia ed Etica Salvatore De Rosa");
+                _dbg_clicks = 0;
+            }
+            setTimeout(() => { _dbg_clicks = 0; }, 3000);
+        });
+    }
+});

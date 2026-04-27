@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fontane-beverini-v8.0.1-EUROPA'; // 🔥 TARGA AGGIORNATA: Questo farà scattare il Popup!
+const CACHE_NAME = 'fontane-beverini-v8.0.3-EUROPA'; // 🔥 TARGA AGGIORNATA: Questo farà scattare il Popup!
 const STATIC_CACHE = 'static-v3';
 const DYNAMIC_CACHE = 'dynamic-v2';
 
