@@ -2535,13 +2535,12 @@ function initMappa() {
     clusterGroup.clearLayers();
     if (fontaneLayer) fontaneLayer.clearLayers();
     markers.clear();
-
+    
     // --- CARICAMENTO FONTANE ---
     if (appData.fontane) {
         appData.fontane.forEach(fontana => {
             if (isValidCoordinate(fontana.latitudine, fontana.longitudine)) {
                 const marker = createMarker(fontana, 'fontana');
-                marker.setZIndexOffset(500); // ⚡ FIX: Abbassato da 1000 a 500 per non "soffocare" i beverini vicini
                 const markerId = `fontana-${fontana.id}`;
                 markers.set(markerId, marker);
                 fontaneLayer.addLayer(marker); 
